@@ -3,8 +3,19 @@
 /public/build
 /public/hot
 /public/storage
-/storage/*.key
-/storage/pail
+
+# Folder storage TIDAK dijejak.
+#
+# Laravel Forge menggantikan storage/ dengan symlink ke folder dikongsi di luar
+# setiap release. Jika Git turut menjejaknya, setiap deploy akan berlanggar
+# antara symlink dan folder sebenar.
+#
+# Folder yang diperlukan dicipta oleh deploy script (lihat docs/DEPLOY-FORGE.md).
+# Untuk pembangunan tempatan, jalankan:
+#     mkdir -p storage/framework/{views,cache/data,sessions,testing} storage/app/public storage/logs
+/storage/
+
+# bootstrap/cache KEKAL dijejak - ia folder sebenar, bukan symlink.
 /vendor
 .env
 .env.backup
