@@ -1,0 +1,3 @@
+# Dashboard dalaman DBENA — tidak untuk diindeks.
+User-agent: *
+Disallow: /
