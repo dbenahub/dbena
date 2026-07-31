@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:oklch(0.35 0.02 260);border-radius:4px;}
+  @keyframes toastIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/duotone/style.css">
+</helmet>
+
+<div style="{{ themeVars }}display:flex;min-width:1440px;width:100%;min-height:100vh;background:var(--bg);color:var(--t96);font-family:'Inter',sans-serif;transition:background 0.2s,color 0.2s;">
+
+  <!-- SIDEBAR -->
+  <div style="width:264px;flex-shrink:0;background:var(--sidebar-bg);border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;">
+    <div style="border:1px solid oklch(0.78 0.12 85/0.4);border-radius:14px;padding:16px 12px;text-align:center;margin-bottom:28px;background:oklch(0.97 0.005 260);">
+      <img src="./assets/logo-dbena.png" style="width:100%;height:auto;display:block;" />
+    </div>
+
+    <div style="flex:1;">
+      <sc-for list="{{ menuItems }}" as="item" hint-placeholder-count="8">
+        <div style="{{ item.rowStyle }}" style-hover="background:var(--hover-bg);" onClick="{{ item.onClick }}">
+          <i class="{{ item.iconClass }}" style="font-size:22px;color:{{ item.iconColor }};flex-shrink:0;"></i>
+          <div style="display:flex;flex-direction:column;line-height:1.3;">
+            <span style="font-size:14px;font-weight:600;color:{{ item.textColor }};">{{ item.label }}</span>
+            <sc-if value="{{ item.labelEn }}"><span style="font-size:11px;color:var(--t55);font-style:italic;">{{ item.labelEn }}</span></sc-if>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:12px;display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <i class="ph-duotone ph-moon" style="font-size:20px;color:oklch(0.78 0.12 85);"></i>
+        <span style="font-size:13px;color:var(--t68);">Dark Mode</span>
+      </div>
+      <div onClick="{{ toggleDark }}" style="width:38px;height:22px;border-radius:12px;cursor:pointer;position:relative;background:{{ darkSwitchBg }};transition:background 0.2s;">
+        <div style="{{ darkSwitchKnobStyle }}"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div style="flex:1;display:flex;flex-direction:column;min-width:0;">
+
+    <!-- TOPBAR -->
+    <div style="height:76px;flex-shrink:0;padding:0 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:20;">
+      <div>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:22px;letter-spacing:1px;color:oklch(0.78 0.12 85);">{{ pageTitle }}</div>
+        <div style="font-size:13px;color:var(--t65);margin-top:2px;">{{ pageSubtitle }}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="position:relative;">
+          <div onClick="{{ toggleDate }}" style="display:flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid var(--border2);border-radius:10px;font-size:13px;color:var(--t75);cursor:pointer;" style-hover="background:var(--hover-bg3);">
+            <i class="ph-duotone ph-calendar-blank" style="font-size:17px;color:oklch(0.78 0.12 85);"></i>
+            {{ topDateLabel }}
+            <i class="ph-duotone ph-caret-down" style="font-size:14px;"></i>
+          </div>
+          <sc-if value="{{ dateOpen }}">
+            <div style="position:absolute;top:46px;left:0;width:160px;max-height:320px;overflow-y:auto;background:var(--card-bg);border:1px solid var(--border2);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,0.4);z-index:30;">
+              <div style="display:flex;flex-direction:column;gap:3px;padding:8px;">
+                <sc-for list="{{ dateYearOptions }}" as="yr" hint-placeholder-count="10">
+                  <div onClick="{{ yr.onClick }}" style="text-align:center;padding:10px 0;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;background:{{ yr.bg }};color:{{ yr.color }};">{{ yr.label }}</div>
+                </sc-for>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="position:relative;">
+          <div onClick="{{ togglePeriod }}" style="display:flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid var(--border2);border-radius:10px;font-size:13px;cursor:pointer;color:var(--t90);" style-hover="background:var(--hover-bg3);">
+            <i class="ph-duotone ph-clock-countdown" style="font-size:17px;color:oklch(0.78 0.12 85);"></i>
+            {{ period }}
+            <i class="ph-duotone ph-caret-down" style="font-size:14px;"></i>
+          </div>
+          <sc-if value="{{ periodOpen }}">
+            <div style="position:absolute;top:46px;right:0;width:220px;background:var(--card-bg);border:1px solid var(--border2);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,0.4);overflow:hidden;z-index:30;">
+              <sc-for list="{{ periodOptions }}" as="p" hint-placeholder-count="3">
+                <div onClick="{{ p.onClick }}" style="padding:12px 16px;font-size:13px;cursor:pointer;color:var(--t90);" style-hover="background:var(--hover-bg2);">{{ p.label }}</div>
+              </sc-for>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="position:relative;">
+          <div onClick="{{ toggleNotif }}" style="position:relative;cursor:pointer;width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border2);" style-hover="background:var(--hover-bg3);">
+            <i class="ph-duotone ph-bell" style="font-size:20px;color:var(--t85);"></i>
+            <sc-if value="{{ showNotifBadge }}"><div style="position:absolute;top:6px;right:7px;width:8px;height:8px;border-radius:50%;background:oklch(0.55 0.22 350);"></div></sc-if>
+          </div>
+          <sc-if value="{{ notifOpen }}">
+            <div style="position:absolute;top:46px;right:0;width:320px;background:var(--card-bg);border:1px solid var(--border2);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,0.4);overflow:hidden;z-index:30;">
+              <div style="padding:14px 16px;font-size:13px;font-weight:700;border-bottom:1px solid var(--border);">Notifikasi <span style="font-style:italic;font-weight:400;color:var(--t55);">/ Notifications</span></div>
+              <sc-if value="{{ hasNotifications }}" hint-placeholder-val="{{ true }}">
+              <sc-for list="{{ notifItems }}" as="n" hint-placeholder-count="4">
+                <div onClick="{{ n.onClick }}" style="display:flex;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border3);cursor:pointer;" style-hover="background:var(--hover-bg);">
+                  <i class="ph-duotone {{ n.iconClass }}" style="font-size:20px;color:{{ n.accentColor }};flex-shrink:0;margin-top:2px;"></i>
+                  <div>
+                    <div style="font-size:12.5px;color:var(--t92);line-height:1.4;">{{ n.text }}</div>
+                    <div style="font-size:11px;color:var(--t50);margin-top:3px;">{{ n.time }}</div>
+                  </div>
+                </div>
+              </sc-for>
+              </sc-if>
+              <sc-if value="{{ noNotifications }}">
+                <div style="padding:24px 16px;text-align:center;font-size:12.5px;color:var(--t55);">Semua servis on track — tiada amaran kritikal. <span style="font-style:italic;">/ All clear.</span></div>
+              </sc-if>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="position:relative;">
+          <div onClick="{{ toggleProfile }}" style="display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 10px 6px 6px;border-radius:10px;" style-hover="background:var(--hover-bg3);">
+            <div style="width:36px;height:36px;border-radius:50%;border:1.5px solid oklch(0.78 0.12 85);background:oklch(0.78 0.12 85/0.16);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+              <i class="ph-duotone ph-shield-check" style="font-size:18px;color:oklch(0.78 0.12 85);"></i>
+            </div>
+            <div style="line-height:1.25;">
+              <div style="font-size:13px;font-weight:600;color:var(--t94);">Akses Dalaman</div>
+              <div style="font-size:11px;color:var(--t55);font-style:italic;">Internal Access</div>
+            </div>
+            <i class="ph-duotone ph-caret-down" style="font-size:14px;color:var(--t60);"></i>
+          </div>
+          <sc-if value="{{ profileOpen }}">
+            <div style="position:absolute;top:56px;right:0;width:200px;background:var(--card-bg);border:1px solid var(--border2);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,0.4);overflow:hidden;z-index:30;">
+              <div onClick="{{ goTetapan }}" style="display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:13px;cursor:pointer;color:var(--t90);" style-hover="background:var(--hover-bg2);">
+                <i class="ph-duotone ph-gear" style="font-size:17px;color:oklch(0.78 0.12 85);"></i> Tetapan / Settings
+              </div>
+              <div onClick="{{ doLogout }}" style="display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:13px;cursor:pointer;color:oklch(0.75 0.1 20);" style-hover="background:var(--hover-bg2);">
+                <i class="ph-duotone ph-sign-out" style="font-size:17px;"></i> Log Keluar / Log Out
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT -->
+    <div style="flex:1;padding:28px 32px 60px;display:flex;flex-direction:column;gap:24px;">
+
+      <!-- DASHBOARD PAGE -->
+      <sc-if value="{{ isDashboard }}">
+        <div style="display:flex;gap:24px;align-items:stretch;">
+          <div style="flex:2;background:var(--card-bg);border:1px solid oklch(0.78 0.12 85/0.3);border-radius:16px;padding:26px;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:20px;">
+              <div>
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <div style="font-size:16px;font-weight:700;">Prestasi Keseluruhan <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Overall Performance</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;padding:3px 11px 3px 8px;border-radius:20px;background:color-mix(in oklch, {{ currentTierColor }} 18%, transparent);border:1px solid color-mix(in oklch, {{ currentTierColor }} 40%, transparent);">
+                    <div style="width:7px;height:7px;border-radius:50%;background:{{ currentTierColor }};"></div>
+                    <span style="font-size:11.5px;font-weight:700;color:{{ currentTierColor }};">Index: {{ currentTierNameMy }} / {{ currentTierName }}</span>
+                  </div>
+                </div>
+                <div style="font-size:11.5px;color:var(--t55);margin-top:2px;">{{ overallCaption }}<sc-if value="{{ isProjectedMonth }}"> — <span style="font-style:italic;">unjuran, data sebenar belum tersedia</span></sc-if></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                <div style="display:flex;background:var(--hover-bg3);border-radius:9px;padding:3px;gap:2px;">
+                  <div onClick="{{ setMonthlyView }}" style="padding:7px 14px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;background:{{ monthlyViewBg }};color:{{ monthlyViewColor }};">Bulanan / Monthly</div>
+                  <div onClick="{{ setYearlyView }}" style="padding:7px 14px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;background:{{ yearlyViewBg }};color:{{ yearlyViewColor }};">Tahunan / Yearly</div>
+                </div>
+                <div style="display:flex;gap:5px;overflow-x:auto;max-width:340px;">
+                  <sc-for list="{{ dashboardMonthButtons }}" as="mb" hint-placeholder-count="12">
+                    <div onClick="{{ mb.onClick }}" style="{{ mb.style }}">{{ mb.label }}</div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:32px;flex:1;">
+              <div style="flex:1;">
+                <div style="font-size:13px;color:var(--t60);">{{ salesFieldLabel }}</div>
+                <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:38px;margin:6px 0 18px;">{{ totalSalesLabel }}</div>
+                <div style="font-size:13px;color:var(--t60);">{{ targetFieldLabel }}</div>
+                <div style="font-size:20px;font-weight:700;margin:4px 0 16px;">{{ totalTargetLabel }}</div>
+                <div style="font-size:12px;color:var(--t55);margin-bottom:6px;">Perubahan vs Sasaran <span style="font-style:italic;">/ Change vs Target</span></div>
+                <div style="display:flex;align-items:center;gap:6px;font-size:15px;font-weight:700;color:{{ changeVsTargetColor }};">
+                  <i class="ph-duotone {{ changeVsTargetIcon }}"></i> {{ changeVsTargetLabel }} <span style="font-size:12px;font-weight:400;color:var(--t55);font-style:italic;">vs sasaran semasa / vs current target</span>
+                </div>
+              </div>
+              <div style="width:210px;height:210px;border-radius:50%;flex-shrink:0;position:relative;display:flex;align-items:center;justify-content:center;background:{{ overallDonutBg }};">
+                <div style="width:158px;height:158px;border-radius:50%;background:var(--card-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                  <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:30px;color:oklch(0.78 0.12 85);">{{ overallPct }}</div>
+                  <div style="font-size:10.5px;color:var(--t60);text-align:center;margin-top:4px;line-height:1.3;">Pencapaian Sasaran<br/><span style="font-style:italic;">Target Achievement</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="flex:1;display:flex;flex-direction:column;gap:16px;">
+            <div style="flex:1;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:16px;">
+              <div style="width:52px;height:52px;border-radius:50%;background:oklch(0.55 0.22 350/0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="ph-duotone ph-wallet" style="font-size:26px;color:oklch(0.6 0.22 350);"></i>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:13px;color:var(--t60);">Kutipan <span style="font-style:italic;">/ Collection</span></div>
+                <div style="font-size:22px;font-weight:700;margin-top:2px;">{{ kutipanLabel }}</div>
+              </div>
+              <div style="font-size:12px;color:{{ kutipanChangeColor }};font-weight:600;text-align:right;">
+                <div style="color:var(--t50);font-weight:400;font-size:11px;">vs sasaran / vs target</div>
+                {{ kutipanChangeLabel }}
+              </div>
+            </div>
+            <div style="flex:1;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:16px;">
+              <div style="width:52px;height:52px;border-radius:50%;background:oklch(0.78 0.12 85/0.16);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="ph-duotone ph-receipt" style="font-size:26px;color:oklch(0.78 0.12 85);"></i>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:13px;color:var(--t60);">Sebut Harga <span style="font-style:italic;">/ Quotation</span></div>
+                <div style="font-size:22px;font-weight:700;margin-top:2px;">{{ sebutHargaLabel }}</div>
+              </div>
+              <div style="font-size:12px;color:{{ quotationChangeColor }};font-weight:600;text-align:right;">
+                <div style="color:var(--t50);font-weight:400;font-size:11px;">vs sasaran / vs target</div>
+                {{ quotationChangeLabel }}
+              </div>
+            </div>
+            <div style="flex:1;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:18px 20px;display:flex;align-items:center;gap:16px;">
+              <div style="width:52px;height:52px;border-radius:50%;background:oklch(0.55 0.22 350/0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="ph-duotone ph-user-plus" style="font-size:26px;color:oklch(0.6 0.22 350);"></i>
+              </div>
+              <div style="flex:1;">
+                <div style="font-size:13px;color:var(--t60);">Lead Baharu <span style="font-style:italic;">/ New Leads</span></div>
+                <div style="font-size:22px;font-weight:700;margin-top:2px;">{{ leadLabel }}</div>
+              </div>
+              <div style="font-size:12px;color:{{ leadChangeColor }};font-weight:600;text-align:right;">
+                <div style="color:var(--t50);font-weight:400;font-size:11px;">vs sasaran / vs target</div>
+                {{ leadChangeLabel }}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+            <div>
+              <div style="font-size:16px;font-weight:700;">Prestasi Mengikut Servis <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Performance by Service</span></div>
+              <div style="font-size:11.5px;color:var(--t55);margin-top:2px;">{{ serviceViewCaption }}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+              <div style="display:flex;background:var(--hover-bg3);border-radius:9px;padding:3px;gap:2px;">
+                <div onClick="{{ setMonthlyView }}" style="padding:7px 14px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;background:{{ monthlyViewBg }};color:{{ monthlyViewColor }};">Bulanan / Monthly</div>
+                <div onClick="{{ setYearlyView }}" style="padding:7px 14px;border-radius:7px;font-size:12.5px;font-weight:600;cursor:pointer;background:{{ yearlyViewBg }};color:{{ yearlyViewColor }};">Tahunan / Yearly</div>
+              </div>
+              <div style="display:flex;gap:5px;overflow-x:auto;max-width:420px;">
+                <sc-for list="{{ dashboardMonthButtons }}" as="mb" hint-placeholder-count="12">
+                  <div onClick="{{ mb.onClick }}" style="{{ mb.style }}">{{ mb.label }}</div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:2fr 1.2fr 1.2fr 2fr 1.6fr 1.2fr;gap:16px;padding:0 0 12px;font-size:11.5px;color:var(--t55);border-bottom:1px solid var(--border);">
+            <div>Servis <span style="font-style:italic;">/ Service</span></div><div>Jumlah Jualan <span style="font-style:italic;">/ Sales</span></div><div>Sasaran <span style="font-style:italic;">/ Target</span></div><div>Pencapaian <span style="font-style:italic;">/ Achievement</span></div><div>Status</div><div>Tindakan <span style="font-style:italic;">/ Action</span></div>
+          </div>
+          <sc-for list="{{ serviceRows }}" as="row" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:2fr 1.2fr 1.2fr 2fr 1.6fr 1.2fr;gap:16px;align-items:center;padding:16px 0;border-bottom:1px solid var(--border3);">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:34px;height:34px;border-radius:9px;background:oklch(0.55 0.22 350/0.16);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                  <i class="ph-duotone {{ row.iconClass }}" style="font-size:18px;color:oklch(0.78 0.12 85);"></i>
+                </div>
+                <div>
+                  <div style="font-size:13.5px;font-weight:600;">{{ row.name }}</div>
+                  <sc-if value="{{ row.nameEn }}"><div style="font-size:11px;color:var(--t55);font-style:italic;">{{ row.nameEn }}</div></sc-if>
+                </div>
+              </div>
+              <div style="font-size:13.5px;font-weight:600;">{{ row.salesLabel }}</div>
+              <div style="font-size:13.5px;color:var(--t70);">{{ row.targetLabel }}</div>
+              <div>
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="flex:1;height:7px;border-radius:4px;background:var(--track-bg);overflow:hidden;">
+                    <div style="height:100%;border-radius:4px;background:{{ row.barColor }};width:{{ row.pctWidth }};"></div>
+                  </div>
+                  <div style="font-size:12.5px;font-weight:600;width:44px;">{{ row.pctLabel }}</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:7px;">
+                <div style="width:8px;height:8px;border-radius:50%;background:{{ row.statusColor }};"></div>
+                <div style="font-size:12px;line-height:1.3;"><div>{{ row.statusLabel }}</div><div style="font-style:italic;color:var(--t55);">{{ row.statusLabelEn }}</div></div>
+              </div>
+              <div onClick="{{ row.onView }}" style="display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid oklch(0.78 0.12 85/0.5);color:oklch(0.78 0.12 85);border-radius:9px;padding:8px 10px;font-size:12px;font-weight:600;cursor:pointer;" style-hover="background:oklch(0.78 0.12 85/0.12);">
+                Lihat Detail <i class="ph-duotone ph-caret-right"></i>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px;">
+            <div style="font-size:16px;font-weight:700;">Index Sasaran Jualan <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Sales Target Index</span></div>
+            <div style="display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:color-mix(in oklch, {{ currentTierColor }} 18%, transparent);">
+              <div style="width:7px;height:7px;border-radius:50%;background:{{ currentTierColor }};"></div>
+              <span style="font-size:12px;font-weight:700;color:{{ currentTierColor }};">Status: {{ currentTierNameMy }} ({{ indexTimeframeLabel }})</span>
+            </div>
+          </div>
+          <div style="font-size:12px;color:var(--t55);margin-bottom:20px;">Ditentukan oleh hasil jualan {{ indexTimeframeLabel }} berbanding sasaran indeks. Untung bersih dianggarkan {{ estProfitLabel }} (margin 18%, anggaran) <span style="font-style:italic;">/ Estimated net profit</span></div>
+
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;margin-bottom:24px;">
+            <sc-for list="{{ indexTiersView }}" as="tr" hint-placeholder-count="5">
+              <div style="width:100%;position:relative;display:flex;align-items:center;justify-content:center;">
+                <div style="width:{{ tr.widthPct }};display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 16px;border-radius:6px;background:{{ tr.color }};color:white;font-weight:700;font-size:13px;">
+                  {{ tr.nameMy }} <span style="font-weight:400;font-style:italic;font-size:11.5px;opacity:0.85;">/ {{ tr.name }}</span>
+                </div>
+                <sc-if value="{{ tr.isCurrent }}">
+                  <div style="position:absolute;right:8px;display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:{{ tr.color }};white-space:nowrap;background:var(--card-bg);padding:3px 8px;border-radius:6px;border:1px solid {{ tr.color }};">
+                    <i class="ph-duotone ph-map-pin" style="font-size:14px;"></i> Anda di sini / Current
+                  </div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <div style="min-width:760px;">
+              <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 1fr 1fr;gap:10px;padding-bottom:10px;font-size:11px;font-weight:700;color:var(--t60);border-bottom:1px solid var(--border2);text-transform:uppercase;">
+                <div>Tahap <span style="font-style:italic;">/ Tier</span></div>
+                <div>Revenue Bulanan</div><div>Untung Bersih Bulanan</div>
+                <div>Revenue Suku Tahun</div><div>Untung Bersih Suku Tahun</div>
+                <div>Revenue Tahunan</div><div>Untung Bersih Tahunan</div>
+              </div>
+              <sc-for list="{{ indexTiersView }}" as="tr" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr 1fr 1fr 1fr;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border3);font-size:12.5px;background:{{ tr.rowBg }};">
+                  <div style="display:flex;align-items:center;gap:8px;font-weight:700;">
+                    <div style="width:9px;height:9px;border-radius:2px;background:{{ tr.color }};flex-shrink:0;"></div>{{ tr.nameMy }}
+                    <sc-if value="{{ tr.isCurrent }}"><i class="ph-duotone ph-check-circle" style="color:{{ tr.color }};font-size:15px;"></i></sc-if>
+                  </div>
+                  <div>{{ tr.monthlyRevenueLabel }}</div><div>{{ tr.monthlyProfitLabel }}</div>
+                  <div>{{ tr.quarterlyRevenueLabel }}</div><div>{{ tr.quarterlyProfitLabel }}</div>
+                  <div>{{ tr.yearlyRevenueLabel }}</div><div>{{ tr.yearlyProfitLabel }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:24px;align-items:flex-start;">
+          <div style="flex:2;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:2px;">Trend Jualan &amp; Sasaran <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Sales &amp; Target Trend</span></div>
+            <div style="font-size:12px;color:var(--t55);margin-bottom:16px;">Bulanan, Tahun <b style="color:var(--t80);">{{ dashboardYear }}</b> <span style="font-style:italic;">/ Monthly, Year {{ dashboardYear }}</span></div>
+            <dc-import name="TrendChart" chart="{{ dashboardChart }}" hint-size="100%,320px"></dc-import>
+
+            <div style="display:flex;align-items:center;gap:10px;margin:24px 0 4px;">
+              <div style="font-size:13px;font-weight:700;color:var(--t80);white-space:nowrap;">Mengikut Servis <span style="font-style:italic;font-weight:400;color:var(--t55);">/ By Service</span></div>
+              <div style="flex:1;height:1px;background:var(--border);"></div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:14px;margin-bottom:16px;">
+              <sc-for list="{{ stackLegend }}" as="lg" hint-placeholder-count="5">
+                <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--t65);">
+                  <div style="width:9px;height:9px;border-radius:2px;background:{{ lg.color }};"></div>{{ lg.name }}
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:16px;height:200px;border-left:1px solid var(--border2);border-bottom:1px solid var(--border2);padding:0 8px;">
+              <sc-for list="{{ stackBars }}" as="sb" hint-placeholder-count="7">
+                <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;">
+                  <div style="font-size:10.5px;color:var(--t55);">{{ sb.totalLabel }}</div>
+                  <div style="width:60%;display:flex;flex-direction:column-reverse;border-radius:4px 4px 0 0;overflow:hidden;height:{{ sb.totalPct }};">
+                    <sc-for list="{{ sb.segments }}" as="seg" hint-placeholder-count="5">
+                      <div style="flex:{{ seg.flexVal }} 1 0%;background:{{ seg.color }};"></div>
+                    </sc-for>
+                  </div>
+                  <div style="font-size:11px;color:var(--t60);">{{ sb.label }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <div style="flex:1;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;display:flex;flex-direction:column;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+              <div style="font-size:16px;font-weight:700;">Keutamaan Minggu Ini <span style="color:var(--t55);font-weight:400;font-style:italic;">/ This Week's Priorities</span></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:14px;flex:1;">
+              <sc-for list="{{ priorityItems }}" as="p" hint-placeholder-count="3">
+                <div onClick="{{ p.onView }}" style="display:flex;gap:12px;cursor:pointer;padding:10px;border-radius:10px;" style-hover="background:var(--hover-bg);">
+                  <div style="width:38px;height:38px;border-radius:9px;background:oklch(0.55 0.22 350/0.16);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="ph-duotone {{ p.iconClass }}" style="font-size:19px;color:oklch(0.78 0.12 85);"></i>
+                  </div>
+                  <div style="flex:1;min-width:0;">
+                    <div style="font-size:13px;font-weight:600;">{{ p.name }}<sc-if value="{{ p.nameEn }}"> <span style="font-weight:400;font-style:italic;color:var(--t55);">/ {{ p.nameEn }}</span></sc-if></div>
+                    <div style="font-size:12px;color:var(--t65);line-height:1.4;margin-top:3px;">{{ p.desc }}<br/><span style="font-style:italic;color:var(--t50);">{{ p.descEn }}</span></div>
+                  </div>
+                  <div title="{{ p.owner }}" style="width:30px;height:30px;border-radius:50%;flex-shrink:0;border:1.5px solid oklch(0.78 0.12 85/0.5);background-image:url('{{ p.avatarUrl }}');background-size:cover;background-position:center;background-color:var(--hover-bg2);"></div>
+                </div>
+              </sc-for>
+            </div>
+            <div onClick="{{ goLaporan }}" style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:13px;font-weight:600;color:oklch(0.78 0.12 85);cursor:pointer;display:flex;align-items:center;gap:6px;">
+              Lihat semua tindakan <span style="font-style:italic;font-weight:400;">/ View all actions</span> <i class="ph-duotone ph-caret-right"></i>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;">
+          <div style="font-size:16px;font-weight:700;margin-bottom:2px;">Trend Jualan Tahunan <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Annual Sales Trend</span></div>
+          <div style="font-size:12px;color:var(--t55);margin-bottom:16px;">Unjuran jualan setahun penuh, {{ yearOptionsRange }} <span style="font-style:italic;">/ Full-year sales projection</span></div>
+          <dc-import name="TrendChart" chart="{{ yearlyChart }}" hint-size="100%,320px"></dc-import>
+        </div>
+
+      </sc-if>
+
+      <!-- SERVICE DETAIL PAGE -->
+      <sc-if value="{{ isService }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div onClick="{{ goDashboard }}" style="width:38px;height:38px;border-radius:10px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;cursor:pointer;" style-hover="background:var(--hover-bg);">
+            <i class="ph-duotone ph-arrow-left" style="font-size:18px;"></i>
+          </div>
+          <div style="font-size:13px;color:var(--t60);">Dashboard Utama <span style="color:var(--t40);">/</span> <span style="color:var(--t90);font-weight:600;">{{ currentService.name }}</span></div>
+        </div>
+
+        <sc-if value="{{ criticalRows.length }}">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:var(--card-bg);border:1px solid var(--border);border-radius:14px;padding:14px 18px;">
+            <div style="font-size:12.5px;color:var(--t60);">Papar bulan <span style="font-style:italic;">/ View month</span>: <b style="color:var(--t90);">{{ criticalMonth }}</b></div>
+            <div style="display:flex;gap:6px;overflow-x:auto;max-width:100%;">
+              <sc-for list="{{ criticalMonthButtons }}" as="mb" hint-placeholder-count="12">
+                <div onClick="{{ mb.onClick }}" style="{{ mb.style }}">{{ mb.label }}</div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;gap:20px;">
+          <div style="flex:1;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:22px;">
+            <div style="font-size:12.5px;color:var(--t60);">Jumlah Jualan <span style="font-style:italic;">/ Total Sales</span></div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:26px;margin-top:8px;">{{ currentService.salesLabel }}</div>
+          </div>
+          <div style="flex:1;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:22px;">
+            <div style="font-size:12.5px;color:var(--t60);">Sasaran <span style="font-style:italic;">/ Target</span></div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:26px;margin-top:8px;">{{ currentService.targetLabel }}</div>
+          </div>
+          <div style="flex:1;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:22px;display:flex;align-items:center;gap:16px;">
+            <div style="width:76px;height:76px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:{{ serviceDonutBg }};">
+              <div style="width:54px;height:54px;border-radius:50%;background:var(--card-bg);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:oklch(0.78 0.12 85);">{{ currentService.pctLabel }}</div>
+            </div>
+            <div style="font-size:12px;color:var(--t60);line-height:1.4;">Pencapaian Sasaran<br/><span style="font-style:italic;">Target Achievement</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:20px;">
+          <sc-if value="{{ quotationCard }}">
+            <div style="flex:1;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:22px;">
+              <div style="font-size:12.5px;color:var(--t60);margin-bottom:12px;">Quotation: Actual vs Sasaran <span style="font-style:italic;">/ Actual vs Target</span></div>
+              <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:10px;">
+                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:22px;">{{ quotationCard.actualLabel }}</span>
+                <span style="font-size:13px;color:var(--t65);">/ {{ quotationCard.targetLabel }} sasaran</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="flex:1;height:8px;border-radius:4px;background:var(--track-bg);overflow:hidden;"><div style="height:100%;border-radius:4px;background:{{ quotationCard.barColor }};width:{{ quotationCard.pctWidth }};"></div></div>
+                <div style="font-size:13px;font-weight:700;width:44px;text-align:right;">{{ quotationCard.pctLabel }}</div>
+              </div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ siteVisitCard }}">
+            <div style="flex:1;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:22px;">
+              <div style="font-size:12.5px;color:var(--t60);margin-bottom:12px;">{{ siteVisitLabel }}: Actual vs Sasaran <span style="font-style:italic;">/ Actual vs Target</span></div>
+              <div style="display:flex;align-items:baseline;gap:14px;margin-bottom:10px;">
+                <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:22px;">{{ siteVisitCard.actualLabel }}</span>
+                <span style="font-size:13px;color:var(--t65);">/ {{ siteVisitCard.targetLabel }} sasaran</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="flex:1;height:8px;border-radius:4px;background:var(--track-bg);overflow:hidden;"><div style="height:100%;border-radius:4px;background:{{ siteVisitCard.barColor }};width:{{ siteVisitCard.pctWidth }};"></div></div>
+                <div style="font-size:13px;font-weight:700;width:44px;text-align:right;">{{ siteVisitCard.pctLabel }}</div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;">
+          <div style="font-size:16px;font-weight:700;margin-bottom:18px;">Trend Bulanan <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Monthly Trend</span></div>
+          <dc-import name="TrendChart" chart="{{ serviceChart }}" hint-size="100%,300px"></dc-import>
+        </div>
+
+        <sc-if value="{{ weeklyQuotationBars.length }}">
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:2px;">Trend Quotation &amp; Site Visit <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Weekly Trend</span></div>
+            <div style="font-size:12px;color:var(--t55);margin-bottom:18px;">Actual vs Sasaran mingguan, {{ criticalMonth }} 2026 <span style="font-style:italic;">/ Weekly actual vs target</span></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:24px;">
+              <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div style="font-size:12.5px;font-weight:600;color:var(--t80);">Amount Quotation <span style="font-style:italic;font-weight:400;color:var(--t55);">/ Quotation Value</span></div>
+                  <div style="font-size:11px;color:var(--t55);">Sasaran: <b style="color:var(--t80);">{{ weeklyAmountTarget }}</b>/mgu</div>
+                </div>
+                <div style="display:flex;align-items:flex-end;gap:12px;height:120px;border-left:1px solid var(--border2);border-bottom:1px solid var(--border2);padding:8px 8px 0;position:relative;">
+                  <div style="position:absolute;left:0;right:0;top:8px;border-top:2px dashed oklch(0.78 0.12 85/0.6);"></div>
+                  <sc-for list="{{ weeklyAmountBars }}" as="wb" hint-placeholder-count="4">
+                    <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;">
+                      <div style="font-size:10.5px;font-weight:700;color:var(--t80);white-space:nowrap;">{{ wb.actual }}</div>
+                      <div title="{{ wb.actual }}" style="width:56%;border-radius:4px 4px 0 0;background:{{ wb.barColor }};height:{{ wb.pctHeight }};min-height:2px;"></div>
+                      <div style="font-size:10.5px;color:var(--t55);">{{ wb.label }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div style="font-size:12.5px;font-weight:600;color:var(--t80);">Bilangan Quotation <span style="font-style:italic;font-weight:400;color:var(--t55);">/ Quotation Count</span></div>
+                  <div style="font-size:11px;color:var(--t55);">Sasaran: <b style="color:var(--t80);">{{ weeklyQuotationTarget }}</b>/minggu</div>
+                </div>
+                <div style="display:flex;align-items:flex-end;gap:12px;height:120px;border-left:1px solid var(--border2);border-bottom:1px solid var(--border2);padding:8px 8px 0;position:relative;">
+                  <div style="position:absolute;left:0;right:0;top:8px;border-top:2px dashed oklch(0.78 0.12 85/0.6);"></div>
+                  <sc-for list="{{ weeklyQuotationBars }}" as="wb" hint-placeholder-count="4">
+                    <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;">
+                      <div style="font-size:11px;font-weight:700;color:var(--t80);">{{ wb.actual }}</div>
+                      <div title="{{ wb.actual }}" style="width:56%;border-radius:4px 4px 0 0;background:{{ wb.barColor }};height:{{ wb.pctHeight }};min-height:2px;"></div>
+                      <div style="font-size:10.5px;color:var(--t55);">{{ wb.label }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+                  <div style="font-size:12.5px;font-weight:600;color:var(--t80);">Bilangan {{ siteVisitLabel }} <span style="font-style:italic;font-weight:400;color:var(--t55);">/ {{ siteVisitLabel }} Count</span></div>
+                  <div style="font-size:11px;color:var(--t55);">Sasaran: <b style="color:var(--t80);">{{ weeklySiteVisitTarget }}</b>/minggu</div>
+                </div>
+                <div style="display:flex;align-items:flex-end;gap:12px;height:120px;border-left:1px solid var(--border2);border-bottom:1px solid var(--border2);padding:8px 8px 0;position:relative;">
+                  <div style="position:absolute;left:0;right:0;top:8px;border-top:2px dashed oklch(0.78 0.12 85/0.6);"></div>
+                  <sc-for list="{{ weeklySiteVisitBars }}" as="wb" hint-placeholder-count="4">
+                    <div style="flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:6px;">
+                      <div style="font-size:11px;font-weight:700;color:var(--t80);">{{ wb.actual }}</div>
+                      <div title="{{ wb.actual }}" style="width:56%;border-radius:4px 4px 0 0;background:{{ wb.barColor }};height:{{ wb.pctHeight }};min-height:2px;"></div>
+                      <div style="font-size:10.5px;color:var(--t55);">{{ wb.label }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:14px;font-size:11px;color:var(--t55);">
+              <div style="width:14px;border-top:2px dashed oklch(0.78 0.12 85/0.8);"></div> Garis sasaran mingguan <span style="font-style:italic;">/ Weekly target line</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ criticalRows.length }}">
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+              <div>
+                <div style="font-size:16px;font-weight:700;">Data Kritikal Mingguan <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Weekly Critical Data</span></div>
+                <div style="font-size:12px;color:var(--t55);margin-top:2px;">Kemaskini oleh PIC setiap minggu <span style="font-style:italic;">/ Updated by PIC weekly</span></div>
+                <div style="display:flex;gap:14px;margin-top:10px;">
+                  <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t65);"><div style="width:8px;height:8px;border-radius:50%;background:oklch(0.55 0.15 145);"></div>Green — On track</div>
+                  <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t65);"><div style="width:8px;height:8px;border-radius:50%;background:oklch(0.78 0.15 85);"></div>Yellow — Belum on track, ada action plan</div>
+                  <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--t65);"><div style="width:8px;height:8px;border-radius:50%;background:oklch(0.55 0.2 25);"></div>Red — Belum on track, tiada action plan</div>
+                </div>
+                <sc-if value="{{ ownerFilter }}">
+                  <div onClick="{{ clearOwnerFilter }}" style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:5px 11px;border-radius:20px;background:oklch(0.78 0.12 85/0.15);border:1px solid oklch(0.78 0.12 85/0.5);font-size:11.5px;font-weight:600;color:oklch(0.78 0.12 85);cursor:pointer;width:fit-content;">
+                    Tapis: {{ ownerFilter }} <i class="ph-duotone ph-x" style="font-size:12px;"></i>
+                  </div>
+                </sc-if>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <div onClick="{{ openGoogleSheet }}" style-hover="filter:brightness(1.08);" style="display:flex;align-items:center;gap:7px;padding:9px 14px;border-radius:9px;font-size:12.5px;font-weight:700;cursor:pointer;background:oklch(0.78 0.12 85);color:oklch(0.15 0.02 260);">
+                  <i class="ph-duotone ph-google-logo" style="font-size:16px;"></i> Google Sheet Integration
+                </div>
+              </div>
+            </div>
+            <div style="overflow-x:auto;">
+              <div style="min-width:1360px;">
+                <div style="display:grid;grid-template-columns:250px 95px 95px 95px 95px 80px 115px 140px 90px 110px 1fr;gap:10px;padding-bottom:12px;font-size:11px;font-weight:700;color:var(--t60);border-bottom:2px solid var(--border2);text-transform:uppercase;letter-spacing:0.3px;">
+                  <div>Data Kritikal</div>
+                  <sc-for list="{{ criticalWeeks }}" as="w" hint-placeholder-count="4"><div style="white-space:pre-line;line-height:1.3;">{{ w }}</div></sc-for>
+                  <div>Jenis</div><div>Actual</div><div>Sasaran <span style="font-style:italic;">/ Target</span></div><div>Status</div><div>Pemilik <span style="font-style:italic;">/ Owner</span></div><div>Pelan Tindakan <span style="font-style:italic;">/ Action Plan</span></div>
+                </div>
+                <sc-for list="{{ displayCriticalRows }}" as="cr" hint-placeholder-count="10">
+                  <div style="display:grid;grid-template-columns:250px 95px 95px 95px 95px 80px 115px 140px 90px 110px 1fr;gap:10px;align-items:center;padding:13px 0;border-bottom:1px solid var(--border3);font-size:12.5px;">
+                    <div style="font-weight:600;">{{ cr.metric }}</div>
+                    <input value="{{ cr.week1 }}" onChange="{{ cr.onWeek1Change }}" disabled="{{ cr.notEditable }}" placeholder="—" style="width:100%;background:transparent;border:1px solid var(--border2);border-radius:7px;padding:6px 8px;color:var(--t85);font-size:12px;font-family:inherit;text-align:center;" />
+                    <input value="{{ cr.week2 }}" onChange="{{ cr.onWeek2Change }}" disabled="{{ cr.notEditable }}" placeholder="—" style="width:100%;background:transparent;border:1px solid var(--border2);border-radius:7px;padding:6px 8px;color:var(--t85);font-size:12px;font-family:inherit;text-align:center;" />
+                    <input value="{{ cr.week3 }}" onChange="{{ cr.onWeek3Change }}" disabled="{{ cr.notEditable }}" placeholder="—" style="width:100%;background:transparent;border:1px solid var(--border2);border-radius:7px;padding:6px 8px;color:var(--t85);font-size:12px;font-family:inherit;text-align:center;" />
+                    <input value="{{ cr.week4 }}" onChange="{{ cr.onWeek4Change }}" disabled="{{ cr.notEditable }}" placeholder="—" style="width:100%;background:transparent;border:1px solid var(--border2);border-radius:7px;padding:6px 8px;color:var(--t85);font-size:12px;font-family:inherit;text-align:center;" />
+                    <div style="color:var(--t65);">{{ cr.type }}</div>
+                    <div style="font-weight:700;color:var(--t90);">{{ cr.actual }}</div>
+                    <div style="font-weight:600;color:oklch(0.72 0.15 145);" title="Hanya boleh ditukar di Admin Panel">{{ cr.target }}</div>
+                    <div style="display:flex;align-items:center;gap:6px;"><div style="width:7px;height:7px;border-radius:50%;background:{{ cr.statusColor }};flex-shrink:0;"></div>{{ cr.status }}</div>
+                    <select value="{{ cr.owner }}" onChange="{{ cr.onOwnerChange }}" style="width:100%;padding:5px 8px;border-radius:6px;font-size:11px;font-weight:700;background:color-mix(in oklch, {{ cr.ownerColor }} 18%, transparent);color:{{ cr.ownerColor }};border:1px solid color-mix(in oklch, {{ cr.ownerColor }} 40%, transparent);cursor:pointer;">
+                      <sc-for list="{{ ownerOptionsList }}" as="ow" hint-placeholder-count="5">
+                        <option value="{{ ow }}">{{ ow }}</option>
+                      </sc-for>
+                    </select>
+                    <input value="{{ cr.actionPlan }}" onChange="{{ cr.onPlanChange }}" placeholder="Isi pelan tindakan..." style="width:100%;background:transparent;border:1px solid var(--border2);border-radius:7px;padding:6px 9px;color:var(--t85);font-size:12px;font-family:inherit;" />
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+        <sc-if value="{{ ownerPerformance.length }}">
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Prestasi Pemilik Data <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Data Owner Performance</span></div>
+            <div style="font-size:12px;color:var(--t55);margin-bottom:18px;">Dinilai berdasarkan pencapaian metrik yang diamanahkan — klik untuk tapis Data Kritikal ikut pemilik <span style="font-style:italic;">/ Click to filter Weekly Critical Data by owner</span></div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;">
+              <sc-for list="{{ ownerPerformance }}" as="op" hint-placeholder-count="3">
+                <div onClick="{{ op.onClick }}" style="background:var(--hover-bg3);border:{{ op.cardBorder }};border-radius:12px;padding:18px;cursor:pointer;" style-hover="border-color:{{ op.ownerColor }};">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                    <span style="display:inline-block;padding:5px 12px;border-radius:7px;font-size:13px;font-weight:700;background:color-mix(in oklch, {{ op.ownerColor }} 18%, transparent);color:{{ op.ownerColor }};">{{ op.name }}<sc-if value="{{ op.isSelected }}"> ✓</sc-if></span>
+                    <sc-if value="{{ op.hasCritical }}">
+                      <div style="display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;color:oklch(0.6 0.2 25);">
+                        <i class="ph-duotone ph-warning-circle" style="font-size:16px;"></i> Perlu Tindakan
+                      </div>
+                    </sc-if>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    <div style="flex:1;height:8px;border-radius:4px;background:var(--track-bg);overflow:hidden;"><div style="height:100%;border-radius:4px;background:{{ op.barColor }};width:{{ op.scorePct }}%;"></div></div>
+                    <div style="font-size:13px;font-weight:700;width:40px;text-align:right;">{{ op.scorePct }}%</div>
+                  </div>
+                  <div style="display:flex;gap:14px;font-size:11.5px;color:var(--t65);margin-bottom:12px;">
+                    <div><span style="color:oklch(0.55 0.15 145);font-weight:700;">{{ op.greenCount }}</span> On Track</div>
+                    <div><span style="color:oklch(0.78 0.15 85);font-weight:700;">{{ op.yellowCount }}</span> Ada Plan</div>
+                    <div><span style="color:oklch(0.6 0.2 25);font-weight:700;">{{ op.redCount }}</span> Kritikal</div>
+                    <div style="color:var(--t55);">/ {{ op.total }} metrik</div>
+                  </div>
+                  <sc-if value="{{ op.hasCritical }}">
+                    <div style="background:oklch(0.6 0.2 25/0.1);border:1px solid oklch(0.6 0.2 25/0.3);border-radius:8px;padding:10px 12px;">
+                      <div style="font-size:11px;font-weight:700;color:oklch(0.6 0.2 25);margin-bottom:5px;">Metrik belum capai sasaran &amp; tiada action plan:</div>
+                      <sc-for list="{{ op.criticalMetrics }}" as="cm" hint-placeholder-count="2">
+                        <div style="font-size:12px;color:var(--t80);line-height:1.6;">• {{ cm }}</div>
+                      </sc-for>
+                    </div>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <div style="display:flex;gap:20px;align-items:flex-start;">
+          <div style="flex:2;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;">
+            <div style="font-size:16px;font-weight:700;margin-bottom:4px;">Analisis Penting <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Key Analysis</span></div>
+            <div style="font-size:12px;color:var(--t55);margin-bottom:18px;">Analisis trend &amp; statistik berdasarkan data semasa <span style="font-style:italic;">/ Trend &amp; statistics based on current data</span></div>
+
+            <div style="background:var(--hover-bg3);border:1px solid var(--border3);border-radius:12px;padding:16px 18px;margin-bottom:16px;">
+              <div style="font-size:11.5px;color:var(--t60);margin-bottom:10px;">Perbandingan Actual vs Sasaran <span style="font-style:italic;">/ Actual vs Target Comparison</span></div>
+              <div style="display:flex;align-items:baseline;gap:24px;margin-bottom:10px;">
+                <div><span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:22px;">{{ currentService.salesLabel }}</span><span style="font-size:11px;color:var(--t55);margin-left:6px;">Actual</span></div>
+                <div><span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;font-size:16px;color:var(--t65);">{{ currentService.targetLabel }}</span><span style="font-size:11px;color:var(--t55);margin-left:6px;">Sasaran / Target</span></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="flex:1;height:8px;border-radius:4px;background:var(--track-bg);overflow:hidden;">
+                  <div style="height:100%;border-radius:4px;background:{{ currentService.barColor }};width:{{ currentService.pctWidth }};"></div>
+                </div>
+                <div style="font-size:13px;font-weight:700;width:50px;text-align:right;">{{ currentService.pctLabel }}</div>
+              </div>
+            </div>
+
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px;">
+              <sc-for list="{{ analysisTiles }}" as="t" hint-placeholder-count="3">
+                <div style="background:var(--hover-bg3);border:1px solid var(--border3);border-radius:12px;padding:16px;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                    <i class="ph-duotone {{ t.iconClass }}" style="font-size:18px;color:oklch(0.78 0.12 85);"></i>
+                    <div style="font-size:11.5px;color:var(--t60);line-height:1.3;">{{ t.label }}<br/><span style="font-style:italic;">{{ t.labelEn }}</span></div>
+                  </div>
+                  <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:19px;">{{ t.value }}</div>
+                  <div style="font-size:11px;color:var(--t55);margin-top:4px;">{{ t.note }}</div>
+                </div>
+              </sc-for>
+            </div>
+
+            <sc-if value="{{ weeklyQuotationTarget }}">
+              <div style="display:flex;gap:14px;margin-bottom:20px;">
+                <div style="flex:1;display:flex;align-items:center;gap:12px;background:var(--hover-bg3);border:1px solid var(--border3);border-radius:12px;padding:14px 16px;">
+                  <i class="ph-duotone ph-file-text" style="font-size:22px;color:oklch(0.6 0.22 350);flex-shrink:0;"></i>
+                  <div style="font-size:12.5px;color:var(--t70);line-height:1.5;">Sasaran minimum <b>{{ weeklyQuotationTarget }} quotation baharu</b> setiap minggu diperlukan untuk kekal on-track ke sasaran bulanan.</div>
+                </div>
+                <div style="flex:1;display:flex;align-items:center;gap:12px;background:var(--hover-bg3);border:1px solid var(--border3);border-radius:12px;padding:14px 16px;">
+                  <i class="ph-duotone ph-map-pin" style="font-size:22px;color:oklch(0.6 0.22 350);flex-shrink:0;"></i>
+                  <div style="font-size:12.5px;color:var(--t70);line-height:1.5;">Sasaran minimum <b>{{ weeklySiteVisitTarget }} site visit</b> setiap minggu — aktiviti ini pemacu utama kepada quotation &amp; jualan.</div>
+                </div>
+              </div>
+            </sc-if>
+
+            <div style="font-size:13px;font-weight:700;margin-bottom:10px;">Tindakan Disyorkan <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Recommended Actions</span></div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <sc-for list="{{ analysisBullets }}" as="b" hint-placeholder-count="3">
+                <div style="display:flex;gap:10px;align-items:flex-start;">
+                  <i class="ph-duotone ph-check-circle" style="font-size:16px;color:oklch(0.72 0.15 145);flex-shrink:0;margin-top:1px;"></i>
+                  <div style="font-size:12.5px;color:var(--t75);line-height:1.5;">{{ b }}</div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <sc-if value="{{ servicePriority }}">
+            <div style="flex:1;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:22px;">
+              <div style="font-size:15px;font-weight:700;margin-bottom:14px;">Keutamaan <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Priority</span></div>
+              <div style="font-size:13px;color:var(--t80);line-height:1.5;">{{ servicePriority.desc }}<br/><span style="font-style:italic;color:var(--t55);">{{ servicePriority.descEn }}</span></div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border);">
+                <div style="width:32px;height:32px;border-radius:50%;border:1.5px solid oklch(0.78 0.12 85/0.5);background-image:url('{{ servicePriority.avatarUrl }}');background-size:cover;background-position:center;background-color:var(--hover-bg2);"></div>
+                <div style="font-size:12.5px;">{{ servicePriority.owner }}</div>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- LAPORAN PAGE -->
+      <sc-if value="{{ isLaporan }}">
+        <div style="display:flex;align-items:center;justify-content:space-between;background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:16px 22px;">
+          <div style="display:flex;gap:12px;">
+            <div style="position:relative;">
+              <div onClick="{{ toggleLaporanDate }}" style="display:flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid var(--border2);border-radius:10px;font-size:13px;cursor:pointer;" style-hover="background:var(--hover-bg3);">
+                <i class="ph-duotone ph-calendar-blank" style="color:oklch(0.78 0.12 85);"></i> {{ laporanDateLabel }} <i class="ph-duotone ph-caret-down" style="font-size:13px;"></i>
+              </div>
+              <sc-if value="{{ laporanDateOpen }}">
+                <div style="position:absolute;top:46px;left:0;width:160px;max-height:300px;overflow-y:auto;background:var(--card-bg);border:1px solid var(--border2);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,0.4);z-index:30;">
+                  <sc-for list="{{ dashboardMonthButtons }}" as="mb" hint-placeholder-count="12">
+                    <div onClick="{{ mb.onClick }}" style="padding:10px 14px;font-size:13px;cursor:pointer;color:var(--t90);" style-hover="background:var(--hover-bg2);">{{ mb.label }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+            <div style="position:relative;">
+              <div onClick="{{ toggleLaporanFilter }}" style="display:flex;align-items:center;gap:8px;padding:9px 14px;border:1px solid var(--border2);border-radius:10px;font-size:13px;cursor:pointer;" style-hover="background:var(--hover-bg3);">
+                <i class="ph-duotone ph-funnel" style="color:oklch(0.78 0.12 85);"></i> {{ laporanServiceLabel }} <i class="ph-duotone ph-caret-down" style="font-size:13px;"></i>
+              </div>
+              <sc-if value="{{ laporanFilterOpen }}">
+                <div style="position:absolute;top:46px;left:0;width:220px;background:var(--card-bg);border:1px solid var(--border2);border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,0.4);z-index:30;overflow:hidden;">
+                  <sc-for list="{{ laporanServiceOptions }}" as="o" hint-placeholder-count="6">
+                    <div onClick="{{ o.onClick }}" style="padding:11px 16px;font-size:13px;cursor:pointer;color:var(--t90);" style-hover="background:var(--hover-bg2);">{{ o.label }}</div>
+                  </sc-for>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+          <div onClick="{{ exportReport }}" style="display:flex;align-items:center;gap:8px;background:oklch(0.78 0.12 85);color:var(--input-bg);padding:10px 18px;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;" style-hover="filter:brightness(1.08);">
+            <i class="ph-duotone ph-download-simple"></i> Eksport / Export
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:20px;">
+            <div style="font-size:12.5px;color:var(--t60);">Jumlah Hasil <span style="font-style:italic;">/ Total Revenue</span></div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:22px;margin-top:8px;">{{ totalRevenueLabel }}</div>
+          </div>
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:20px;">
+            <div style="font-size:12.5px;color:var(--t60);">Jumlah Sebut Harga <span style="font-style:italic;">/ Total Quotations</span></div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:22px;margin-top:8px;">{{ totalQuotationLabel }}</div>
+          </div>
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:20px;">
+            <div style="font-size:12.5px;color:var(--t60);">Kadar Penukaran <span style="font-style:italic;">/ Conversion Rate</span></div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:22px;margin-top:8px;">{{ conversionRateLabel }}</div>
+          </div>
+          <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:20px;">
+            <div style="font-size:12.5px;color:var(--t60);">Purata Nilai Deal <span style="font-style:italic;">/ Avg Deal Value</span></div>
+            <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:22px;margin-top:8px;">{{ avgDealLabel }}</div>
+          </div>
+        </div>
+
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;">
+          <div style="font-size:16px;font-weight:700;margin-bottom:18px;">Trend Keseluruhan <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Overall Trend</span></div>
+          <dc-import name="TrendChart" chart="{{ reportChart }}" hint-size="100%,320px"></dc-import>
+        </div>
+
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:24px;">
+          <div style="font-size:16px;font-weight:700;margin-bottom:18px;">Pecahan Mengikut Servis <span style="color:var(--t55);font-weight:400;font-style:italic;">/ Breakdown by Service</span></div>
+          <div style="display:grid;grid-template-columns:2fr 1.2fr 1.2fr 1fr 1.6fr 1.4fr;gap:16px;padding-bottom:12px;font-size:11.5px;color:var(--t55);border-bottom:1px solid var(--border);">
+            <div>Servis</div><div>Jumlah Jualan</div><div>Sasaran</div><div>Projek</div><div>Pencapaian</div><div>Status</div>
+          </div>
+          <sc-for list="{{ reportBreakdownRows }}" as="row" hint-placeholder-count="5">
+            <div style="display:grid;grid-template-columns:2fr 1.2fr 1.2fr 1fr 1.6fr 1.4fr;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid var(--border3);font-size:13px;">
+              <div style="display:flex;align-items:center;gap:10px;font-weight:600;"><i class="ph-duotone {{ row.iconClass }}" style="color:oklch(0.78 0.12 85);font-size:17px;"></i>{{ row.name }}</div>
+              <div style="font-weight:600;">{{ row.salesLabel }}</div>
+              <div style="color:var(--t70);">{{ row.targetLabel }}</div>
+              <div>{{ row.projectCount }}</div>
+              <div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;height:6px;border-radius:4px;background:var(--track-bg);overflow:hidden;max-width:80px;"><div style="height:100%;background:{{ row.barColor }};width:{{ row.pctWidth }};"></div></div>{{ row.pctLabel }}</div>
+              <div style="display:flex;align-items:center;gap:6px;"><div style="width:7px;height:7px;border-radius:50%;background:{{ row.statusColor }};"></div>{{ row.statusLabel }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- TETAPAN PAGE -->
+      <sc-if value="{{ isTetapan }}">
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:16px;padding:26px;max-width:640px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <i class="ph-duotone ph-shield-check" style="font-size:20px;color:oklch(0.78 0.12 85);"></i>
+            <div style="font-size:16px;font-weight:700;">Keutamaan Sistem <span style="color:var(--t55);font-weight:400;font-style:italic;">/ System Preferences</span></div>
+          </div>
+          <div style="font-size:12px;color:var(--t55);margin-bottom:22px;">Akses dalaman syarikat sahaja — tiada akaun individu. <span style="font-style:italic;">/ Internal company access only — no individual user accounts.</span></div>
+          <div style="display:flex;flex-direction:column;gap:18px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div><div style="font-size:13.5px;font-weight:600;">Notifikasi Emel</div><div style="font-size:11.5px;color:var(--t55);font-style:italic;">Email Notifications</div></div>
+              <div onClick="{{ toggleNotifEmail }}" style="width:38px;height:22px;border-radius:12px;cursor:pointer;position:relative;background:{{ switchEmailBg }};"><div style="{{ switchEmailKnob }}"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div><div style="font-size:13.5px;font-weight:600;">Laporan Mingguan</div><div style="font-size:11.5px;color:var(--t55);font-style:italic;">Weekly Report</div></div>
+              <div onClick="{{ toggleNotifWeekly }}" style="width:38px;height:22px;border-radius:12px;cursor:pointer;position:relative;background:{{ switchWeeklyBg }};"><div style="{{ switchWeeklyKnob }}"></div></div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div><div style="font-size:13.5px;font-weight:600;">Bunyi Amaran</div><div style="font-size:11.5px;color:var(--t55);font-style:italic;">Alert Sound</div></div>
+              <div onClick="{{ toggleNotifSound }}" style="width:38px;height:22px;border-radius:12px;cursor:pointer;position:relative;background:{{ switchSoundBg }};"><div style="{{ switchSoundKnob }}"></div></div>
+            </div>
+          </div>
+          <div onClick="{{ saveSettings }}" style="margin-top:26px;background:oklch(0.78 0.12 85);color:var(--input-bg);text-align:center;padding:12px;border-radius:10px;font-size:13.5px;font-weight:700;cursor:pointer;" style-hover="filter:brightness(1.08);">
+            Simpan Tetapan <span style="font-style:italic;font-weight:600;">/ Save Settings</span>
+          </div>
+          <a href="./Admin Login.dc.html" style="margin-top:14px;display:flex;align-items:center;justify-content:center;gap:7px;padding:12px;border-radius:10px;border:1px solid var(--border2);font-size:12.5px;font-weight:600;color:var(--t70);text-decoration:none;">
+            <i class="ph-duotone ph-shield-check" style="color:oklch(0.78 0.12 85);"></i> Admin Panel
+          </a>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <sc-if value="{{ toast }}">
+    <div style="position:fixed;bottom:28px;right:32px;background:oklch(0.22 0.03 260);border:1px solid oklch(0.78 0.12 85/0.4);border-radius:12px;padding:14px 20px;font-size:13.5px;box-shadow:0 12px 32px rgba(0,0,0,0.5);animation:toastIn 0.25s ease;z-index:100;display:flex;align-items:center;gap:10px;">
+    <i class="ph-duotone ph-check-circle" style="color:oklch(0.72 0.15 145);font-size:19px;"></i>{{ toast }}</div>
+  </sc-if>
+
+  <sc-if value="{{ sheetModalOpen }}">
+  <sc-if value="{{ rawDataOpen }}">
+    <div onClick="{{ toggleRawData }}" style="position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:110;display:flex;align-items:center;justify-content:center;">
+      <div onClick="{{ stopProp }}" style="width:640px;max-height:80vh;display:flex;flex-direction:column;background:var(--card-bg);border:1px solid var(--border2);border-radius:16px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <i class="ph-duotone ph-code" style="font-size:20px;color:oklch(0.78 0.12 85);"></i>
+            <div style="font-size:15.5px;font-weight:700;">Raw Data — Data Kritikal</div>
+          </div>
+          <i class="ph-duotone ph-x" onClick="{{ toggleRawData }}" style="font-size:20px;cursor:pointer;color:var(--t55);"></i>
+        </div>
+        <div style="font-size:11.5px;color:var(--t55);margin-bottom:12px;">Struktur data mentah yang akan disegerak dengan Google Sheet. Week 1-4 diisi oleh PIC setiap minggu. <span style="font-style:italic;">/ Raw data structure to be synced.</span></div>
+        <pre style="flex:1;overflow:auto;background:var(--hover-bg3);border:1px solid var(--border3);border-radius:10px;padding:16px;font-size:11.5px;color:var(--t80);font-family:'SF Mono',Consolas,monospace;white-space:pre-wrap;margin:0;">{{ rawDataJson }}</pre>
+      </div>
+    </div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      page: 'dashboard',
+      activeServiceKey: null,
+      period: 'Mingguan / Weekly',
+      periodOpen: false, notifOpen: false, profileOpen: false, dateOpen: false, dashboardYear: 2026, notifRead: false,
+      toast: null, darkOn: true, editingProfile: false, criticalMonth: 'Jul', criticalActionPlans: {}, dashboardMonthIndex: 6,
+      criticalOwners: {}, criticalWeekValues: {}, serviceViewMode: 'monthly', ownerFilter: null,
+      laporanServiceFilter: null, laporanFilterOpen: false, laporanDateOpen: false,
+      sheetModalOpen: false, rawDataOpen: false, sheetUrl: '', sheetConnected: false, lastSynced: null,
+      addOwnerModalOpen: false, newOwnerName: '', customOwners: [],
+      settings: { name: 'Ahmad Nizam', role: 'Managing Director', email: 'ahmad.nizam@dbena.com.my', phone: '012-345 6789', notifEmail: true, notifWeekly: true, notifSound: false, avatarUrl: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Ahmad-Nizam&backgroundColor=b6e3f4' },
+    };
+    this.months = ['Jan','Feb','Mac','Apr','Mei','Jun','Jul','Ogo','Sep','Okt','Nov','Dis'];
+    this.monthsFull = ['Januari','Februari','Mac','April','Mei','Jun','Julai','Ogos','September','Oktober','November','Disember'];
+    this.monthsEn = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    this.indexTiers = [
+      { key: 'critical', name: 'Critical', nameMy: 'Kritikal', color: 'oklch(0.6 0.2 25)', monthlyRevenue: 0, monthlyProfit: 0 },
+      { key: 'survival', name: 'Survival', nameMy: 'Bertahan', color: 'oklch(0.75 0.15 70)', monthlyRevenue: 457142.86, monthlyProfit: 0 },
+      { key: 'growing', name: 'Growing', nameMy: 'Berkembang', color: 'oklch(0.62 0.16 300)', monthlyRevenue: 685714.29, monthlyProfit: 80000 },
+      { key: 'stable', name: 'Stable', nameMy: 'Stabil', color: 'oklch(0.6 0.15 235)', monthlyRevenue: 914285.71, monthlyProfit: 160000 },
+      { key: 'sustainability', name: 'Sustainability', nameMy: 'Mampan', color: 'oklch(0.65 0.16 150)', monthlyRevenue: 1371428.57, monthlyProfit: 320000 },
+    ];
+    this.yearOptions = [2023, 2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032];
+    this.yearGrowthFactor = { 2023: 0.58, 2024: 0.72, 2025: 0.87, 2026: 1, 2027: 1.15, 2028: 1.3, 2029: 1.45, 2030: 1.6, 2031: 1.75, 2032: 1.9 };
+    this.periodConfig = {
+      'Mingguan / Weekly': { mult: 1, prevLabel: 'vs minggu lalu / vs last week' },
+      'Bulanan / Monthly': { mult: 4.33, prevLabel: 'vs bulan lalu / vs last month' },
+      'Suku Tahunan / Quarterly': { mult: 13, prevLabel: 'vs suku lalu / vs last quarter' },
+    };
+    this.services = [
+      { key:'renovation', name:'Renovation', nameEn:'Ubah Suai', iconClass:'ph-wrench', sales:512480, target:500000 },
+      { key:'kabinet', name:'Kabinet', nameEn:'Cabinetry', iconClass:'ph-squares-four', sales:286940, target:200000 },
+      { key:'bina-rumah', name:'Bina Rumah', nameEn:'House Construction', iconClass:'ph-house-line', sales:198500, target:500000 },
+      { key:'divider', name:'Divider', nameEn:'Pembahagi', iconClass:'ph-columns', sales:102350, target:40000 },
+      { key:'mihrab', name:'Mihrab', nameEn:'', iconClass:'ph-bank', sales:71006, target:80000 },
+    ];
+    this.projectsByService = {
+      renovation: [
+        { name:'Rumah Taman Melawati', client:'En. Zulkifli Rahman', value:68000, status:'Selesai', date:'12 Jul 2026' },
+        { name:'Kondominium Mont Kiara', client:'Pn. Siti Aishah', value:92000, status:'Dalam Proses', date:'18 Jul 2026' },
+        { name:'Rumah Banglo Bangi', client:'En. Farid Iskandar', value:145000, status:'Dalam Proses', date:'22 Jul 2026' },
+        { name:'Apartmen Cheras', client:'Pn. Wong Mei Ling', value:54000, status:'Menunggu Kelulusan', date:'24 Jul 2026' },
+      ],
+      kabinet: [
+        { name:'Kabinet Dapur Puchong', client:'Pn. Nor Aina', value:18500, status:'Selesai', date:'10 Jul 2026' },
+        { name:'Kabinet Bilik Subang', client:'En. Rizal Hakim', value:24200, status:'Dalam Proses', date:'19 Jul 2026' },
+        { name:'Kabinet Pejabat Shah Alam', client:'Syarikat ABC Sdn Bhd', value:31500, status:'Dalam Proses', date:'21 Jul 2026' },
+        { name:'Kabinet Dapur Klang', client:'Pn. Fatimah Zahra', value:15800, status:'Menunggu Kelulusan', date:'25 Jul 2026' },
+      ],
+      'bina-rumah': [
+        { name:'Banglo Setia Alam', client:"Dato' Azman", value:850000, status:'Dalam Proses', date:'05 Jul 2026' },
+        { name:'Rumah Teres Rawang', client:'En. Hafizuddin', value:320000, status:'Perancangan', date:'14 Jul 2026' },
+        { name:'Rumah Kluster Semenyih', client:'Pn. Aida Roslan', value:410000, status:'Dalam Proses', date:'20 Jul 2026' },
+      ],
+      divider: [
+        { name:'Pembahagi Ruang Tetamu, PJ', client:'En. Kamal Ariffin', value:8500, status:'Selesai', date:'08 Jul 2026' },
+        { name:'Pembahagi Pejabat KL', client:'Firma Guaman XYZ', value:14200, status:'Dalam Proses', date:'16 Jul 2026' },
+        { name:'Pembahagi Rumah Ampang', client:'Pn. Suraya Ismail', value:6900, status:'Selesai', date:'23 Jul 2026' },
+      ],
+      mihrab: [
+        { name:'Mihrab Masjid Ampang', client:'Jawatankuasa Masjid Ampang', value:38000, status:'Dalam Proses', date:'11 Jul 2026' },
+        { name:'Mihrab Surau Bangi', client:'Jawatankuasa Surau Bangi', value:22000, status:'Perancangan', date:'20 Jul 2026' },
+      ],
+    };
+    this.criticalData = {
+      renovation: [
+        { metric:'Sales Collection (New)', type:'Total', actual:'RM0.00', target:'RM150,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'Revenue/Sales', type:'Total', actual:'RM0.00', target:'RM500,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'Sales Collection (Progress Claim)', type:'Total', actual:'RM0.00', target:'Progress', status:'Red', owner:'HAFIZAN' },
+        { metric:'Amount Quotation Release (New)', type:'Total', actual:'RM0.00', target:'RM2,400,000.00', status:'Red', owner:'HAFIZAN' },
+        { metric:'No of New Quotation', type:'Total', actual:'0', target:'16', status:'Red', owner:'HAFIZAN' },
+        { metric:'No of Site Visit', type:'Total', actual:'0', target:'24', status:'Red', owner:'ZIKRI' },
+        { metric:'Ads Spend', type:'Total', actual:'RM0.00', target:'RM6,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'No of Lead', type:'Total', actual:'0', target:'600', status:'Red', owner:'ZIKRI' },
+        { metric:'Cost Per Lead (CPL)', type:'Avg', actual:'RM0.00', target:'RM10.00', status:'Red', owner:'INFO' },
+        { metric:'Cost Per Appointment (CPA)', type:'Avg', actual:'RM0.00', target:'RM250.00', status:'Red', owner:'INFO' },
+      ],
+      kabinet: [
+        { metric:'Sales Collection (New)', type:'Total', actual:'RM0.00', target:'RM60,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'Revenue/Sales', type:'Total', actual:'RM0.00', target:'RM200,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'Sales Collection (Progress Claim)', type:'Total', actual:'RM0.00', target:'Progress', status:'Red', owner:'ZIKRI' },
+        { metric:'Amount Quotation Release (New)', type:'Total', actual:'RM0.00', target:'RM1,000,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'No of New Quotation', type:'Total', actual:'0', target:'30', status:'Red', owner:'ZIKRI' },
+        { metric:'No of Site Visit', type:'Total', actual:'0', target:'40', status:'Red', owner:'ZIKRI' },
+        { metric:'Ads Spend', type:'Total', actual:'RM0.00', target:'RM6,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'No of Lead', type:'Total', actual:'0', target:'400', status:'Red', owner:'ZIKRI' },
+        { metric:'Cost Per Lead (CPL)', type:'Avg', actual:'RM0.00', target:'RM15.00', status:'Red', owner:'INFO' },
+        { metric:'Cost Per Appointment (CPA)', type:'Avg', actual:'RM0.00', target:'RM150.00', status:'Red', owner:'INFO' },
+      ],
+      'bina-rumah': [
+        { metric:'Sales Collection (New)', type:'Total', actual:'RM0.00', target:'RM150,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'Revenue/Sales', type:'Total', actual:'RM0.00', target:'RM500,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'Sales Collection (Progress Claim)', type:'Total', actual:'RM0.00', target:'Progress', status:'Red', owner:'HAFIZAN' },
+        { metric:'Amount Quotation Release (New)', type:'Total', actual:'RM0.00', target:'RM2,500,000.00', status:'Red', owner:'HAFIZAN' },
+        { metric:'No of New Quotation', type:'Total', actual:'0', target:'20', status:'Red', owner:'HAFIZAN' },
+        { metric:'No of Appointment (Offline / Online)', type:'Total', actual:'0', target:'30', status:'Red', owner:'HAFIZAN' },
+        { metric:'Ads Spend', type:'Total', actual:'RM0.00', target:'RM4,500.00', status:'Red', owner:'ZIKRI' },
+        { metric:'No of Lead', type:'Total', actual:'0', target:'300', status:'Red', owner:'ZIKRI' },
+        { metric:'Cost Per Lead (CPL)', type:'Avg', actual:'RM0.00', target:'RM15.00', status:'Red', owner:'INFO' },
+        { metric:'Cost Per Appointment (CPA)', type:'Avg', actual:'RM0.00', target:'RM150.00', status:'Red', owner:'INFO' },
+      ],
+      mihrab: [
+        { metric:'Sales Collection (New)', type:'Total', actual:'RM0.00', target:'RM40,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'Revenue/Sales', type:'Total', actual:'RM0.00', target:'RM80,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'Sales Collection (Progress Claim)', type:'Total', actual:'RM0.00', target:'Progress', status:'Red', owner:'ZIKRI' },
+        { metric:'Amount Quotation Release (New)', type:'Total', actual:'RM0.00', target:'RM400,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'No of New Quotation', type:'Total', actual:'0', target:'11', status:'Red', owner:'ZIKRI' },
+        { metric:'No of Site Visit', type:'Total', actual:'0', target:'16', status:'Red', owner:'ZIKRI' },
+        { metric:'Ads Spend', type:'Total', actual:'RM0.00', target:'RM1,200.00', status:'Red', owner:'ZIKRI' },
+        { metric:'No of Lead', type:'Total', actual:'0', target:'80', status:'Red', owner:'ZIKRI' },
+        { metric:'Cost Per Lead (CPL)', type:'Avg', actual:'RM0.00', target:'RM15.00', status:'Red', owner:'INFO' },
+        { metric:'Cost Per Appointment (CPA)', type:'Avg', actual:'RM0.00', target:'RM75.00', status:'Red', owner:'INFO' },
+      ],
+      divider: [
+        { metric:'Sales Collection (New)', type:'Total', actual:'RM0.00', target:'RM20,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'Revenue/Sales', type:'Total', actual:'RM0.00', target:'RM40,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'Sales Collection (Progress Claim)', type:'Total', actual:'RM4,890.00', target:'Progress', status:'Red', owner:'ZIKRI' },
+        { metric:'Amount Quotation Release (New)', type:'Total', actual:'RM0.00', target:'RM200,000.00', status:'Red', owner:'ZIKRI' },
+        { metric:'No of New Quotation', type:'Total', actual:'0', target:'16', status:'Red', owner:'ZIKRI' },
+        { metric:'Ads Spend', type:'Total', actual:'RM0.00', target:'RM1,200.00', status:'Red', owner:'ZIKRI' },
+        { metric:'No of Lead', type:'Total', actual:'0', target:'80', status:'Red', owner:'ZIKRI' },
+        { metric:'Cost Per Lead (CPL)', type:'Avg', actual:'RM0.00', target:'RM15.00', status:'Red', owner:'INFO' },
+        { metric:'Cost Per Quotation (CPQ)', type:'Avg', actual:'RM0.00', target:'RM75.00', status:'Red', owner:'INFO' },
+      ],
+    };
+
+    this.priorities = [
+      { serviceKey:'kabinet', owner:'Ahmad Hafiz', avatar:12, desc:'Tingkatkan pencapaian kepada 35% ke atas.', descEn:'Increase achievement to above 35%.' },
+      { serviceKey:'bina-rumah', owner:'Mohd Amirul', avatar:33, desc:'Tutup sekurang-kurangnya 3 projek baharu.', descEn:'Close at least 3 new projects.' },
+      { serviceKey:'mihrab', owner:'Nurul Farah', avatar:44, desc:'Bina momentum kutipan untuk minggu ini.', descEn:'Build collection momentum for this week.' },
+    ];
+    this.notifications = [
+      { iconClass:'ph-user-plus', text:'5 lead baharu diterima pagi ini', time:'10 minit lalu' },
+      { iconClass:'ph-file-text', text:'Sebut harga #Q-2291 menunggu kelulusan', time:'1 jam lalu' },
+      { iconClass:'ph-wallet', text:'Kutipan RM45,000 diterima — Taman Melawati', time:'3 jam lalu' },
+      { iconClass:'ph-warning-circle', text:'Kabinet: pencapaian di bawah 30%', time:'Semalam' },
+    ];
+    this.menuBase = [
+      { key:'dashboard', label:'Dashboard Utama', labelEn:'Main Dashboard', iconClass:'ph-house', page:'dashboard' },
+      { key:'renovation', label:'Renovation', labelEn:'Ubah Suai', iconClass:'ph-wrench', page:'service', serviceKey:'renovation' },
+      { key:'kabinet', label:'Kabinet', labelEn:'Cabinetry', iconClass:'ph-squares-four', page:'service', serviceKey:'kabinet' },
+      { key:'bina-rumah', label:'Bina Rumah', labelEn:'House Construction', iconClass:'ph-house-line', page:'service', serviceKey:'bina-rumah' },
+      { key:'divider', label:'Divider', labelEn:'Pembahagi', iconClass:'ph-columns', page:'service', serviceKey:'divider' },
+      { key:'mihrab', label:'Mihrab', labelEn:'', iconClass:'ph-bank', page:'service', serviceKey:'mihrab' },
+      { key:'laporan', label:'Laporan', labelEn:'Reports', iconClass:'ph-chart-bar', page:'laporan' },
+      { key:'tetapan', label:'Tetapan', labelEn:'Settings', iconClass:'ph-gear', page:'tetapan' },
+    ];
+    this._toastTimer = null;
+    this.adminSheetUrl = '';
+    this.applyAdminSettings();
+  }
+
+  applyAdminSettings() {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('dbena_admin_settings') || 'null'); } catch (e) { saved = null; }
+    if (!saved) return;
+    if (saved.services) {
+      saved.services.forEach(sv => {
+        const target = this.services.find(x => x.key === sv.key);
+        if (target) { target.nameEn = sv.nameEn; target.target = sv.target; }
+        const rows = this.criticalData[sv.key];
+        if (rows) {
+          const revRow = rows.find(r => r.metric === 'Revenue/Sales');
+          if (revRow) revRow.target = 'RM' + Math.round(sv.target).toLocaleString('en-US') + '.00';
+        }
+      });
+    }
+    if (saved.indexTiers) {
+      saved.indexTiers.forEach(t => {
+        const target = this.indexTiers.find(x => x.key === t.key);
+        if (target) { target.monthlyRevenue = t.monthlyRevenue; target.monthlyProfit = t.monthlyProfit; }
+      });
+    }
+    if (saved.yearFactors) { Object.assign(this.yearGrowthFactor, saved.yearFactors); }
+    if (saved.sheetUrl) { this.adminSheetUrl = saved.sheetUrl; }
+    if (saved.owners) {
+      const extra = saved.owners.filter(o => !['ZIKRI', 'HAFIZAN', 'NIZAM', 'AZHARI', 'INFO'].includes(o));
+      if (extra.length) this.state.customOwners = extra;
+    }
+  }
+
+  buildThemeVars(dark) {
+    const DARKV = ['0.15 0.025 260','0.13 0.025 260','0.19 0.025 260','0.22 0.025 260','0.24 0.03 260','0.2 0.025 260','0.28 0.02 260','0.15 0.02 260','0.32 0.02 260'];
+    const LIGHTV = ['0.97 0.008 260','0.995 0.003 260','1 0 0','0.93 0.012 260','0.9 0.02 260','0.95 0.01 260','0.88 0.012 260','0.96 0.01 260','0.82 0.012 260'];
+    const keys1 = ['bg','sidebarBg','cardBg','hoverBg','hoverBg2','hoverBg3','trackBg','inputBg','switchOff'];
+    const DARK_TXT = ['0.96 0.01 260','0.94 0.01 260','0.92 0.01 260','0.9 0.01 260','0.85 0.01 260','0.8 0.01 260','0.75 0.02 260','0.7 0.02 260','0.68 0.02 260','0.65 0.02 260','0.6 0.02 260','0.55 0.02 260','0.5 0.02 260','0.4 0.02 260'];
+    const LIGHT_TXT = ['0.2 0.02 260','0.22 0.02 260','0.24 0.02 260','0.27 0.02 260','0.32 0.02 260','0.36 0.02 260','0.4 0.02 260','0.44 0.02 260','0.46 0.02 260','0.48 0.02 260','0.52 0.02 260','0.55 0.02 260','0.58 0.02 260','0.62 0.02 260'];
+    const keys2 = ['t96','t94','t92','t90','t85','t80','t75','t70','t68','t65','t60','t55','t50','t40'];
+    const pairs = {};
+    keys1.forEach((k, i) => { pairs[k] = 'oklch(' + (dark ? DARKV[i] : LIGHTV[i]) + ')'; });
+    keys2.forEach((k, i) => { pairs[k] = 'oklch(' + (dark ? DARK_TXT[i] : LIGHT_TXT[i]) + ')'; });
+    pairs.border = dark ? 'oklch(1 0 0/0.08)' : 'oklch(0 0 0/0.1)';
+    pairs.border2 = dark ? 'oklch(1 0 0/0.1)' : 'oklch(0 0 0/0.13)';
+    pairs.border3 = dark ? 'oklch(1 0 0/0.06)' : 'oklch(0 0 0/0.07)';
+    return Object.entries(pairs).map(([k, v]) => '--' + k.replace(/([A-Z])/g, '-$1').toLowerCase() + ':' + v + ';').join('');
+  }
+
+  fmtRM(n) { return 'RM' + Math.round(n).toLocaleString('en-US'); }
+  fmtNum(n) { return Math.round(n).toLocaleString('en-US'); }
+
+  navigate(page, serviceKey) { this.setState({ page, activeServiceKey: serviceKey || null, periodOpen:false, notifOpen:false, profileOpen:false, dateOpen:false }); }
+  togglePeriod() { this.setState(s => ({ periodOpen: !s.periodOpen, notifOpen:false, profileOpen:false, dateOpen:false })); }
+  selectPeriod(p) { this.setState({ period: p, periodOpen: false }); }
+  toggleNotif() { this.setState(s => ({ notifOpen: !s.notifOpen, periodOpen:false, profileOpen:false, dateOpen:false, notifRead: true })); }
+  toggleProfile() { this.setState(s => ({ profileOpen: !s.profileOpen, periodOpen:false, notifOpen:false, dateOpen:false })); }
+  toggleDate() { this.setState(s => ({ dateOpen: !s.dateOpen, periodOpen:false, notifOpen:false, profileOpen:false })); }
+  selectDashboardYear(year) { this.setState({ dashboardYear: year, dateOpen: false }); }
+  openGoogleSheet() {
+    if (!this.adminSheetUrl) { this.showToast('Belum ada pautan Google Sheet. Sila konfigurasi di Admin Panel. / No Google Sheet link yet — configure it in Admin Panel.'); return; }
+    window.open(this.adminSheetUrl, '_blank');
+  }
+  toggleSheetModal() { this.setState(s => ({ sheetModalOpen: !s.sheetModalOpen })); }
+  toggleRawData() { this.setState(s => ({ rawDataOpen: !s.rawDataOpen })); }
+  updateSheetUrl(v) { this.setState({ sheetUrl: v }); }
+  connectSheet() {
+    if (!this.state.sheetUrl.trim()) { this.showToast('Sila masukkan pautan Google Sheet / Enter a Google Sheet link'); return; }
+    this.setState({ sheetConnected: true, lastSynced: new Date().toLocaleString('en-MY', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) });
+    this.showToast('Google Sheet berjaya disambung / Google Sheet connected');
+  }
+  syncSheetNow() {
+    this.setState({ lastSynced: new Date().toLocaleString('en-MY', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) });
+    this.showToast('Data disegerak dari Google Sheet / Data synced from Google Sheet');
+  }
+  disconnectSheet() { this.setState({ sheetConnected: false, sheetUrl: '', lastSynced: null }); this.showToast('Google Sheet diputuskan / Disconnected'); }
+  toggleAddOwnerModal() { this.setState(s => ({ addOwnerModalOpen: !s.addOwnerModalOpen, newOwnerName: '' })); }
+  updateNewOwnerName(v) { this.setState({ newOwnerName: v }); }
+  addCustomOwner() {
+    const name = this.state.newOwnerName.trim().toUpperCase();
+    if (!name) { this.showToast('Sila masukkan nama pemilik / Enter an owner name'); return; }
+    const allNames = ['ZIKRI', 'HAFIZAN', 'NIZAM', 'AZHARI', 'INFO', ...this.state.customOwners];
+    if (allNames.includes(name)) { this.showToast('Pemilik sudah wujud / Owner already exists'); return; }
+    this.setState(s => ({ customOwners: [...s.customOwners, name], addOwnerModalOpen: false, newOwnerName: '' }));
+    this.showToast('Pemilik "' + name + '" ditambah / Owner added');
+  }
+  toggleDark() { this.setState(s => ({ darkOn: !s.darkOn })); }
+  selectCriticalMonth(m) { this.setState({ criticalMonth: m }); }
+  updateActionPlan(key, value) { this.setState(s => ({ criticalActionPlans: { ...s.criticalActionPlans, [key]: value } })); }
+  selectDashboardMonth(idx) { this.setState({ dashboardMonthIndex: idx, dateOpen: false }); }
+  updateCriticalOwner(key, value) { this.setState(s => ({ criticalOwners: { ...s.criticalOwners, [key]: value } })); }
+  updateWeekValue(ck, weekIdx, value) { this.setState(s => ({ criticalWeekValues: { ...s.criticalWeekValues, [ck + '::w' + weekIdx]: value } })); }
+  computeCriticalActual(s, svKey, r) {
+    const ck = svKey + '::' + r.metric;
+    const isCurrency = /RM/.test(r.actual);
+    const weekVals = [0, 1, 2, 3].map(i => s.criticalWeekValues[ck + '::w' + i] ?? '');
+    const weekSum = weekVals.reduce((a, v) => a + (this.parseNum(v) || 0), 0);
+    const hasAnyWeekInput = weekVals.some(v => String(v).trim() !== '');
+    return hasAnyWeekInput ? (isCurrency ? this.fmtRM(weekSum) : String(weekSum)) : r.actual;
+  }
+  setServiceViewMode(mode) { this.setState({ serviceViewMode: mode }); }
+  toggleOwnerFilter(name) { this.setState(s => ({ ownerFilter: s.ownerFilter === name ? null : name })); }
+  toggleLaporanFilter() { this.setState(s => ({ laporanFilterOpen: !s.laporanFilterOpen, laporanDateOpen: false })); }
+  toggleLaporanDate() { this.setState(s => ({ laporanDateOpen: !s.laporanDateOpen, laporanFilterOpen: false })); }
+  selectLaporanService(key) { this.setState({ laporanServiceFilter: key, laporanFilterOpen: false }); }
+  parseNum(str) { const n = parseFloat(String(str).replace(/[^0-9.]/g, '')); return isNaN(n) ? null : n; }
+  getOwnerColor(name) {
+    const map = { ZIKRI: 'oklch(0.6 0.15 250)', HAFIZAN: 'oklch(0.7 0.12 85)', NIZAM: 'oklch(0.6 0.16 350)', AZHARI: 'oklch(0.6 0.15 145)' };
+    if (map[name]) return map[name];
+    const palette = ['oklch(0.62 0.15 30)', 'oklch(0.62 0.15 190)', 'oklch(0.62 0.15 100)', 'oklch(0.62 0.15 320)'];
+    let hash = 0; for (let i = 0; i < name.length; i++) hash = (hash * 31 + name.charCodeAt(i)) % palette.length;
+    return palette[hash] || 'oklch(0.6 0.02 260)';
+  }
+
+  buildYearlyChart(baseSales, baseTarget) {
+    const years = this.yearOptions;
+    const actuals = years.map(y => baseSales * this.yearGrowthFactor[y] * 12);
+    const targets = years.map(y => baseTarget * this.yearGrowthFactor[y] * 12);
+    const max = Math.max(...actuals, ...targets);
+    const bars = years.map((y, i) => ({ label: String(y), hasValue: true, pctHeight: Math.min(100, actuals[i] / max * 100) + '%', valueLabel: this.fmtRM(actuals[i]) }));
+    const dots = years.map((y, i) => ({ x: (i / (years.length - 1) * 1160 + 20).toFixed(1), y: ((1 - targets[i] / max) * 340 + 20).toFixed(1) }));
+    const linePoints = dots.map(d => d.x + ',' + d.y).join(' ');
+    return { bars, dots, linePoints, maxLabel: this.fmtNum(max) };
+  }
+
+  getMonthWeeks(monthIndex, year) {
+    const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
+    const thursdays = [];
+    for (let d = 1; d <= daysInMonth; d++) { if (new Date(year, monthIndex, d).getDay() === 4) thursdays.push(d); }
+    const w1end = thursdays[1] || daysInMonth;
+    const w2end = thursdays[2] || daysInMonth;
+    const w3end = thursdays[3] || daysInMonth;
+    return [[1, w1end], [w1end + 1, w2end], [w2end + 1, w3end], [w3end + 1, daysInMonth]];
+  }
+  getCriticalWeekLabels(monthIndex, year) {
+    const pad = (n) => String(n).padStart(2, '0');
+    const mm = pad(monthIndex + 1);
+    return this.getMonthWeeks(monthIndex, year).map((w, i) => 'Minggu ' + (i + 1) + '\n' + pad(w[0]) + '/' + mm + '-' + pad(w[1]) + '/' + mm);
+  }
+
+  showToast(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => this.setState({ toast: null }), 2600);
+  }
+
+  toggleEditProfile() {
+    if (this.state.editingProfile) this.showToast('Profil berjaya dikemaskini / Profile updated');
+    this.setState(s => ({ editingProfile: !s.editingProfile }));
+  }
+  saveSettings() { this.showToast('Tetapan berjaya disimpan / Settings saved'); }
+  exportReport() { this.showToast('Laporan sedang dieksport... / Exporting report...'); }
+  doLogout() { this.setState({ profileOpen:false }); this.showToast('Log keluar (demo) / Logged out (demo)'); }
+
+  updateSettingField(field, value) { this.setState(s => ({ settings: { ...s.settings, [field]: value } })); }
+  onAvatarFileChange(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { this.updateSettingField('avatarUrl', reader.result); this.showToast('Gambar profil dikemaskini / Profile photo updated'); };
+    reader.readAsDataURL(file);
+  }
+  toggleSettingSwitch(field) { this.setState(s => ({ settings: { ...s.settings, [field]: !s.settings[field] } })); }
+
+  buildChart(actualArr7, targetTotal) {
+    const max = targetTotal;
+    const bars = this.months.map((m, i) => {
+      const v = i < 7 ? actualArr7[i] : null;
+      return { label: m, hasValue: v != null, pctHeight: v ? Math.min(100, (v / max) * 100) + '%' : '0%', valueLabel: v ? this.fmtRM(v) : '' };
+    });
+    const dots = this.months.map((m, i) => {
+      const v = max * (i + 1) / 12;
+      return { x: (i / 11 * 1160 + 20).toFixed(1), y: ((1 - v / max) * 340 + 20).toFixed(1) };
+    });
+    const linePoints = dots.map(d => d.x + ',' + d.y).join(' ');
+    return { bars, dots, linePoints, maxLabel: this.fmtNum(max) };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const periodCfg = this.periodConfig[s.period] || this.periodConfig['Mingguan / Weekly'];
+    const periodMult = periodCfg.mult;
+    const yearFactor = this.yearGrowthFactor[s.dashboardYear] ?? 1;
+
+    const getEffectiveSales = (sv) => {
+      const rows = this.criticalData[sv.key];
+      if (!rows) return sv.sales;
+      const revRow = rows.find(r => r.metric === 'Revenue/Sales');
+      if (!revRow) return sv.sales;
+      const raw = this.computeCriticalActual(s, sv.key, revRow);
+      const n = this.parseNum(raw);
+      return n != null ? n : sv.sales;
+    };
+    const effectiveServices = this.services.map(sv => ({ ...sv, sales: getEffectiveSales(sv) }));
+    const rawBaseSales = effectiveServices.reduce((a, x) => a + x.sales, 0);
+    const rawBaseTarget = effectiveServices.reduce((a, x) => a + x.target, 0);
+    const totalSales = rawBaseSales * yearFactor;
+    const totalTarget = rawBaseTarget * yearFactor;
+
+    const baseActualRatios = [120000, 260000, 410000, 570000, 740000, 950000, 1172276];
+    const scale = totalSales / 1172276;
+    const cumActualByMonth = baseActualRatios.map(v => v * scale);
+    const overallMonthlyDelta = cumActualByMonth.map((v, i) => i === 0 ? v : v - cumActualByMonth[i - 1]);
+    const cumTargetByMonth = this.months.map((_, i) => totalTarget * (i + 1));
+    const dmIdx = s.dashboardMonthIndex;
+    const isProjectedMonth = dmIdx > 6;
+    const isYearlyOverall = s.serviceViewMode === 'yearly';
+    const monthActual = isYearlyOverall
+      ? (isProjectedMonth ? cumActualByMonth[6] : cumActualByMonth[dmIdx])
+      : (isProjectedMonth ? 0 : overallMonthlyDelta[dmIdx]);
+    const monthTarget = isYearlyOverall ? cumTargetByMonth[dmIdx] : totalTarget;
+    const overallPct = monthTarget ? (monthActual / monthTarget * 100) : 0;
+    const changeVsTarget = monthTarget ? ((monthActual - monthTarget) / monthTarget * 100) : 0;
+
+    const estProfitMargin = 0.18;
+    const estProfit = monthActual * estProfitMargin;
+    const revKey = isYearlyOverall ? 'yearlyRevenue' : 'monthlyRevenue';
+    let currentTierIdx = 0;
+    this.indexTiers.forEach((t, i) => {
+      const threshold = isYearlyOverall ? t.monthlyRevenue * 12 : t.monthlyRevenue;
+      if (monthActual >= threshold) currentTierIdx = i;
+    });
+    const currentTier = this.indexTiers[currentTierIdx];
+    const indexTiersView = this.indexTiers.map((t, i) => {
+      const isCurrent = i === currentTierIdx;
+      const widthPct = 100 - i * 16;
+      return {
+        key: t.key, name: t.name, nameMy: t.nameMy, color: t.color, isCurrent, widthPct: widthPct + '%',
+        rowBg: isCurrent ? ('color-mix(in oklch, ' + t.color + ' 12%, transparent)') : 'transparent',
+        monthlyRevenueLabel: this.fmtRM(t.monthlyRevenue), monthlyProfitLabel: this.fmtRM(t.monthlyProfit),
+        quarterlyRevenueLabel: this.fmtRM(t.monthlyRevenue * 3), quarterlyProfitLabel: this.fmtRM(t.monthlyProfit * 3),
+        yearlyRevenueLabel: this.fmtRM(t.monthlyRevenue * 12), yearlyProfitLabel: this.fmtRM(t.monthlyProfit * 12),
+      };
+    }).reverse();
+    const dashboardMonthButtons = this.months.map((m, i) => ({
+      label: m, onClick: () => this.selectDashboardMonth(i),
+      style: 'padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;flex-shrink:0;' + (i === dmIdx ? 'background:oklch(0.78 0.12 85);color:oklch(0.15 0.02 260);' : 'background:var(--hover-bg3);color:var(--t65);'),
+    }));
+
+    const serviceRows = effectiveServices.map(sv => {
+      const share = totalSales ? ((sv.sales * yearFactor) / totalSales) : 0;
+      const svCumByMonth = cumActualByMonth.map(v => v * share);
+      const svMonthlyDelta = svCumByMonth.map((v, i) => i === 0 ? v : v - svCumByMonth[i - 1]);
+      const isYearly = s.serviceViewMode === 'yearly';
+      const svTargetScaled = sv.target * yearFactor;
+      let displayActual, displayTarget;
+      if (isYearly) {
+        displayActual = dmIdx <= 6 ? svCumByMonth[dmIdx] : svCumByMonth[6];
+        displayTarget = svTargetScaled * 12;
+      } else {
+        displayActual = dmIdx <= 6 ? svMonthlyDelta[dmIdx] : null;
+        displayTarget = svTargetScaled;
+      }
+      const pct = (displayActual != null && displayTarget) ? (displayActual / displayTarget * 100) : 0;
+      const good = pct >= 35;
+      const _monthlyDelta = svMonthlyDelta;
+      return {
+        ...sv,
+        pctLabel: displayActual != null ? pct.toFixed(1) + '%' : '—',
+        pctWidth: Math.min(100, pct) + '%',
+        salesLabel: displayActual != null ? this.fmtRM(displayActual) : '—',
+        targetLabel: this.fmtRM(displayTarget),
+        statusLabel: good ? 'Memuaskan' : 'Perlu Dipertingkat',
+        statusLabelEn: good ? 'Satisfactory' : 'Needs Improvement',
+        statusColor: good ? 'oklch(0.72 0.15 145)' : 'oklch(0.75 0.14 70)',
+        barColor: good ? 'oklch(0.72 0.15 145)' : 'oklch(0.6 0.22 350)',
+        onView: () => this.navigate('service', sv.key),
+        monthlyDelta: _monthlyDelta,
+      };
+    });
+
+    const menuItems = this.menuBase.map(m => {
+      const active = m.page === 'service' ? (s.page === 'service' && s.activeServiceKey === m.serviceKey) : s.page === m.page;
+      return {
+        ...m, active,
+        rowStyle: 'display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;cursor:pointer;margin-bottom:2px;' +
+          (active ? 'background:var(--hover-bg2);border-left:3px solid oklch(0.78 0.12 85);' : 'border-left:3px solid transparent;'),
+        iconColor: active ? 'oklch(0.78 0.12 85)' : 'var(--t68)',
+        textColor: active ? 'var(--t96)' : 'var(--t68)',
+        onClick: () => m.page === 'service' ? this.navigate('service', m.serviceKey) : this.navigate(m.page),
+      };
+    });
+
+    const priorityItems = this.priorities.map(p => {
+      const sv = this.services.find(x => x.key === p.serviceKey);
+      return { ...p, name: sv.name, nameEn: sv.nameEn, iconClass: sv.iconClass, avatarUrl: 'https://i.pravatar.cc/64?img=' + p.avatar, onView: () => this.navigate('service', sv.key) };
+    });
+
+    const periodOptions = ['Mingguan / Weekly', 'Bulanan / Monthly', 'Suku Tahunan / Quarterly'].map(p => ({ label: p, onClick: () => this.selectPeriod(p) }));
+
+    let pageTitle = 'EXECUTIVE PERFORMANCE', pageSubtitle = 'Dashboard Prestasi Syarikat';
+    let currentService = null, serviceChart = null, serviceProjects = [], servicePriority = null, serviceProjectCount = 0, criticalRows = [], displayCriticalRows = [];
+    let analysisTiles = [], analysisBullets = [], weeklyQuotationTarget = null, weeklySiteVisitTarget = null, quotationCard = null, siteVisitCard = null, ownerPerformance = [];
+    let weeklyQuotationBars = [], weeklySiteVisitBars = [], weeklyAmountBars = [], weeklyAmountTarget = null, siteVisitLabel = 'Site Visit';
+
+    if (s.page === 'service') {
+      currentService = serviceRows.find(x => x.key === s.activeServiceKey);
+      pageTitle = (currentService.name + (currentService.nameEn ? ' / ' + currentService.nameEn : '')).toUpperCase();
+      pageSubtitle = 'Prestasi Servis / Service Performance';
+      const factor = totalSales ? (currentService.sales / totalSales) : 0;
+      serviceChart = this.buildChart(cumActualByMonth.map(v => v * factor), currentService.target);
+      const list = this.projectsByService[currentService.key] || [];
+      serviceProjectCount = list.length;
+      serviceProjects = list.map(pr => ({
+        ...pr, valueLabel: this.fmtRM(pr.value),
+        statusColor: pr.status === 'Selesai' ? 'oklch(0.72 0.15 145)' : pr.status === 'Dalam Proses' ? 'oklch(0.75 0.14 70)' : pr.status === 'Menunggu Kelulusan' ? 'oklch(0.65 0.15 250)' : 'var(--t60)',
+      }));
+      servicePriority = priorityItems.find(p => p.serviceKey === currentService.key) || null;
+      const good = currentService.pctLabel && parseFloat(currentService.pctLabel) >= 35;
+      const gap = Math.max(0, currentService.target - currentService.sales);
+      const monthsLeft = 5;
+      const avgProjectValue = serviceProjectCount ? currentService.sales / serviceProjectCount : 0;
+      analysisTiles = [
+        { label: 'Pencapaian Jualan', labelEn: 'Sales Achievement', iconClass: 'ph-target', value: currentService.pctLabel, note: this.fmtRM(gap) + ' lagi untuk capai sasaran / to reach target' },
+        { label: 'Purata Nilai Projek', labelEn: 'Avg Project Value', iconClass: 'ph-chart-line-up', value: this.fmtRM(avgProjectValue), note: serviceProjectCount + ' projek aktif / active projects' },
+        { label: 'Kadar Larian Diperlukan', labelEn: 'Required Monthly Run-Rate', iconClass: 'ph-gauge', value: this.fmtRM(gap / monthsLeft) + '/bln', note: 'untuk capai sasaran tahunan / to hit annual target' },
+      ];
+      analysisBullets = good
+        ? ['Kekalkan momentum site visit dan susulan quotation setiap minggu.', 'Pastikan kutipan (collection) sentiasa selaras dengan jualan direkodkan.', 'Teruskan pemantauan CPL & CPA supaya perbelanjaan iklan kekal efisien.']
+        : ['Tingkatkan bilangan site visit mingguan — aktiviti ini pemacu utama kepada quotation dan jualan.', 'Percepatkan susulan quotation sedia ada untuk tingkatkan kadar penukaran ke jualan.', 'Pantau CPL & CPA supaya perbelanjaan iklan (ads spend) kekal efisien dan tidak membazir.'];
+      const hasMonthData = s.criticalMonth === 'Jul';
+      if (this.criticalData[currentService.key]) {
+        const qRow = this.criticalData[currentService.key].find(r => r.metric === 'No of New Quotation');
+        const svRow = this.criticalData[currentService.key].find(r => r.metric === 'No of Site Visit' || r.metric.indexOf('No of Appointment') === 0);
+        const mkCard = (row) => {
+          const target = parseInt(row.target) || 0;
+          const actual = hasMonthData ? (this.parseNum(row.actual) || 0) : 0;
+          const pct = target ? Math.min(100, actual / target * 100) : 0;
+          return { actualLabel: this.fmtNum(actual), targetLabel: this.fmtNum(target), pctLabel: pct.toFixed(0) + '%', pctWidth: pct + '%', barColor: pct >= 100 ? 'oklch(0.55 0.15 145)' : pct >= 50 ? 'oklch(0.78 0.15 85)' : 'oklch(0.55 0.2 25)' };
+        };
+        if (qRow) { quotationCard = mkCard(qRow); weeklyQuotationTarget = Math.ceil((parseInt(qRow.target) || 0) / 4); }
+        if (svRow) { siteVisitCard = mkCard(svRow); weeklySiteVisitTarget = Math.ceil((parseInt(svRow.target) || 0) / 4); siteVisitLabel = svRow.metric.indexOf('Appointment') >= 0 ? 'Appointment' : 'Site Visit'; }
+
+        const mkWeeklyBars = (row, weeklyTarget, isCurrency) => {
+          const monthlyActual = hasMonthData ? (this.parseNum(row.actual) || 0) : 0;
+          const perWeek = monthlyActual / 4;
+          return criticalWeekLabelsShort.map((label) => {
+            const pct = weeklyTarget ? Math.min(100, perWeek / weeklyTarget * 100) : 0;
+            return { label, actual: isCurrency ? this.fmtRM(perWeek) : Math.round(perWeek), pctHeight: pct + '%', barColor: pct >= 100 ? 'oklch(0.55 0.15 145)' : pct >= 50 ? 'oklch(0.78 0.15 85)' : 'oklch(0.6 0.22 350)' };
+          });
+        };
+        const criticalWeekLabelsShort = this.getMonthWeeks(this.months.indexOf(s.criticalMonth), s.dashboardYear).map((w, i) => 'M' + (i + 1));
+        if (qRow) weeklyQuotationBars = mkWeeklyBars(qRow, weeklyQuotationTarget);
+        if (svRow) weeklySiteVisitBars = mkWeeklyBars(svRow, weeklySiteVisitTarget);
+        const amtRow = this.criticalData[currentService.key].find(r => r.metric === 'Amount Quotation Release (New)');
+        if (amtRow) { weeklyAmountTarget = Math.round((this.parseNum(amtRow.target) || 0) / 4); weeklyAmountBars = mkWeeklyBars(amtRow, weeklyAmountTarget, true); }
+
+        const revRow = this.criticalData[currentService.key].find(r => r.metric === 'Revenue/Sales');
+        if (revRow) {
+          const revActual = hasMonthData ? (this.parseNum(revRow.actual) || 0) : 0;
+          const revTarget = this.parseNum(revRow.target) || currentService.target;
+          const revPct = revTarget ? Math.min(999, revActual / revTarget * 100) : 0;
+          currentService.salesLabel = this.fmtRM(revActual);
+          currentService.targetLabel = this.fmtRM(revTarget);
+          currentService.pctLabel = revPct.toFixed(1) + '%';
+          currentService.pctWidth = Math.min(100, revPct) + '%';
+          currentService.barColor = revPct >= 100 ? 'oklch(0.72 0.15 145)' : 'oklch(0.6 0.22 350)';
+        }
+      }
+      criticalRows = (this.criticalData[currentService.key] || []).map(r => {
+        const ck = currentService.key + '::' + r.metric;
+        const target = r.target;
+        const owner = s.criticalOwners[ck] ?? r.owner;
+        const plan = s.criticalActionPlans[ck] || '';
+        const isCurrency = /RM/.test(r.actual);
+        const weekVals = [0, 1, 2, 3].map(i => s.criticalWeekValues[ck + '::w' + i] ?? '');
+        const weekSum = weekVals.reduce((a, v) => a + (this.parseNum(v) || 0), 0);
+        const hasAnyWeekInput = weekVals.some(v => String(v).trim() !== '');
+        const rawActual = hasAnyWeekInput ? (isCurrency ? this.fmtRM(weekSum) : String(weekSum)) : r.actual;
+        const hasPlan = plan.trim().length > 0;
+        const actualDisplay = hasMonthData ? rawActual : '—';
+        const actualNum = hasMonthData ? this.parseNum(rawActual) : null;
+        const targetNum = this.parseNum(target);
+        const pct = (actualNum != null && targetNum != null && targetNum > 0) ? (actualNum / targetNum * 100) : null;
+        let status, statusColor;
+        if (!hasMonthData) { status = 'Belum Update'; statusColor = 'oklch(0.6 0.02 260)'; }
+        else if (pct !== null && pct >= 100) { status = 'Green'; statusColor = 'oklch(0.55 0.15 145)'; }
+        else if (hasPlan) { status = 'Yellow'; statusColor = 'oklch(0.78 0.15 85)'; }
+        else { status = 'Red'; statusColor = 'oklch(0.55 0.2 25)'; }
+        return {
+          ...r, target, owner, actual: actualDisplay, status, statusColor, actionPlan: plan, notEditable: !hasMonthData,
+          week1: weekVals[0], week2: weekVals[1], week3: weekVals[2], week4: weekVals[3],
+          onWeek1Change: (e) => this.updateWeekValue(ck, 0, e.target.value),
+          onWeek2Change: (e) => this.updateWeekValue(ck, 1, e.target.value),
+          onWeek3Change: (e) => this.updateWeekValue(ck, 2, e.target.value),
+          onWeek4Change: (e) => this.updateWeekValue(ck, 3, e.target.value),
+          onPlanChange: (e) => this.updateActionPlan(ck, e.target.value),
+          onOwnerChange: (e) => this.updateCriticalOwner(ck, e.target.value),
+          ownerColor: this.getOwnerColor(owner),
+        };
+      });
+
+      const ownerNames = [...new Set(criticalRows.map(r => r.owner))].filter(n => n !== 'INFO');
+      ownerPerformance = ownerNames.map(name => {
+        const rows = criticalRows.filter(r => r.owner === name);
+        const greenCount = rows.filter(r => r.status === 'Green').length;
+        const yellowCount = rows.filter(r => r.status === 'Yellow').length;
+        const redCount = rows.filter(r => r.status === 'Red').length;
+        const criticalMetrics = rows.filter(r => r.status === 'Red').map(r => r.metric);
+        const total = rows.length;
+        const scorePct = total ? Math.round((greenCount / total) * 100) : 0;
+        const isSelected = s.ownerFilter === name;
+        return {
+          name, total, greenCount, yellowCount, redCount, criticalMetrics, scorePct, isSelected,
+          onClick: () => this.toggleOwnerFilter(name),
+          hasCritical: redCount > 0,
+          ownerColor: this.getOwnerColor(name),
+          barColor: scorePct >= 70 ? 'oklch(0.55 0.15 145)' : scorePct >= 40 ? 'oklch(0.78 0.15 85)' : 'oklch(0.55 0.2 25)',
+          cardBorder: isSelected ? ('1px solid ' + this.getOwnerColor(name)) : '1px solid var(--border3)',
+        };
+      });
+      displayCriticalRows = s.ownerFilter ? criticalRows.filter(r => r.owner === s.ownerFilter) : criticalRows;
+    } else if (s.page === 'laporan') {
+      pageTitle = 'LAPORAN / REPORTS'; pageSubtitle = 'Ringkasan Prestasi Keseluruhan / Overall Performance Summary';
+    } else if (s.page === 'tetapan') {
+      pageTitle = 'TETAPAN / SETTINGS'; pageSubtitle = 'Keutamaan Sistem / System Preferences';
+    }
+
+    const dashboardChart = this.buildChart(cumActualByMonth, totalTarget);
+    const yearlyChart = this.buildYearlyChart(rawBaseSales, rawBaseTarget);
+    const serviceColors = { renovation: 'oklch(0.6 0.2 350)', kabinet: 'oklch(0.75 0.15 85)', 'bina-rumah': 'oklch(0.6 0.16 250)', divider: 'oklch(0.65 0.15 145)', mihrab: 'oklch(0.7 0.16 40)' };
+    const stackMonths = this.months.slice(0, 7);
+    const monthTotals = stackMonths.map((_, i) => serviceRows.reduce((a, r) => a + (r.monthlyDelta[i] || 0), 0));
+    const maxMonthTotal = Math.max(...monthTotals) || 1;
+    const stackBars = stackMonths.map((m, i) => ({
+      label: m, totalPct: (monthTotals[i] / maxMonthTotal * 100) + '%', totalLabel: this.fmtRM(monthTotals[i]),
+      segments: serviceRows.map(r => ({ key: r.key, color: serviceColors[r.key], flexVal: Math.max(0.001, r.monthlyDelta[i] || 0) })),
+    }));
+    const stackLegend = serviceRows.map(r => ({ name: r.name, color: serviceColors[r.key] }));
+    const totalProjects = Object.values(this.projectsByService).reduce((a, arr) => a + arr.length, 0);
+    const avgDeal = totalSales / totalProjects;
+    const breakdownRows = serviceRows.map(r => ({ ...r, projectCount: (this.projectsByService[r.key] || []).length }));
+
+    const mkSwitch = (on) => ({ bg: on ? 'oklch(0.72 0.15 145)' : 'var(--switch-off)', knob: 'position:absolute;top:2px;left:' + (on ? '18px' : '2px') + ';width:18px;height:18px;border-radius:50%;background:white;transition:left 0.15s;' });
+  const swEmail = mkSwitch(s.settings.notifEmail), swWeekly = mkSwitch(s.settings.notifWeekly), swSound = mkSwitch(s.settings.notifSound), swDark = mkSwitch(s.darkOn);
+
+    const filteredRow = s.laporanServiceFilter ? serviceRows.find(r => r.key === s.laporanServiceFilter) : null;
+    const reportRevenueNum = filteredRow ? (this.parseNum(filteredRow.salesLabel) || 0) : monthActual;
+    const reportRevenueLabel = filteredRow ? filteredRow.salesLabel : this.fmtRM(monthActual);
+    const reportQuotationLabel = this.fmtRM(reportRevenueNum * 3.83);
+    const reportProjectCount = filteredRow ? (this.projectsByService[filteredRow.key] || []).length : totalProjects;
+    const reportAvgDealLabel = this.fmtRM(reportProjectCount ? reportRevenueNum / reportProjectCount : 0);
+    const laporanChart = filteredRow ? this.buildChart(cumActualByMonth.map(v => v * ((filteredRow.sales * yearFactor) / (totalSales || 1))), filteredRow.target * yearFactor) : dashboardChart;
+    const laporanBreakdownRows = filteredRow ? breakdownRows.filter(r => r.key === filteredRow.key) : breakdownRows;
+
+    const sumCriticalMetric = (matchFn) => {
+      let actual = 0, target = 0;
+      Object.keys(this.criticalData).forEach(svKey => {
+        this.criticalData[svKey].forEach(r => {
+          if (!matchFn(r.metric)) return;
+          const rawActual = this.computeCriticalActual(s, svKey, r);
+          const rawTarget = r.target;
+          const an = this.parseNum(rawActual); if (an != null) actual += an;
+          const tn = this.parseNum(rawTarget); if (tn != null) target += tn;
+        });
+      });
+      return { actual, target };
+    };
+    const liveNotifications = [];
+    this.services.forEach(sv => {
+      const rows = this.criticalData[sv.key];
+      if (!rows) return;
+      const hasMonthData = s.criticalMonth === 'Jul';
+      let redCount = 0;
+      rows.forEach(r => {
+        const ck = sv.key + '::' + r.metric;
+        const target = r.target;
+        const rawActual = this.computeCriticalActual(s, sv.key, r);
+        const plan = s.criticalActionPlans[ck] || '';
+        const actualNum = hasMonthData ? this.parseNum(rawActual) : null;
+        const targetNum = this.parseNum(target);
+        const pct = (actualNum != null && targetNum != null && targetNum > 0) ? (actualNum / targetNum * 100) : null;
+        const isGreen = pct !== null && pct >= 100;
+        const isRed = hasMonthData && !isGreen && plan.trim().length === 0;
+        if (isRed) redCount++;
+      });
+      if (redCount > 0) {
+        liveNotifications.push({
+          iconClass: 'ph-warning-circle', accentColor: 'oklch(0.6 0.2 25)',
+          text: sv.name + ': ' + redCount + ' metrik belum capai sasaran (tiada action plan)',
+          time: 'Data Kritikal', onClick: () => { this.navigate('service', sv.key); },
+        });
+      }
+    });
+    if (s.sheetConnected) {
+      liveNotifications.push({ iconClass: 'ph-check-circle', accentColor: 'oklch(0.55 0.15 145)', text: 'Google Sheet disambung — segerak terakhir ' + s.lastSynced, time: 'Integrasi', onClick: () => {} });
+    }
+
+    const kutipanSum = sumCriticalMetric(m => m === 'Sales Collection (New)' || m === 'Sales Collection (Progress Claim)');
+    const quotationSum = sumCriticalMetric(m => m === 'Amount Quotation Release (New)');
+    const leadSum = sumCriticalMetric(m => m === 'No of Lead');
+    const pctChange = (sum) => sum.target ? (((sum.actual - sum.target) / sum.target) * 100) : 0;
+    const kutipanChangePct = pctChange(kutipanSum), quotationChangePct = pctChange(quotationSum), leadChangePct = pctChange(leadSum);
+
+    return {
+      isDashboard: s.page === 'dashboard', isService: s.page === 'service', isLaporan: s.page === 'laporan', isTetapan: s.page === 'tetapan',
+      pageTitle, pageSubtitle,
+      menuItems, priorityItems, serviceRows, breakdownRows, periodOptions,
+      notifItems: liveNotifications, hasNotifications: liveNotifications.length > 0, noNotifications: liveNotifications.length === 0, showNotifBadge: liveNotifications.length > 0 && !s.notifRead,
+      dashboardChart, yearlyChart, stackBars, stackLegend, currentService, serviceChart, serviceProjects, servicePriority, serviceProjectCount, criticalRows,
+      indexTiersView, currentTierName: currentTier.name, currentTierNameMy: currentTier.nameMy, currentTierColor: currentTier.color,
+      estProfitLabel: this.fmtRM(estProfit), indexTimeframeLabel: isYearlyOverall ? 'Tahunan' : 'Bulanan',
+      yearOptionsRange: this.yearOptions[0] + '-' + this.yearOptions[this.yearOptions.length - 1],
+      criticalWeeks: this.getCriticalWeekLabels(this.months.indexOf(s.criticalMonth), s.dashboardYear),
+      criticalMonth: s.criticalMonth,
+      rawDataOpen: s.rawDataOpen, openGoogleSheet: () => this.openGoogleSheet(),
+      sheetButtonLabel: s.sheetConnected ? 'Google Sheet Disambung' : 'Google Sheet Integration',
+      addOwnerModalOpen: s.addOwnerModalOpen, newOwnerName: s.newOwnerName,
+      toggleAddOwnerModal: () => this.toggleAddOwnerModal(), onNewOwnerNameChange: (e) => this.updateNewOwnerName(e.target.value), addCustomOwner: () => this.addCustomOwner(),
+      ownerOptionsList: ['ZIKRI', 'HAFIZAN', 'NIZAM', 'AZHARI', ...s.customOwners, 'INFO'],
+      stopProp: (e) => e.stopPropagation(),
+      toggleSheetModal: () => this.toggleSheetModal(), toggleRawData: () => this.toggleRawData(),
+      onSheetUrlChange: (e) => this.updateSheetUrl(e.target.value),
+      connectSheet: () => this.connectSheet(), syncSheetNow: () => this.syncSheetNow(), disconnectSheet: () => this.disconnectSheet(),
+      rawDataJson: JSON.stringify((this.criticalData[currentService ? currentService.key : ''] || []).map(r => ({
+        metric: r.metric, type: r.type, week1: '—', week2: '—', week3: '—', week4: '—',
+        monthlyActual: r.actual, monthlyTarget: r.target, status: r.status, owner: r.owner,
+      })), null, 2),
+      analysisTiles, analysisBullets, weeklyQuotationTarget, weeklySiteVisitTarget, quotationCard, siteVisitCard, ownerPerformance,
+      ownerFilter: s.ownerFilter, displayCriticalRows, clearOwnerFilter: () => this.toggleOwnerFilter(s.ownerFilter),
+      weeklyQuotationBars, weeklySiteVisitBars, weeklyAmountBars, weeklyAmountTarget: weeklyAmountTarget != null ? this.fmtRM(weeklyAmountTarget) : null, siteVisitLabel,
+      criticalMonthButtons: this.months.map(m => ({ label: m, active: m === s.criticalMonth, onClick: () => this.selectCriticalMonth(m), style: 'padding:7px 14px;border-radius:8px;font-size:12.5px;font-weight:600;cursor:pointer;flex-shrink:0;' + (m === s.criticalMonth ? 'background:oklch(0.78 0.12 85);color:oklch(0.15 0.02 260);' : 'background:var(--hover-bg3);color:var(--t65);') })),
+      overallDonutBg: 'conic-gradient(oklch(0.6 0.22 350) 0% ' + Math.min(100, overallPct) + '%, var(--track-bg) ' + Math.min(100, overallPct) + '% 100%)',
+      serviceDonutBg: currentService ? 'conic-gradient(oklch(0.6 0.22 350) 0% ' + Math.min(100, parseFloat(currentService.pctLabel)) + '%, var(--track-bg) ' + Math.min(100, parseFloat(currentService.pctLabel)) + '% 100%)' : '',
+      totalSalesLabel: this.fmtRM(monthActual), totalTargetLabel: this.fmtRM(monthTarget), overallPct: overallPct.toFixed(1) + '%',
+      dashboardMonthButtons, dashboardMonthLabel: this.months[dmIdx], isProjectedMonth,
+      topDateLabel: 'Tahun ' + s.dashboardYear,
+      dateOpen: s.dateOpen, toggleDate: () => this.toggleDate(),
+      dateMonthOptions: this.months.map((m, i) => ({ label: this.monthsFull[i] + ' ' + s.dashboardYear, active: i === dmIdx, onClick: () => this.selectDashboardMonth(i) })),
+      dateYearOptions: this.yearOptions.map(y => ({ label: String(y), onClick: () => this.selectDashboardYear(y), bg: y === s.dashboardYear ? 'oklch(0.78 0.12 85)' : 'transparent', color: y === s.dashboardYear ? 'oklch(0.15 0.02 260)' : 'var(--t65)' })),
+      dashboardYear: s.dashboardYear,
+      serviceViewMode: s.serviceViewMode,
+      isYearlyView: s.serviceViewMode === 'yearly',
+      setMonthlyView: () => this.setServiceViewMode('monthly'),
+      setYearlyView: () => this.setServiceViewMode('yearly'),
+      monthlyViewBg: s.serviceViewMode === 'monthly' ? 'oklch(0.78 0.12 85)' : 'transparent',
+      monthlyViewColor: s.serviceViewMode === 'monthly' ? 'oklch(0.15 0.02 260)' : 'var(--t65)',
+      yearlyViewBg: s.serviceViewMode === 'yearly' ? 'oklch(0.78 0.12 85)' : 'transparent',
+      yearlyViewColor: s.serviceViewMode === 'yearly' ? 'oklch(0.15 0.02 260)' : 'var(--t65)',
+      serviceViewCaption: (s.serviceViewMode === 'yearly' ? 'Kumulatif tahunan (sasaran x12) ' : 'Prestasi bulanan ') + 'setakat ' + this.months[dmIdx] + ' ' + s.dashboardYear,
+      overallCaption: isYearlyOverall ? ('Kumulatif tahunan setakat ' + this.months[dmIdx] + ' ' + s.dashboardYear + ' / Cumulative as of ' + this.months[dmIdx] + ' ' + s.dashboardYear) : ('Prestasi bulan ' + this.months[dmIdx] + ' ' + s.dashboardYear + ' / Monthly performance for ' + this.months[dmIdx] + ' ' + s.dashboardYear),
+      changeVsTargetLabel: (changeVsTarget >= 0 ? '+' : '') + changeVsTarget.toFixed(1) + '%',
+      changeVsTargetColor: changeVsTarget >= 0 ? 'oklch(0.72 0.15 145)' : 'oklch(0.6 0.2 25)',
+      changeVsTargetIcon: changeVsTarget >= 0 ? 'ph-trend-up' : 'ph-trend-down',
+      salesFieldLabel: isYearlyOverall ? "Kumulatif Jumlah Jualan / Cumulative Total Sales" : "Jumlah Jualan Bulanan / Monthly Total Sales",
+      targetFieldLabel: isYearlyOverall ? "Sasaran Kumulatif / Cumulative Target" : "Sasaran Bulanan / Monthly Target",
+      period: s.period, periodOpen: s.periodOpen, notifOpen: s.notifOpen, profileOpen: s.profileOpen, toast: s.toast,
+      themeVars: this.buildThemeVars(s.darkOn),
+      darkOn: s.darkOn, darkSwitchBg: swDark.bg, darkSwitchKnobStyle: swDark.knob,
+      settings: s.settings, editingProfile: s.editingProfile, notEditingProfile: !s.editingProfile,
+      editIconClass: s.editingProfile ? 'ph-check' : 'ph-pencil-simple', editLabel: s.editingProfile ? 'Simpan / Save' : 'Edit',
+      switchEmailBg: swEmail.bg, switchEmailKnob: swEmail.knob,
+      switchWeeklyBg: swWeekly.bg, switchWeeklyKnob: swWeekly.knob,
+      switchSoundBg: swSound.bg, switchSoundKnob: swSound.knob,
+      totalRevenueLabel: reportRevenueLabel, totalQuotationLabel: reportQuotationLabel, conversionRateLabel: '8.2%', avgDealLabel: reportAvgDealLabel,
+      laporanDateLabel: this.monthsFull[dmIdx] + ' ' + s.dashboardYear,
+      laporanServiceLabel: s.laporanServiceFilter ? (this.services.find(x => x.key === s.laporanServiceFilter) || {}).name : 'Semua Servis',
+      laporanFilterOpen: s.laporanFilterOpen, laporanDateOpen: s.laporanDateOpen,
+      toggleLaporanFilter: () => this.toggleLaporanFilter(), toggleLaporanDate: () => this.toggleLaporanDate(),
+      laporanServiceOptions: [{ key: null, label: 'Semua Servis / All Services' }].concat(this.services.map(sv => ({ key: sv.key, label: sv.name + (sv.nameEn ? ' / ' + sv.nameEn : '') }))).map(o => ({ ...o, active: s.laporanServiceFilter === o.key, onClick: () => this.selectLaporanService(o.key) })),
+      reportChart: laporanChart, reportBreakdownRows: laporanBreakdownRows,
+      kutipanLabel: this.fmtRM(kutipanSum.actual), sebutHargaLabel: this.fmtRM(quotationSum.actual), leadLabel: this.fmtNum(leadSum.actual), periodPrevLabel: periodCfg.prevLabel,
+      kutipanChangeLabel: (kutipanChangePct >= 0 ? '↑ +' : '↓ ') + kutipanChangePct.toFixed(1) + '%', kutipanChangeColor: kutipanChangePct >= 0 ? 'oklch(0.72 0.15 145)' : 'oklch(0.6 0.2 25)',
+      quotationChangeLabel: (quotationChangePct >= 0 ? '↑ +' : '↓ ') + quotationChangePct.toFixed(1) + '%', quotationChangeColor: quotationChangePct >= 0 ? 'oklch(0.72 0.15 145)' : 'oklch(0.6 0.2 25)',
+      leadChangeLabel: (leadChangePct >= 0 ? '↑ +' : '↓ ') + leadChangePct.toFixed(1) + '%', leadChangeColor: leadChangePct >= 0 ? 'oklch(0.72 0.15 145)' : 'oklch(0.6 0.2 25)',
+      togglePeriod: () => this.togglePeriod(), toggleNotif: () => this.toggleNotif(), toggleProfile: () => this.toggleProfile(),
+      goDashboard: () => this.navigate('dashboard'), goLaporan: () => this.navigate('laporan'), goTetapan: () => this.navigate('tetapan'),
+      toggleDark: () => this.toggleDark(), doLogout: () => this.doLogout(),
+      toggleEditProfile: () => this.toggleEditProfile(), saveSettings: () => this.saveSettings(), exportReport: () => this.exportReport(),
+      onAvatarFileChange: (e) => this.onAvatarFileChange(e),
+      onNameChange: (e) => this.updateSettingField('name', e.target.value),
+      onRoleChange: (e) => this.updateSettingField('role', e.target.value),
+      onEmailChange: (e) => this.updateSettingField('email', e.target.value),
+      onPhoneChange: (e) => this.updateSettingField('phone', e.target.value),
+      toggleNotifEmail: () => this.toggleSettingSwitch('notifEmail'),
+      toggleNotifWeekly: () => this.toggleSettingSwitch('notifWeekly'),
+      toggleNotifSound: () => this.toggleSettingSwitch('notifSound'),
+    };
+  }
+}
+</script>
+</body>
+</html>

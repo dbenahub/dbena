@@ -1,0 +1,300 @@
+@import 'tailwindcss';
+
+@import '@fontsource/plus-jakarta-sans/500.css';
+@import '@fontsource/plus-jakarta-sans/600.css';
+@import '@fontsource/plus-jakarta-sans/700.css';
+@import '@fontsource/plus-jakarta-sans/800.css';
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@phosphor-icons/web/duotone';
+
+/* ==========================================================================
+   DBENA — Token Reka Bentuk
+   Nilai oklch() disalin TEPAT dari prototaip .dc.html (buildThemeVars()).
+   Jangan tukar ke hex — Tailwind v4 menyokong oklch() secara asli.
+   ========================================================================== */
+
+@theme {
+  --font-display: 'Plus Jakarta Sans', sans-serif;
+  --font-sans: 'Inter', sans-serif;
+
+  /* Jenama */
+  --color-brand-gold: oklch(0.78 0.12 85);
+  --color-brand-pink: oklch(0.6 0.22 350);
+  --color-brand-pink-soft: oklch(0.55 0.22 350);
+  --color-brand-success: oklch(0.72 0.15 145);
+
+  /* Status metrik kritikal */
+  --color-status-green: oklch(0.55 0.15 145);
+  --color-status-yellow: oklch(0.78 0.15 85);
+  --color-status-red: oklch(0.55 0.2 25);
+  --color-status-pending: oklch(0.6 0.02 260);
+  --color-status-warn: oklch(0.75 0.14 70);
+  --color-status-danger: oklch(0.6 0.2 25);
+
+  /* Tier index jualan */
+  --color-tier-critical: oklch(0.6 0.2 25);
+  --color-tier-survival: oklch(0.75 0.15 70);
+  --color-tier-growing: oklch(0.62 0.16 300);
+  --color-tier-stable: oklch(0.6 0.15 235);
+  --color-tier-sustainability: oklch(0.65 0.16 150);
+
+  /* Servis (carta bertindan) */
+  --color-svc-renovation: oklch(0.6 0.2 350);
+  --color-svc-kabinet: oklch(0.75 0.15 85);
+  --color-svc-bina-rumah: oklch(0.6 0.16 250);
+  --color-svc-divider: oklch(0.65 0.15 145);
+  --color-svc-mihrab: oklch(0.7 0.16 40);
+
+  /* Zon terhad (Admin Login) */
+  --color-restricted: oklch(0.6 0.2 25);
+  --color-restricted-deep: oklch(0.55 0.19 25);
+  --color-restricted-bright: oklch(0.68 0.19 25);
+  --color-restricted-bg: oklch(0.12 0.01 25);
+  --color-restricted-panel: oklch(0.16 0.03 25);
+  --color-restricted-form: oklch(0.14 0.015 25);
+  --color-restricted-input: oklch(0.19 0.02 25);
+
+  /* PIC / Owner */
+  --color-owner-1: oklch(0.6 0.15 250);
+  --color-owner-2: oklch(0.7 0.12 85);
+  --color-owner-3: oklch(0.6 0.16 350);
+  --color-owner-4: oklch(0.6 0.15 145);
+  --color-owner-5: oklch(0.62 0.15 30);
+  --color-owner-6: oklch(0.62 0.15 190);
+  --color-owner-7: oklch(0.62 0.15 100);
+  --color-owner-8: oklch(0.62 0.15 320);
+
+  /* Alias token bertema (dirujuk sebagai bg-surface, text-t96 dsb.) */
+  --color-surface: var(--bg);
+  --color-sidebar: var(--sidebar-bg);
+  --color-card: var(--card-bg);
+  --color-hover: var(--hover-bg);
+  --color-hover2: var(--hover-bg2);
+  --color-hover3: var(--hover-bg3);
+  --color-track: var(--track-bg);
+  --color-field: var(--input-bg);
+  --color-t96: var(--t96);
+  --color-t94: var(--t94);
+  --color-t92: var(--t92);
+  --color-t90: var(--t90);
+  --color-t85: var(--t85);
+  --color-t80: var(--t80);
+  --color-t75: var(--t75);
+  --color-t70: var(--t70);
+  --color-t68: var(--t68);
+  --color-t65: var(--t65);
+  --color-t60: var(--t60);
+  --color-t55: var(--t55);
+  --color-t50: var(--t50);
+  --color-t40: var(--t40);
+  --color-edge: var(--border);
+  --color-edge2: var(--border2);
+  --color-edge3: var(--border3);
+}
+
+/* --------------------------------------------------------------------------
+   Tema GELAP (lalai) — port tepat dari buildThemeVars(true)
+   -------------------------------------------------------------------------- */
+:root,
+[data-theme='dark'] {
+  --bg: oklch(0.15 0.025 260);
+  --sidebar-bg: oklch(0.13 0.025 260);
+  --card-bg: oklch(0.19 0.025 260);
+  --hover-bg: oklch(0.22 0.025 260);
+  --hover-bg2: oklch(0.24 0.03 260);
+  --hover-bg3: oklch(0.2 0.025 260);
+  --track-bg: oklch(0.28 0.02 260);
+  --input-bg: oklch(0.15 0.02 260);
+  --switch-off: oklch(0.32 0.02 260);
+
+  --t96: oklch(0.96 0.01 260);
+  --t94: oklch(0.94 0.01 260);
+  --t92: oklch(0.92 0.01 260);
+  --t90: oklch(0.9 0.01 260);
+  --t85: oklch(0.85 0.01 260);
+  --t80: oklch(0.8 0.01 260);
+  --t75: oklch(0.75 0.02 260);
+  --t70: oklch(0.7 0.02 260);
+  --t68: oklch(0.68 0.02 260);
+  --t65: oklch(0.65 0.02 260);
+  --t60: oklch(0.6 0.02 260);
+  --t55: oklch(0.55 0.02 260);
+  --t50: oklch(0.5 0.02 260);
+  --t40: oklch(0.4 0.02 260);
+
+  --border: oklch(1 0 0 / 0.08);
+  --border2: oklch(1 0 0 / 0.1);
+  --border3: oklch(1 0 0 / 0.06);
+
+  --scrollbar-thumb: oklch(0.35 0.02 260);
+}
+
+/* --------------------------------------------------------------------------
+   Tema TERANG — port dari buildThemeVars(false)
+   PEMBETULAN isu #23: prototaip guna --t55 = oklch(0.55 0.02 260) pada KEDUA
+   mod, menyebabkan kontras gagal WCAG AA pada latar terang. Nilai terang
+   digelapkan kepada 0.48 (nisbah ~4.6:1 atas --card-bg putih).
+   -------------------------------------------------------------------------- */
+[data-theme='light'] {
+  --bg: oklch(0.97 0.008 260);
+  --sidebar-bg: oklch(0.995 0.003 260);
+  --card-bg: oklch(1 0 0);
+  --hover-bg: oklch(0.93 0.012 260);
+  --hover-bg2: oklch(0.9 0.02 260);
+  --hover-bg3: oklch(0.95 0.01 260);
+  --track-bg: oklch(0.88 0.012 260);
+  --input-bg: oklch(0.96 0.01 260);
+  --switch-off: oklch(0.82 0.012 260);
+
+  --t96: oklch(0.2 0.02 260);
+  --t94: oklch(0.22 0.02 260);
+  --t92: oklch(0.24 0.02 260);
+  --t90: oklch(0.27 0.02 260);
+  --t85: oklch(0.32 0.02 260);
+  --t80: oklch(0.36 0.02 260);
+  --t75: oklch(0.4 0.02 260);
+  --t70: oklch(0.44 0.02 260);
+  --t68: oklch(0.46 0.02 260);
+  --t65: oklch(0.48 0.02 260);
+  --t60: oklch(0.5 0.02 260);
+  --t55: oklch(0.48 0.02 260); /* dibetulkan dari 0.55 — WCAG AA */
+  --t50: oklch(0.52 0.02 260); /* dibetulkan dari 0.58 — WCAG AA */
+  --t40: oklch(0.58 0.02 260);
+
+  --border: oklch(0 0 0 / 0.1);
+  --border2: oklch(0 0 0 / 0.13);
+  --border3: oklch(0 0 0 / 0.07);
+
+  --scrollbar-thumb: oklch(0.75 0.012 260);
+}
+
+/* --------------------------------------------------------------------------
+   Asas
+   -------------------------------------------------------------------------- */
+@layer base {
+  * { box-sizing: border-box; }
+
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--t96);
+    font-family: 'Inter', sans-serif;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+
+  input, select, textarea, button { font-family: inherit; }
+
+  input::placeholder, textarea::placeholder { color: var(--t50); }
+
+  /* Fokus boleh-lihat untuk navigasi papan kekunci (a11y) */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-gold);
+    outline-offset: 2px;
+  }
+
+  [x-cloak] { display: none !important; }
+}
+
+/* --------------------------------------------------------------------------
+   Animasi — port tepat dari prototaip
+   -------------------------------------------------------------------------- */
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@utility animate-shake { animation: shake 0.4s; }
+@utility animate-toast-in { animation: toastIn 0.25s ease; }
+@utility animate-fade-in { animation: fadeIn 0.15s ease; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Utiliti komponen
+   -------------------------------------------------------------------------- */
+@layer components {
+  .dbena-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+  }
+
+  .dbena-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 12px 14px;
+    color: var(--t94);
+    font-size: 14px;
+    transition: border-color 0.15s;
+  }
+  .dbena-input:focus { border-color: var(--color-brand-gold); outline: none; }
+  .dbena-input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .dbena-btn-gold {
+    background: var(--color-brand-gold);
+    color: oklch(0.15 0.02 260);
+    border-radius: 10px;
+    font-weight: 700;
+    transition: filter 0.15s;
+  }
+  .dbena-btn-gold:hover { filter: brightness(1.08); }
+
+  .dbena-btn-red {
+    background: var(--color-restricted-deep);
+    color: oklch(0.98 0.005 25);
+    border-radius: 10px;
+    font-weight: 700;
+    transition: filter 0.15s;
+  }
+  .dbena-btn-red:hover { filter: brightness(1.1); }
+
+  /* Jadual dengan lajur pertama melekat (mobile) */
+  .sticky-col-table { position: relative; }
+  .sticky-col-table .sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 2;
+    background: var(--card-bg);
+  }
+
+  /* Skrol dengan snap untuk butang bulan pada mobile */
+  .snap-row {
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+  }
+  .snap-row > * { scroll-snap-align: start; }
+
+  /* Sasaran sentuh minimum 44px (WCAG 2.5.5) */
+  @media (pointer: coarse) {
+    .touch-target { min-width: 44px; min-height: 44px; }
+  }
+}

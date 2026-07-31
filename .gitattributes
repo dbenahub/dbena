@@ -1,0 +1,13 @@
+* text=auto eol=lf
+
+*.php diff=php
+*.blade.php linguist-language=Blade
+*.md diff=markdown
+
+# Prototaip ialah rujukan, bukan kod aktif — kecualikan dari statistik bahasa
+docs/prototaip/* linguist-vendored
+docs/prototaip/support.js linguist-generated
+
+*.png binary
+*.jpg binary
+*.woff2 binary

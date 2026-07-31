@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<!-- NOTA: Kelayakan log masuk dalam fail ini telah DIREDAKSI sebelum
+     dimasukkan ke repositori. Prototaip ini disimpan sebagai rujukan
+     REKA BENTUK sahaja dan tidak dijalankan. -->
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  @keyframes shake{10%,90%{transform:translateX(-1px);}20%,80%{transform:translateX(2px);}30%,50%,70%{transform:translateX(-4px);}40%,60%{transform:translateX(4px);}}
+  @keyframes toastIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/duotone/style.css">
+</helmet>
+
+<div style="display:flex;min-width:1440px;width:100%;min-height:100vh;background:oklch(0.15 0.025 260);color:oklch(0.96 0.01 260);font-family:'Inter',sans-serif;align-items:center;justify-content:center;">
+
+  <div style="width:440px;background:oklch(0.19 0.025 260);border:1px solid oklch(1 0 0/0.08);border-radius:20px;padding:40px;box-shadow:0 24px 60px rgba(0,0,0,0.5);animation:{{ shakeAnim }};">
+
+    <div style="border:1px solid oklch(0.78 0.12 85/0.4);border-radius:14px;padding:16px 12px;text-align:center;margin-bottom:28px;background:oklch(0.97 0.005 260);">
+      <img src="./assets/logo-dbena.png" style="width:100%;height:auto;display:block;" />
+    </div>
+
+    <!-- LOGIN STEP -->
+    <sc-if value="{{ isLogin }}">
+      <div style="text-align:center;margin-bottom:26px;">
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:20px;">Log Masuk <span style="color:oklch(0.55 0.02 260);font-weight:400;font-style:italic;">/ Sign In</span></div>
+        <div style="font-size:12.5px;color:oklch(0.6 0.02 260);margin-top:4px;">Dashboard Prestasi Syarikat</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <div style="font-size:11.5px;color:oklch(0.55 0.02 260);margin-bottom:6px;">Username</div>
+          <input value="{{ username }}" onChange="{{ onUsernameChange }}" onKeyDown="{{ onLoginKeyDown }}" placeholder="Masukkan username" style="width:100%;background:oklch(0.15 0.02 260);border:1px solid oklch(1 0 0/0.1);border-radius:10px;padding:12px 14px;color:oklch(0.94 0.01 260);font-size:14px;font-family:inherit;" />
+        </div>
+        <div>
+          <div style="font-size:11.5px;color:oklch(0.55 0.02 260);margin-bottom:6px;">Kata Laluan <span style="font-style:italic;">/ Password</span></div>
+          <div style="position:relative;">
+            <input type="{{ passwordFieldType }}" value="{{ password }}" onChange="{{ onPasswordChange }}" onKeyDown="{{ onLoginKeyDown }}" placeholder="Masukkan kata laluan" style="width:100%;background:oklch(0.15 0.02 260);border:1px solid oklch(1 0 0/0.1);border-radius:10px;padding:12px 42px 12px 14px;color:oklch(0.94 0.01 260);font-size:14px;font-family:inherit;" />
+            <i class="ph-duotone {{ passwordEyeIcon }}" onClick="{{ togglePasswordVisible }}" style="position:absolute;right:14px;top:50%;transform:translateY(-50%);cursor:pointer;color:oklch(0.55 0.02 260);font-size:17px;"></i>
+          </div>
+        </div>
+        <sc-if value="{{ loginError }}">
+          <div style="display:flex;align-items:center;gap:8px;background:oklch(0.6 0.2 25/0.12);border:1px solid oklch(0.6 0.2 25/0.35);border-radius:9px;padding:10px 12px;font-size:12.5px;color:oklch(0.6 0.2 25);">
+            <i class="ph-duotone ph-warning-circle" style="font-size:16px;flex-shrink:0;"></i>{{ loginError }}
+          </div>
+        </sc-if>
+        <div onClick="{{ submitLogin }}" style="text-align:center;background:oklch(0.78 0.12 85);color:oklch(0.15 0.02 260);padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;" style-hover="filter:brightness(1.08);">
+          Log Masuk <span style="font-style:italic;font-weight:600;">/ Sign In</span>
+        </div>
+        <div onClick="{{ goForgot }}" style="text-align:center;font-size:12.5px;color:oklch(0.78 0.12 85);cursor:pointer;font-weight:600;">
+          Lupa Kata Laluan? <span style="font-style:italic;font-weight:400;">/ Forgot Password?</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- OTP STEP (login) -->
+    <sc-if value="{{ isOtp }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;margin-bottom:22px;">
+        <i class="ph-duotone ph-shield-check" style="font-size:34px;color:oklch(0.78 0.12 85);"></i>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:19px;margin-top:10px;">Pengesahan OTP <span style="color:oklch(0.55 0.02 260);font-weight:400;font-style:italic;">/ OTP Verification</span></div>
+        <div style="font-size:12.5px;color:oklch(0.6 0.02 260);margin-top:6px;line-height:1.5;">Kod 6-digit telah dihantar ke<br/><b style="color:oklch(0.94 0.01 260);">dbenareport@gmail.com</b></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <input value="{{ otpInput }}" onChange="{{ onOtpChange }}" onKeyDown="{{ onOtpKeyDown }}" placeholder="000000" maxlength="6" style="width:100%;text-align:center;letter-spacing:10px;background:oklch(0.15 0.02 260);border:1px solid oklch(1 0 0/0.1);border-radius:10px;padding:14px;color:oklch(0.94 0.01 260);font-size:22px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;" />
+        <sc-if value="{{ otpError }}">
+          <div style="display:flex;align-items:center;gap:8px;background:oklch(0.6 0.2 25/0.12);border:1px solid oklch(0.6 0.2 25/0.35);border-radius:9px;padding:10px 12px;font-size:12.5px;color:oklch(0.6 0.2 25);">
+            <i class="ph-duotone ph-warning-circle" style="font-size:16px;flex-shrink:0;"></i>{{ otpError }}
+          </div>
+        </sc-if>
+        <div onClick="{{ submitOtp }}" style="text-align:center;background:oklch(0.78 0.12 85);color:oklch(0.15 0.02 260);padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;" style-hover="filter:brightness(1.08);">
+          Sahkan OTP <span style="font-style:italic;font-weight:600;">/ Verify</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div onClick="{{ backToLogin }}" style="font-size:12.5px;color:oklch(0.6 0.02 260);cursor:pointer;display:flex;align-items:center;gap:5px;"><i class="ph-duotone ph-arrow-left"></i> Kembali</div>
+          <div onClick="{{ resendOtp }}" style="font-size:12.5px;color:oklch(0.78 0.12 85);cursor:pointer;font-weight:600;">Hantar Semula OTP</div>
+        </div>
+        <div style="background:oklch(0.78 0.12 85/0.1);border:1px dashed oklch(0.78 0.12 85/0.4);border-radius:9px;padding:10px 12px;font-size:11.5px;color:oklch(0.78 0.12 85);text-align:center;">
+          Demo: OTP anda ialah <b>{{ demoOtp }}</b> (paparan ujian sahaja)
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- FORGOT PASSWORD: EMAIL STEP -->
+    <sc-if value="{{ isForgot }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;margin-bottom:22px;">
+        <i class="ph-duotone ph-key" style="font-size:34px;color:oklch(0.78 0.12 85);"></i>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:19px;margin-top:10px;">Lupa Kata Laluan <span style="color:oklch(0.55 0.02 260);font-weight:400;font-style:italic;">/ Forgot Password</span></div>
+        <div style="font-size:12.5px;color:oklch(0.6 0.02 260);margin-top:6px;">Kod set semula hanya boleh dihantar ke emel berdaftar.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <div style="font-size:11.5px;color:oklch(0.55 0.02 260);margin-bottom:6px;">Emel Berdaftar <span style="font-style:italic;">/ Registered Email</span></div>
+          <input value="{{ forgotEmail }}" onChange="{{ onForgotEmailChange }}" placeholder="dbenareport@gmail.com" style="width:100%;background:oklch(0.15 0.02 260);border:1px solid oklch(1 0 0/0.1);border-radius:10px;padding:12px 14px;color:oklch(0.94 0.01 260);font-size:14px;font-family:inherit;" />
+        </div>
+        <sc-if value="{{ forgotError }}">
+          <div style="display:flex;align-items:center;gap:8px;background:oklch(0.6 0.2 25/0.12);border:1px solid oklch(0.6 0.2 25/0.35);border-radius:9px;padding:10px 12px;font-size:12.5px;color:oklch(0.6 0.2 25);">
+            <i class="ph-duotone ph-warning-circle" style="font-size:16px;flex-shrink:0;"></i>{{ forgotError }}
+          </div>
+        </sc-if>
+        <div onClick="{{ submitForgot }}" style="text-align:center;background:oklch(0.78 0.12 85);color:oklch(0.15 0.02 260);padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;" style-hover="filter:brightness(1.08);">
+          Hantar Kod Set Semula <span style="font-style:italic;font-weight:600;">/ Send Reset Code</span>
+        </div>
+        <div onClick="{{ backToLogin }}" style="text-align:center;font-size:12.5px;color:oklch(0.6 0.02 260);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;"><i class="ph-duotone ph-arrow-left"></i> Kembali ke Log Masuk</div>
+      </div>
+    </sc-if>
+
+    <!-- FORGOT PASSWORD: OTP STEP -->
+    <sc-if value="{{ isResetOtp }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;margin-bottom:22px;">
+        <i class="ph-duotone ph-shield-check" style="font-size:34px;color:oklch(0.78 0.12 85);"></i>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:19px;margin-top:10px;">Kod Set Semula <span style="color:oklch(0.55 0.02 260);font-weight:400;font-style:italic;">/ Reset Code</span></div>
+        <div style="font-size:12.5px;color:oklch(0.6 0.02 260);margin-top:6px;line-height:1.5;">Kod 6-digit telah dihantar ke<br/><b style="color:oklch(0.94 0.01 260);">dbenareport@gmail.com</b></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <input value="{{ resetOtpInput }}" onChange="{{ onResetOtpChange }}" placeholder="000000" maxlength="6" style="width:100%;text-align:center;letter-spacing:10px;background:oklch(0.15 0.02 260);border:1px solid oklch(1 0 0/0.1);border-radius:10px;padding:14px;color:oklch(0.94 0.01 260);font-size:22px;font-weight:700;font-family:'Plus Jakarta Sans',sans-serif;" />
+        <sc-if value="{{ resetOtpError }}">
+          <div style="display:flex;align-items:center;gap:8px;background:oklch(0.6 0.2 25/0.12);border:1px solid oklch(0.6 0.2 25/0.35);border-radius:9px;padding:10px 12px;font-size:12.5px;color:oklch(0.6 0.2 25);">
+            <i class="ph-duotone ph-warning-circle" style="font-size:16px;flex-shrink:0;"></i>{{ resetOtpError }}
+          </div>
+        </sc-if>
+        <div onClick="{{ submitResetOtp }}" style="text-align:center;background:oklch(0.78 0.12 85);color:oklch(0.15 0.02 260);padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;" style-hover="filter:brightness(1.08);">
+          Sahkan Kod <span style="font-style:italic;font-weight:600;">/ Verify Code</span>
+        </div>
+        <div style="background:oklch(0.78 0.12 85/0.1);border:1px dashed oklch(0.78 0.12 85/0.4);border-radius:9px;padding:10px 12px;font-size:11.5px;color:oklch(0.78 0.12 85);text-align:center;">
+          Demo: Kod anda ialah <b>{{ demoResetOtp }}</b> (paparan ujian sahaja)
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- RESET PASSWORD STEP -->
+    <sc-if value="{{ isResetPassword }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;margin-bottom:22px;">
+        <i class="ph-duotone ph-lock-key" style="font-size:34px;color:oklch(0.78 0.12 85);"></i>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:19px;margin-top:10px;">Set Semula Kata Laluan <span style="color:oklch(0.55 0.02 260);font-weight:400;font-style:italic;">/ Reset Password</span></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div>
+          <div style="font-size:11.5px;color:oklch(0.55 0.02 260);margin-bottom:6px;">Kata Laluan Baharu <span style="font-style:italic;">/ New Password</span></div>
+          <input type="password" value="{{ newPassword }}" onChange="{{ onNewPasswordChange }}" placeholder="Sekurang-kurangnya 6 aksara" style="width:100%;background:oklch(0.15 0.02 260);border:1px solid oklch(1 0 0/0.1);border-radius:10px;padding:12px 14px;color:oklch(0.94 0.01 260);font-size:14px;font-family:inherit;" />
+        </div>
+        <div>
+          <div style="font-size:11.5px;color:oklch(0.55 0.02 260);margin-bottom:6px;">Sahkan Kata Laluan <span style="font-style:italic;">/ Confirm Password</span></div>
+          <input type="password" value="{{ confirmPassword }}" onChange="{{ onConfirmPasswordChange }}" placeholder="Taip semula kata laluan" style="width:100%;background:oklch(0.15 0.02 260);border:1px solid oklch(1 0 0/0.1);border-radius:10px;padding:12px 14px;color:oklch(0.94 0.01 260);font-size:14px;font-family:inherit;" />
+        </div>
+        <sc-if value="{{ resetPwError }}">
+          <div style="display:flex;align-items:center;gap:8px;background:oklch(0.6 0.2 25/0.12);border:1px solid oklch(0.6 0.2 25/0.35);border-radius:9px;padding:10px 12px;font-size:12.5px;color:oklch(0.6 0.2 25);">
+            <i class="ph-duotone ph-warning-circle" style="font-size:16px;flex-shrink:0;"></i>{{ resetPwError }}
+          </div>
+        </sc-if>
+        <div onClick="{{ submitResetPassword }}" style="text-align:center;background:oklch(0.78 0.12 85);color:oklch(0.15 0.02 260);padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;" style-hover="filter:brightness(1.08);">
+          Set Semula Kata Laluan <span style="font-style:italic;font-weight:600;">/ Reset Password</span>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- SUCCESS (login) -->
+    <sc-if value="{{ isSuccess }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;padding:10px 0;">
+        <i class="ph-duotone ph-check-circle" style="font-size:46px;color:oklch(0.72 0.15 145);"></i>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:19px;margin-top:14px;">Log Masuk Berjaya <span style="color:oklch(0.55 0.02 260);font-weight:400;font-style:italic;">/ Login Successful</span></div>
+        <div style="font-size:12.5px;color:oklch(0.6 0.02 260);margin-top:8px;">Mengalihkan ke dashboard...</div>
+        <a href="./Executive Dashboard.dc.html" style="display:block;text-align:center;background:oklch(0.78 0.12 85);color:oklch(0.15 0.02 260);padding:13px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;margin-top:20px;">
+          Teruskan ke Dashboard <span style="font-style:italic;font-weight:600;">/ Continue</span>
+        </a>
+      </div>
+    </sc-if>
+
+    <!-- RESET SUCCESS -->
+    <sc-if value="{{ isResetSuccess }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;padding:10px 0;">
+        <i class="ph-duotone ph-check-circle" style="font-size:46px;color:oklch(0.72 0.15 145);"></i>
+        <div style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:19px;margin-top:14px;">Kata Laluan Dikemaskini <span style="color:oklch(0.55 0.02 260);font-weight:400;font-style:italic;">/ Password Updated</span></div>
+        <div style="font-size:12.5px;color:oklch(0.6 0.02 260);margin-top:8px;">Sila log masuk semula dengan kata laluan baharu anda.</div>
+        <div onClick="{{ backToLogin }}" style="background:oklch(0.78 0.12 85);color:oklch(0.15 0.02 260);padding:13px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;margin-top:20px;">
+          Kembali ke Log Masuk <span style="font-style:italic;font-weight:600;">/ Back to Login</span>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+
+  <sc-if value="{{ toast }}">
+    <div style="position:fixed;bottom:28px;right:32px;background:oklch(0.22 0.03 260);border:1px solid oklch(0.78 0.12 85/0.4);border-radius:12px;padding:14px 20px;font-size:13.5px;box-shadow:0 12px 32px rgba(0,0,0,0.5);animation:toastIn 0.25s ease;z-index:100;display:flex;align-items:center;gap:10px;">
+    <i class="ph-duotone ph-check-circle" style="color:oklch(0.72 0.15 145);font-size:19px;"></i>{{ toast }}</div>
+  </sc-if>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      step: 'login',
+      username: '', password: '', loginError: '', passwordVisible: false,
+      otpInput: '', otpError: '', demoOtp: '',
+      forgotEmail: '', forgotError: '',
+      resetOtpInput: '', resetOtpError: '', demoResetOtp: '',
+      newPassword: '', confirmPassword: '', resetPwError: '',
+      currentPassword: '[DIREDAKSI]',
+      toast: null, shakeKey: 0,
+    };
+    this._toastTimer = null;
+    this.ALLOWED_EMAIL = 'dbenareport@gmail.com';
+    this.USERNAME = '[DIREDAKSI]';
+  }
+
+  genOtp() { return String(Math.floor(100000 + Math.random() * 900000)); }
+
+  showToast(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => this.setState({ toast: null }), 2600);
+  }
+  shake() { this.setState(s => ({ shakeKey: s.shakeKey + 1 })); }
+
+  onUsernameChange(e) { this.setState({ username: e.target.value, loginError: '' }); }
+  onPasswordChange(e) { this.setState({ password: e.target.value, loginError: '' }); }
+  togglePasswordVisible() { this.setState(s => ({ passwordVisible: !s.passwordVisible })); }
+  onLoginKeyDown(e) { if (e.key === 'Enter') this.submitLogin(); }
+
+  submitLogin() {
+    const s = this.state;
+    if (!s.username.trim() || !s.password.trim()) { this.setState({ loginError: 'Sila isi username dan kata laluan.' }); this.shake(); return; }
+    if (s.username.trim() !== this.USERNAME || s.password !== s.currentPassword) {
+      this.setState({ loginError: 'Username atau kata laluan tidak sah.' }); this.shake(); return;
+    }
+    const otp = this.genOtp();
+    this.setState({ step: 'otp', demoOtp: otp, otpInput: '', otpError: '' });
+    this.showToast('OTP dihantar ke dbenareport@gmail.com');
+  }
+
+  onOtpChange(e) { this.setState({ otpInput: e.target.value.replace(/[^0-9]/g, '').slice(0, 6), otpError: '' }); }
+  onOtpKeyDown(e) { if (e.key === 'Enter') this.submitOtp(); }
+  submitOtp() {
+    const s = this.state;
+    if (s.otpInput.length !== 6) { this.setState({ otpError: 'Masukkan kod 6-digit.' }); this.shake(); return; }
+    if (s.otpInput !== s.demoOtp) { this.setState({ otpError: 'Kod OTP salah. Cuba lagi.' }); this.shake(); return; }
+    this.setState({ step: 'success' });
+  }
+  resendOtp() {
+    const otp = this.genOtp();
+    this.setState({ demoOtp: otp, otpInput: '', otpError: '' });
+    this.showToast('OTP baharu dihantar ke dbenareport@gmail.com');
+  }
+
+  goForgot() { this.setState({ step: 'forgot', forgotEmail: '', forgotError: '' }); }
+  backToLogin() { this.setState({ step: 'login', username: '', password: '', loginError: '', otpInput: '', otpError: '' }); }
+
+  onForgotEmailChange(e) { this.setState({ forgotEmail: e.target.value, forgotError: '' }); }
+  submitForgot() {
+    const s = this.state;
+    const email = s.forgotEmail.trim().toLowerCase();
+    if (!email) { this.setState({ forgotError: 'Sila masukkan alamat emel.' }); this.shake(); return; }
+    if (email !== this.ALLOWED_EMAIL) { this.setState({ forgotError: 'Emel tidak dikenali. Kod set semula hanya boleh dihantar ke dbenareport@gmail.com.' }); this.shake(); return; }
+    const otp = this.genOtp();
+    this.setState({ step: 'resetOtp', demoResetOtp: otp, resetOtpInput: '', resetOtpError: '' });
+    this.showToast('Kod set semula dihantar ke dbenareport@gmail.com');
+  }
+
+  onResetOtpChange(e) { this.setState({ resetOtpInput: e.target.value.replace(/[^0-9]/g, '').slice(0, 6), resetOtpError: '' }); }
+  submitResetOtp() {
+    const s = this.state;
+    if (s.resetOtpInput.length !== 6) { this.setState({ resetOtpError: 'Masukkan kod 6-digit.' }); this.shake(); return; }
+    if (s.resetOtpInput !== s.demoResetOtp) { this.setState({ resetOtpError: 'Kod salah. Cuba lagi.' }); this.shake(); return; }
+    this.setState({ step: 'resetPassword', newPassword: '', confirmPassword: '', resetPwError: '' });
+  }
+
+  onNewPasswordChange(e) { this.setState({ newPassword: e.target.value, resetPwError: '' }); }
+  onConfirmPasswordChange(e) { this.setState({ confirmPassword: e.target.value, resetPwError: '' }); }
+  submitResetPassword() {
+    const s = this.state;
+    if (s.newPassword.length < 6) { this.setState({ resetPwError: 'Kata laluan mesti sekurang-kurangnya 6 aksara.' }); this.shake(); return; }
+    if (s.newPassword !== s.confirmPassword) { this.setState({ resetPwError: 'Kata laluan tidak sepadan.' }); this.shake(); return; }
+    this.setState({ step: 'resetSuccess', currentPassword: s.newPassword });
+  }
+
+  renderVals() {
+    const s = this.state;
+    return {
+      isLogin: s.step === 'login', isOtp: s.step === 'otp', isForgot: s.step === 'forgot',
+      isResetOtp: s.step === 'resetOtp', isResetPassword: s.step === 'resetPassword',
+      isSuccess: s.step === 'success', isResetSuccess: s.step === 'resetSuccess',
+      username: s.username, password: s.password, loginError: s.loginError,
+      passwordFieldType: s.passwordVisible ? 'text' : 'password', passwordEyeIcon: s.passwordVisible ? 'ph-eye-slash' : 'ph-eye',
+      otpInput: s.otpInput, otpError: s.otpError, demoOtp: s.demoOtp,
+      forgotEmail: s.forgotEmail, forgotError: s.forgotError,
+      resetOtpInput: s.resetOtpInput, resetOtpError: s.resetOtpError, demoResetOtp: s.demoResetOtp,
+      newPassword: s.newPassword, confirmPassword: s.confirmPassword, resetPwError: s.resetPwError,
+      toast: s.toast, shakeAnim: (s.loginError || s.otpError || s.forgotError || s.resetOtpError || s.resetPwError) ? 'shake 0.4s' : 'none',
+      onUsernameChange: (e) => this.onUsernameChange(e), onPasswordChange: (e) => this.onPasswordChange(e),
+      togglePasswordVisible: () => this.togglePasswordVisible(), onLoginKeyDown: (e) => this.onLoginKeyDown(e),
+      submitLogin: () => this.submitLogin(),
+      onOtpChange: (e) => this.onOtpChange(e), onOtpKeyDown: (e) => this.onOtpKeyDown(e), submitOtp: () => this.submitOtp(), resendOtp: () => this.resendOtp(),
+      goForgot: () => this.goForgot(), backToLogin: () => this.backToLogin(),
+      onForgotEmailChange: (e) => this.onForgotEmailChange(e), submitForgot: () => this.submitForgot(),
+      onResetOtpChange: (e) => this.onResetOtpChange(e), submitResetOtp: () => this.submitResetOtp(),
+      onNewPasswordChange: (e) => this.onNewPasswordChange(e), onConfirmPasswordChange: (e) => this.onConfirmPasswordChange(e),
+      submitResetPassword: () => this.submitResetPassword(),
+    };
+  }
+}
+</script>
+</body>
+</html>
