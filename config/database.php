@@ -29,9 +29,20 @@ return [
             'prefix_indexes' => true,
             'strict' => true,
             'engine' => 'InnoDB',
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
-            ]) : [],
+            /*
+             * PHP 8.5 menandakan PDO::MYSQL_ATTR_SSL_CA sebagai deprecated dan
+             * menggantikannya dengan Pdo\Mysql::ATTR_SSL_CA. Pemalar lama hanya
+             * disentuh apabila sijil SSL benar-benar dikonfigurasi, dan pemalar
+             * baharu diutamakan apabila ada — jadi tiada amaran pada 8.5, dan
+             * kod kekal berfungsi pada 8.4.
+             */
+            'options' => extension_loaded('pdo_mysql') && env('MYSQL_ATTR_SSL_CA')
+                ? [
+                    (defined('Pdo\Mysql::ATTR_SSL_CA')
+                        ? constant('Pdo\Mysql::ATTR_SSL_CA')
+                        : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
+                ]
+                : [],
         ],
     ],
 
