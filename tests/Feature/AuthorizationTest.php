@@ -173,6 +173,58 @@ it('deletes a PIC that has no data attached', function (): void {
 
 /*
 |--------------------------------------------------------------------------
+| Lajur PEMILIK — paparan sahaja di Dashboard Pengguna
+|--------------------------------------------------------------------------
+*/
+
+it('does not let a plain user reassign the PIC of a row', function (): void {
+    $metric = CriticalMetric::whereRelation('service', 'key', 'renovation')->firstOrFail();
+    $owner = Owner::where('status', OwnerStatus::Active)->firstOrFail();
+
+    Livewire::actingAs($this->user)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->set("rowOwners.{$metric->id}", $owner->id)
+        ->call('saveRowOwner', $metric->id);
+
+    $this->assertDatabaseMissing('critical_metric_months', [
+        'critical_metric_id' => $metric->id,
+        'owner_id' => $owner->id,
+    ]);
+})->throws(AuthorizationException::class);
+
+it('still lets an admin reassign the PIC of a row', function (): void {
+    $metric = CriticalMetric::whereRelation('service', 'key', 'renovation')->firstOrFail();
+    $owner = Owner::where('status', OwnerStatus::Active)->firstOrFail();
+
+    Livewire::actingAs($this->admin)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->set("rowOwners.{$metric->id}", $owner->id)
+        ->call('saveRowOwner', $metric->id);
+
+    $this->assertDatabaseHas('critical_metric_months', [
+        'critical_metric_id' => $metric->id,
+        'owner_id' => $owner->id,
+    ]);
+});
+
+it('lets a plain user still write an action plan', function (): void {
+    // Hanya lajur PEMILIK yang dikunci. Pelan tindakan kekal boleh diisi,
+    // kalau tidak pengguna tidak dapat merekod apa yang mereka akan buat.
+    $metric = CriticalMetric::whereRelation('service', 'key', 'renovation')->firstOrFail();
+
+    Livewire::actingAs($this->user)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->set("rowPlans.{$metric->id}", 'Tambah 20 lead minggu depan')
+        ->call('saveRowPlan', $metric->id);
+
+    $this->assertDatabaseHas('critical_metric_months', [
+        'critical_metric_id' => $metric->id,
+        'action_plan' => 'Tambah 20 lead minggu depan',
+    ]);
+});
+
+/*
+|--------------------------------------------------------------------------
 | Alur kelulusan PIC (isu #11)
 |--------------------------------------------------------------------------
 */

@@ -144,7 +144,7 @@ class ServiceDetail extends Component
 
     public function saveRowOwner(int $metricId): void
     {
-        $this->authorize('updateMeta', CriticalMetric::class);
+        $this->authorize('assignOwner', CriticalMetric::class);
 
         $metric = CriticalMetric::findOrFail($metricId);
         abort_unless($metric->service_id === $this->service()->id, 403);

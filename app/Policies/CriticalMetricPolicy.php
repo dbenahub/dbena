@@ -21,10 +21,24 @@ class CriticalMetricPolicy
         return $user->is_active;
     }
 
-    /** Kedua-dua role boleh menetapkan PIC & pelan tindakan. */
+    /** Kedua-dua role boleh menulis pelan tindakan. */
     public function updateMeta(User $user): bool
     {
         return $user->is_active;
+    }
+
+    /**
+     * Hanya Admin boleh menukar PIC sesuatu baris.
+     *
+     * Di Dashboard Pengguna lajur PEMILIK adalah paparan sahaja. Nama itu
+     * datang daripada lajur DATA OWNER dalam Google Sheet, jadi suntingan
+     * oleh pengguna akan ditulis ganti pada sync berikutnya — dua sumber
+     * kebenaran yang bertelagah. Admin masih boleh menukarnya sebagai
+     * penindihan sementara apabila nama dalam sheet tidak sepadan.
+     */
+    public function assignOwner(User $user): bool
+    {
+        return $user->isAdmin();
     }
 
     /**

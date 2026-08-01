@@ -113,19 +113,30 @@
 
                     <x-status-dot :color="$row['statusColor']" :label="$row['statusLabel']" size="7px" />
 
-                    {{-- Pemilik/PIC — warna dari satu sumber (owners.color_token) --}}
-                    <select wire:model="rowOwners.{{ $row['id'] }}"
-                            wire:change="saveRowOwner({{ $row['id'] }})"
-                            aria-label="{{ $row['label'] }} — {{ __('service.col_owner') }}"
-                            class="w-full cursor-pointer rounded-md px-2 py-1.5 text-[11px] font-bold focus:outline-none"
-                            style="background: color-mix(in oklch, {{ $row['ownerColor'] }} 18%, transparent);
-                                   color: {{ $row['ownerColor'] }};
-                                   border: 1px solid color-mix(in oklch, {{ $row['ownerColor'] }} 40%, transparent)">
-                        <option value="">—</option>
-                        @foreach ($owners as $owner)
-                            <option value="{{ $owner->id }}">{{ $owner->name }}</option>
-                        @endforeach
-                    </select>
+                    {{-- Pemilik/PIC — warna dari satu sumber (owners.color_token).
+                         Paparan sahaja untuk pengguna: nama datang daripada lajur
+                         DATA OWNER dalam Google Sheet. --}}
+                    @can('assignOwner', App\Models\CriticalMetric::class)
+                        <select wire:model="rowOwners.{{ $row['id'] }}"
+                                wire:change="saveRowOwner({{ $row['id'] }})"
+                                aria-label="{{ $row['label'] }} — {{ __('service.col_owner') }}"
+                                class="w-full cursor-pointer rounded-md px-2 py-1.5 text-[11px] font-bold focus:outline-none"
+                                style="background: color-mix(in oklch, {{ $row['ownerColor'] }} 18%, transparent);
+                                       color: {{ $row['ownerColor'] }};
+                                       border: 1px solid color-mix(in oklch, {{ $row['ownerColor'] }} 40%, transparent)">
+                            <option value="">—</option>
+                            @foreach ($owners as $owner)
+                                <option value="{{ $owner->id }}">{{ $owner->name }}</option>
+                            @endforeach
+                        </select>
+                    @else
+                        <div class="w-full truncate rounded-md px-2 py-1.5 text-[11px] font-bold"
+                             title="{{ $row['ownerName'] }}"
+                             style="background: color-mix(in oklch, {{ $row['ownerColor'] }} 14%, transparent);
+                                    color: {{ $row['ownerColor'] }}">
+                            {{ $row['ownerName'] }}
+                        </div>
+                    @endcan
 
                     <input type="text" wire:model.blur="rowPlans.{{ $row['id'] }}"
                            wire:change="saveRowPlan({{ $row['id'] }})"
@@ -177,16 +188,24 @@
 
                     <div class="mb-3">
                         <label class="mb-1 block text-[11px] text-t55">{{ __('service.col_owner') }}</label>
-                        <select wire:model="rowOwners.{{ $row['id'] }}" wire:change="saveRowOwner({{ $row['id'] }})"
-                                class="touch-target w-full rounded-lg px-2.5 py-2 text-[12.5px] font-bold focus:outline-none"
-                                style="background: color-mix(in oklch, {{ $row['ownerColor'] }} 18%, transparent);
-                                       color: {{ $row['ownerColor'] }};
-                                       border: 1px solid color-mix(in oklch, {{ $row['ownerColor'] }} 40%, transparent)">
-                            <option value="">—</option>
-                            @foreach ($owners as $owner)
-                                <option value="{{ $owner->id }}">{{ $owner->name }}</option>
-                            @endforeach
-                        </select>
+                        @can('assignOwner', App\Models\CriticalMetric::class)
+                            <select wire:model="rowOwners.{{ $row['id'] }}" wire:change="saveRowOwner({{ $row['id'] }})"
+                                    class="touch-target w-full rounded-lg px-2.5 py-2 text-[12.5px] font-bold focus:outline-none"
+                                    style="background: color-mix(in oklch, {{ $row['ownerColor'] }} 18%, transparent);
+                                           color: {{ $row['ownerColor'] }};
+                                           border: 1px solid color-mix(in oklch, {{ $row['ownerColor'] }} 40%, transparent)">
+                                <option value="">—</option>
+                                @foreach ($owners as $owner)
+                                    <option value="{{ $owner->id }}">{{ $owner->name }}</option>
+                                @endforeach
+                            </select>
+                        @else
+                            <div class="inline-flex items-center rounded-lg px-2.5 py-1.5 text-[12.5px] font-bold"
+                                 style="background: color-mix(in oklch, {{ $row['ownerColor'] }} 14%, transparent);
+                                        color: {{ $row['ownerColor'] }}">
+                                {{ $row['ownerName'] }}
+                            </div>
+                        @endcan
                     </div>
 
                     <div>
