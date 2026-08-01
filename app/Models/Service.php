@@ -37,6 +37,11 @@ class Service extends Model
         return $this->hasMany(Priority::class);
     }
 
+    public function monthlyTargets(): HasMany
+    {
+        return $this->hasMany(ServiceMonthlyTarget::class);
+    }
+
     public function sheetIntegration(): HasOne
     {
         return $this->hasOne(SheetIntegration::class);
@@ -52,6 +57,46 @@ class Service extends Model
     protected function alternateName(): Attribute
     {
         return Attribute::get(fn (): string => app()->getLocale() === 'en' ? $this->name_ms : $this->name_en);
+    }
+
+    /**
+     * Sasaran bagi satu bulan tertentu.
+     *
+     * Menggunakan baris service_monthly_targets bila wujud; jika tidak,
+     * berundur ke nilai asas `monthly_target`. Ini bermakna DBENA boleh
+     * menetapkan hanya bulan yang berbeza dan biarkan yang lain.
+     */
+    public function targetForMonth(int $year, int $month): float
+    {
+        $override = $this->relationLoaded('monthlyTargets')
+            ? $this->monthlyTargets->first(fn (ServiceMonthlyTarget $t) => $t->year === $year && $t->month === $month)
+            : $this->monthlyTargets()->where('year', $year)->where('month', $month)->first();
+
+        return (float) ($override?->target ?? $this->monthly_target);
+    }
+
+    /**
+     * Sasaran setahun penuh — jumlah kesemua 12 bulan.
+     *
+     * BUKAN monthly_target × 12. Kalau setiap bulan mempunyai sasaran sendiri,
+     * pendaraban ringkas akan memberi jawapan yang salah.
+     */
+    public function targetForYear(int $year): float
+    {
+        return collect(range(1, 12))->sum(fn (int $m) => $this->targetForMonth($year, $m));
+    }
+
+    /**
+     * Sasaran terkumpul dari Januari sehingga bulan yang diberikan.
+     *
+     * Ini yang patut dibandingkan dengan jualan terkumpul — membandingkan
+     * lapan bulan jualan dengan sasaran setahun penuh akan sentiasa kelihatan
+     * seperti kegagalan.
+     */
+    public function cumulativeTargetTo(int $year, int $month): float
+    {
+        return collect(range(1, max(1, min(12, $month))))
+            ->sum(fn (int $m) => $this->targetForMonth($year, $m));
     }
 
     public function metricByKey(string $key): ?CriticalMetric

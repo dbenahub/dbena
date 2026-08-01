@@ -10,6 +10,7 @@ use App\Models\AuditLog;
 use App\Models\IndexTier;
 use App\Models\Owner;
 use App\Models\Service;
+use App\Models\ServiceMonthlyTarget;
 use App\Models\SheetIntegration;
 use App\Models\User;
 use App\Models\YearGrowthFactor;
@@ -43,6 +44,15 @@ class ConfigPanel extends Component
     /** [year => factor] */
     public array $growth = [];
 
+    /** Sasaran bulanan per servis: [serviceId][month] => nilai */
+    public array $monthlyTargets = [];
+
+    /** Tahun yang sedang diedit untuk sasaran bulanan. */
+    public int $targetYear;
+
+    /** Servis yang barisan sasaran bulanannya sedang dibuka. */
+    public ?int $expandedService = null;
+
     public string $sheetUrl = '';
     public string $newOwnerName = '';
     public string $newYear = '';
@@ -65,7 +75,45 @@ class ConfigPanel extends Component
     public function mount(): void
     {
         $this->authorize('access-admin-panel');
+        $this->targetYear = (int) now()->year;
         $this->loadState();
+    }
+
+    public function updatedTargetYear(): void
+    {
+        $this->loadMonthlyTargets();
+    }
+
+    public function toggleService(int $serviceId): void
+    {
+        $this->expandedService = $this->expandedService === $serviceId ? null : $serviceId;
+    }
+
+    /**
+     * Salin sasaran Januari ke sebelas bulan yang lain.
+     *
+     * Kebanyakan servis mempunyai sasaran yang sama sepanjang tahun; menaip
+     * nilai yang sama dua belas kali adalah kerja yang tidak perlu.
+     */
+    public function fillFromJanuary(int $serviceId): void
+    {
+        $january = $this->monthlyTargets[$serviceId][1] ?? '';
+
+        for ($m = 2; $m <= 12; $m++) {
+            $this->monthlyTargets[$serviceId][$m] = $january;
+        }
+    }
+
+    private function loadMonthlyTargets(): void
+    {
+        $this->monthlyTargets = [];
+
+        foreach (Service::with('monthlyTargets')->orderBy('sort_order')->get() as $service) {
+            for ($m = 1; $m <= 12; $m++) {
+                $this->monthlyTargets[$service->id][$m] =
+                    (string) (float) $service->targetForMonth($this->targetYear, $m);
+            }
+        }
     }
 
     private function loadState(): void
@@ -90,6 +138,8 @@ class ConfigPanel extends Component
         }
 
         $this->sheetUrl = (string) (SheetIntegration::global()->url ?? '');
+
+        $this->loadMonthlyTargets();
     }
 
     // ── Simpan Semua ──────────────────────────────────────────────────────
@@ -129,6 +179,38 @@ class ConfigPanel extends Component
 
                 if ($audit->record('tier.updated', $tier, $old, $new, $tier->name_ms)) {
                     $changes++;
+                }
+            }
+
+            foreach (Service::whereIn('id', array_keys($this->monthlyTargets))->get() as $service) {
+                for ($month = 1; $month <= 12; $month++) {
+                    $raw = $this->monthlyTargets[$service->id][$month] ?? null;
+
+                    if ($raw === null || trim((string) $raw) === '') {
+                        continue;
+                    }
+
+                    $value = (float) preg_replace('/[^0-9.]/', '', (string) $raw);
+
+                    $record = ServiceMonthlyTarget::firstOrNew([
+                        'service_id' => $service->id,
+                        'year' => $this->targetYear,
+                        'month' => $month,
+                    ]);
+
+                    $old = ['target' => $record->target];
+
+                    $record->fill(['target' => $value, 'updated_by' => auth()->id()])->save();
+
+                    if ($audit->record(
+                        'service.monthly_target_updated',
+                        $record,
+                        $old,
+                        ['target' => $value],
+                        $service->name_ms.' · '.__('calendar.months_short')[$month - 1].' '.$this->targetYear
+                    )) {
+                        $changes++;
+                    }
                 }
             }
 
@@ -395,7 +477,9 @@ class ConfigPanel extends Component
     public function render(): View
     {
         return view('livewire.admin.config-panel', [
-            'serviceModels' => Service::orderBy('sort_order')->get(),
+            'serviceModels' => Service::with('monthlyTargets')->orderBy('sort_order')->get(),
+            'monthLabels' => __('calendar.months_short'),
+            'targetYears' => range(2023, 2032),
             'tierModels' => IndexTier::orderBy('sort_order')->get(),
             'activeOwners' => Owner::active()->orderByDesc('is_core')->orderBy('name')->get(),
             'pendingOwners' => Owner::pending()->with('creator')->orderBy('created_at')->get(),

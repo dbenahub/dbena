@@ -14,6 +14,13 @@ return [
     'col_service_en' => 'Nama Servis (English)',
     'col_monthly_target' => 'Sasaran Bulanan (RM)',
 
+    'monthly_targets' => 'Sasaran setiap bulan',
+    'monthly_targets_hint' => 'Sasaran ini mengatasi sasaran asas. Biarkan sama jika tiada perubahan bermusim.',
+    'fill_from_january' => 'Salin Januari ke semua',
+    'year_total' => 'Jumlah setahun',
+    'target_year' => 'Tahun sasaran',
+    'col_base_target' => 'Sasaran Asas (RM)',
+
     'tiers_title' => 'Index Sasaran Jualan',
     'tiers_hint' => 'Ambang bulanan bagi setiap tahap indeks (Revenue & Untung Bersih).',
     'col_tier' => 'Tahap',
@@ -90,6 +97,7 @@ return [
     'no_audit' => 'Tiada rekod audit lagi.',
     'action' => [
         'service.updated' => 'Kemaskini servis',
+        'service.monthly_target_updated' => 'Kemaskini sasaran bulanan',
         'tier.updated' => 'Kemaskini threshold tier',
         'growth.updated' => 'Kemaskini faktor pertumbuhan',
         'sheet.updated' => 'Kemaskini Google Sheet',

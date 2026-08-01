@@ -103,7 +103,14 @@
                     <div class="text-[13px] text-t60">
                         {{ $mode->isYearly() ? __('dashboard.cumulative_target') : __('dashboard.monthly_target') }}
                     </div>
-                    <div class="my-1 mb-4 text-xl font-bold">{{ $metrics->formatRm($displayTarget) }}</div>
+                    <div class="my-1 text-xl font-bold">{{ $metrics->formatRm($displayTarget) }}</div>
+                    @if ($mode->isYearly())
+                        <div class="mb-4 text-[11.5px] text-t50">
+                            {{ __('dashboard.full_year_target') }}: {{ $metrics->formatRm($fullYearTarget) }}
+                        </div>
+                    @else
+                        <div class="mb-4"></div>
+                    @endif
 
                     <div class="mb-1.5 text-[12px] text-t55">{{ __('dashboard.change_vs_target') }}</div>
                     <div class="flex items-center gap-1.5 text-[15px] font-bold"

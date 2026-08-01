@@ -14,6 +14,13 @@ return [
     'col_service_en' => 'Service Name (English)',
     'col_monthly_target' => 'Monthly Target (RM)',
 
+    'monthly_targets' => 'Per-month targets',
+    'monthly_targets_hint' => 'These override the base target. Leave them equal if there is no seasonal variation.',
+    'fill_from_january' => 'Copy January to all',
+    'year_total' => 'Year total',
+    'target_year' => 'Target year',
+    'col_base_target' => 'Base Target (RM)',
+
     'tiers_title' => 'Sales Target Index Thresholds',
     'tiers_hint' => 'Monthly thresholds for each index tier (Revenue & Net Profit).',
     'col_tier' => 'Tier',
@@ -90,6 +97,7 @@ return [
     'no_audit' => 'No audit records yet.',
     'action' => [
         'service.updated' => 'Service updated',
+        'service.monthly_target_updated' => 'Monthly target updated',
         'tier.updated' => 'Tier threshold updated',
         'growth.updated' => 'Growth factor updated',
         'sheet.updated' => 'Google Sheet updated',

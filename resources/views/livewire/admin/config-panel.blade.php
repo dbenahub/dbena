@@ -18,31 +18,87 @@
         <h2 class="mb-1 text-base font-bold">{{ __('admin.services_title') }}</h2>
         <p class="mb-5 text-[12px] text-t55">{{ __('admin.services_hint') }}</p>
 
+        <div class="mb-4 flex flex-wrap items-center gap-3">
+            <label for="target-year" class="text-[11.5px] text-t55">{{ __('admin.target_year') }}</label>
+            <select id="target-year" wire:model.live="targetYear"
+                    class="rounded-lg px-2.5 py-2 text-[12.5px] text-t90 focus:outline-none"
+                    style="background: var(--input-bg); border: 1px solid var(--border2)">
+                @foreach ($targetYears as $y)<option value="{{ $y }}">{{ $y }}</option>@endforeach
+            </select>
+        </div>
+
         <div class="hidden gap-3.5 border-b pb-2.5 text-[11px] font-bold uppercase text-t60 md:grid"
              style="grid-template-columns: 1.4fr 1.4fr 1fr; border-color: var(--border2)">
             <div>{{ __('admin.col_service_ms') }}</div>
             <div>{{ __('admin.col_service_en') }}</div>
-            <div>{{ __('admin.col_monthly_target') }}</div>
+            <div>{{ __('admin.col_base_target') }}</div>
         </div>
 
         @foreach ($serviceModels as $service)
-            <div class="grid gap-3 border-b py-3 md:grid-cols-[1.4fr_1.4fr_1fr] md:items-center md:gap-3.5"
-                 style="border-color: var(--border3)" wire:key="svc-{{ $service->id }}">
-                <div class="flex items-center gap-2">
-                    <i class="ph-duotone {{ $service->icon_class }}" style="color: oklch(0.78 0.12 85)" aria-hidden="true"></i>
-                    <input type="text" wire:model="services.{{ $service->id }}.name_ms"
-                           aria-label="{{ __('admin.col_service_ms') }}"
+            @php
+                $yearTotal = collect(range(1, 12))
+                    ->sum(fn ($m) => (float) preg_replace('/[^0-9.]/', '', (string) ($monthlyTargets[$service->id][$m] ?? 0)));
+                $isOpen = $expandedService === $service->id;
+            @endphp
+
+            <div class="border-b py-3" style="border-color: var(--border3)" wire:key="svc-{{ $service->id }}">
+                <div class="grid gap-3 md:grid-cols-[1.4fr_1.4fr_1fr] md:items-center md:gap-3.5">
+                    <div class="flex items-center gap-2">
+                        <i class="ph-duotone {{ $service->icon_class }}" style="color: oklch(0.78 0.12 85)" aria-hidden="true"></i>
+                        <input type="text" wire:model="services.{{ $service->id }}.name_ms"
+                               aria-label="{{ __('admin.col_service_ms') }}"
+                               class="w-full rounded-lg px-2.5 py-2 text-[12.5px] text-t90 focus:outline-none"
+                               style="background: var(--input-bg); border: 1px solid var(--border2)">
+                    </div>
+                    <input type="text" wire:model="services.{{ $service->id }}.name_en"
+                           aria-label="{{ __('admin.col_service_en') }}"
                            class="w-full rounded-lg px-2.5 py-2 text-[12.5px] text-t90 focus:outline-none"
                            style="background: var(--input-bg); border: 1px solid var(--border2)">
+                    <input type="text" inputmode="decimal" wire:model="services.{{ $service->id }}.monthly_target"
+                           aria-label="{{ __('admin.col_monthly_target') }}"
+                           class="w-full rounded-lg px-2.5 py-2 text-[12.5px] font-semibold focus:outline-none"
+                           style="background: var(--input-bg); border: 1px solid var(--border2); color: oklch(0.72 0.15 145)">
                 </div>
-                <input type="text" wire:model="services.{{ $service->id }}.name_en"
-                       aria-label="{{ __('admin.col_service_en') }}"
-                       class="w-full rounded-lg px-2.5 py-2 text-[12.5px] text-t90 focus:outline-none"
-                       style="background: var(--input-bg); border: 1px solid var(--border2)">
-                <input type="text" inputmode="decimal" wire:model="services.{{ $service->id }}.monthly_target"
-                       aria-label="{{ __('admin.col_monthly_target') }}"
-                       class="w-full rounded-lg px-2.5 py-2 text-[12.5px] font-semibold focus:outline-none"
-                       style="background: var(--input-bg); border: 1px solid var(--border2); color: oklch(0.72 0.15 145)">
+
+                {{-- Sasaran per bulan --}}
+                <div class="mt-2 flex flex-wrap items-center gap-3">
+                    <button type="button" wire:click="toggleService({{ $service->id }})"
+                            class="flex items-center gap-1.5 text-[11.5px] font-semibold"
+                            style="color: oklch(0.78 0.12 85)">
+                        <i class="ph-duotone ph-caret-{{ $isOpen ? 'up' : 'down' }}" aria-hidden="true"></i>
+                        {{ __('admin.monthly_targets') }}
+                    </button>
+                    <span class="text-[11.5px] text-t55">
+                        {{ __('admin.year_total') }}:
+                        <b style="color: oklch(0.72 0.15 145)">RM{{ number_format($yearTotal) }}</b>
+                    </span>
+                </div>
+
+                @if ($isOpen)
+                    <div class="mt-3 rounded-xl p-3.5" style="background: var(--hover-bg3); border: 1px solid var(--border3)">
+                        <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
+                            <p class="text-[11.5px] leading-relaxed text-t60">{{ __('admin.monthly_targets_hint') }}</p>
+                            <button type="button" wire:click="fillFromJanuary({{ $service->id }})"
+                                    class="rounded-md px-2.5 py-1.5 text-[11px] font-semibold text-t75"
+                                    style="border: 1px solid var(--border2)">
+                                {{ __('admin.fill_from_january') }}
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+                            @foreach ($monthLabels as $i => $label)
+                                <div>
+                                    <label class="mb-1 block text-center text-[10.5px] text-t60">{{ $label }}</label>
+                                    <input type="text" inputmode="decimal"
+                                           wire:model.live.debounce.400ms="monthlyTargets.{{ $service->id }}.{{ $i + 1 }}"
+                                           aria-label="{{ $service->name }} {{ $label }}"
+                                           class="w-full rounded-lg px-1.5 py-1.5 text-center text-[11.5px] focus:outline-none"
+                                           style="background: var(--input-bg); border: 1px solid var(--border2); color: oklch(0.72 0.15 145)">
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
             </div>
         @endforeach
     </div>
