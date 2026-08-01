@@ -139,6 +139,36 @@ class SheetIntegration extends Model
         return true;
     }
 
+    /**
+     * Kenal pasti SEBAB TEPAT sync tidak boleh berjalan.
+     *
+     * isReadyToSync() memulangkan bool sahaja, yang menghasilkan mesej ralat
+     * yang tidak berguna ("medan tiada:" dengan senarai kosong). Kaedah ini
+     * memulangkan kunci masalah supaya pengguna tahu apa yang perlu dibetulkan.
+     *
+     * @return string|null null bermakna sedia
+     */
+    public function readinessProblem(): ?string
+    {
+        if (blank($this->spreadsheet_id)) {
+            return 'no_link';
+        }
+
+        if (! $this->isMultiService() && $this->service_id === null) {
+            return 'no_service';
+        }
+
+        if ($this->missingMappings() !== []) {
+            return 'mapping';
+        }
+
+        if (! $this->sync_enabled) {
+            return 'disabled';
+        }
+
+        return null;
+    }
+
     /** @return array<int, string> medan wajib yang belum dipetakan */
     public function missingMappings(): array
     {

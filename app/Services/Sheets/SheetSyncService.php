@@ -68,10 +68,12 @@ class SheetSyncService
     ): array {
         $startedAt = microtime(true);
 
-        if (! $integration->isReadyToSync()) {
-            return $this->fail($integration, $trigger, $year, $month, $userId, __('sheets.error.not_configured', [
-                'fields' => implode(', ', $integration->missingMappings()),
-            ]), $startedAt);
+        if ($problem = $integration->readinessProblem()) {
+            return $this->fail($integration, $trigger, $year, $month, $userId,
+                __('sheets.not_ready.'.$problem, [
+                    'fields' => implode(', ', $integration->missingMappings()),
+                ]),
+                $startedAt);
         }
 
         try {

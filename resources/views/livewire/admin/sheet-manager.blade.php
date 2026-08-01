@@ -408,9 +408,32 @@
     {{-- ══ Jalankan sync ══ --}}
     <div class="dbena-card p-5 sm:p-6">
         <h2 class="mb-1 text-base font-bold">{{ __('sheets.run_sync') }}</h2>
-        <p class="mb-5 text-[12px] text-t55">
+        <p class="mb-4 text-[12px] text-t55">
             {{ __('sheets.run_sync_hint', ['minutes' => config('dbena.sheets.sync_interval_minutes')]) }}
         </p>
+
+        {{-- Sekatan dipapar SEBELUM pengguna menekan butang, bukan selepas --}}
+        @php $problem = $integration->readinessProblem(); @endphp
+
+        @if ($problem)
+            <div class="mb-5 flex items-start gap-2.5 rounded-xl px-4 py-3 text-[12.5px] leading-relaxed"
+                 style="background: oklch(0.78 0.15 85/0.1); border: 1px solid oklch(0.78 0.15 85/0.4); color: oklch(0.82 0.14 85)">
+                <i class="ph-duotone ph-warning-circle mt-px shrink-0 text-base" aria-hidden="true"></i>
+                <div>
+                    {{ __('sheets.not_ready.'.$problem, ['fields' => implode(', ', $integration->missingMappings())]) }}
+
+                    @if ($problem === 'disabled')
+                        <button type="button" wire:click="$set('syncEnabled', true)"
+                                class="ml-1 font-bold underline">{{ __('sheets.turn_on_sync') }}</button>
+                    @endif
+                </div>
+            </div>
+        @else
+            <div class="mb-5 flex items-center gap-2 text-[12.5px]" style="color: oklch(0.6 0.15 145)">
+                <i class="ph-duotone ph-check-circle text-base" aria-hidden="true"></i>
+                {{ __('sheets.ready_to_sync') }}
+            </div>
+        @endif
 
         @if ($preview && ! empty($preview['headers']))
             @php

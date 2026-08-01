@@ -95,6 +95,9 @@ return [
     'month_mismatch' => 'The sheet header shows data for :sheet, but you selected :selected. Syncing would write to the wrong month.',
     'use_sheet_month' => 'Switch to :month',
 
+    'turn_on_sync' => 'Turn it on now',
+    'ready_to_sync' => 'Ready to sync.',
+
     'realtime' => 'Real-time Updates (Apps Script)',
     'realtime_hint' => 'Install this script in your Google Sheet so the dashboard updates seconds after any edit — without waiting for the schedule.',
     'show_script' => 'Show Script',
@@ -118,6 +121,13 @@ return [
     'sync' => [
         'success' => ':rows rows synced, :values values updated',
         'partial' => ':matched rows synced, :skipped rows skipped (no match)',
+    ],
+
+    'not_ready' => [
+        'no_link' => 'No Google Sheet link yet. Paste the sheet URL under Connection, then press "Read Sheet & Preview".',
+        'no_service' => 'A single-service layout needs a service selected. Pick a service above, or switch to the "One sheet, all services" layout.',
+        'mapping' => 'Column mapping is incomplete. Required fields not yet set: :fields',
+        'disabled' => 'Sync is switched off. Turn on the "Enable automatic sync" toggle under Connection, then try again.',
     ],
 
     'error' => [

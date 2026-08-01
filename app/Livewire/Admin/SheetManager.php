@@ -62,6 +62,12 @@ class SheetManager extends Component
         $this->loadIntegration();
     }
 
+    /** Simpan serta-merta apabila suis sync ditukar, supaya UI tidak menipu. */
+    public function updatedSyncEnabled(): void
+    {
+        $this->saveConfig(app(AuditLogger::class));
+    }
+
     public function updatedSelectedServiceId(): void
     {
         $this->preview = null;
@@ -182,9 +188,9 @@ class SheetManager extends Component
 
         $integration = $this->saveConfig($audit);
 
-        if (! $integration->isReadyToSync()) {
+        if ($problem = $integration->readinessProblem()) {
             $this->dispatch('dbena-toast',
-                message: __('sheets.error.not_configured', [
+                message: __('sheets.not_ready.'.$problem, [
                     'fields' => implode(', ', $integration->missingMappings()),
                 ]),
                 variant: 'error');

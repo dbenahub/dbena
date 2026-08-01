@@ -95,6 +95,9 @@ return [
     'month_mismatch' => 'Header sheet menunjukkan data untuk :sheet, tetapi anda memilih :selected. Sync akan menulis ke bulan yang salah.',
     'use_sheet_month' => 'Tukar ke :month',
 
+    'turn_on_sync' => 'Hidupkan sekarang',
+    'ready_to_sync' => 'Sedia untuk disegerak.',
+
     'realtime' => 'Kemas Kini Masa-Nyata (Apps Script)',
     'realtime_hint' => 'Pasang skrip ini dalam Google Sheet anda supaya dashboard dikemas kini beberapa saat selepas sebarang suntingan — tanpa menunggu jadual.',
     'show_script' => 'Papar Skrip',
@@ -118,6 +121,13 @@ return [
     'sync' => [
         'success' => ':rows baris disegerak, :values nilai dikemas kini',
         'partial' => ':matched baris disegerak, :skipped baris dilangkau (tiada padanan)',
+    ],
+
+    'not_ready' => [
+        'no_link' => 'Belum ada pautan Google Sheet. Tampal URL sheet di bahagian Sambungan, kemudian tekan "Baca Sheet & Pratonton".',
+        'no_service' => 'Susun atur satu-servis memerlukan servis dipilih. Pilih satu servis di atas, atau tukar kepada susun atur "Satu sheet, semua servis".',
+        'mapping' => 'Pemetaan lajur belum lengkap. Medan wajib yang belum ditetapkan: :fields',
+        'disabled' => 'Sync belum dihidupkan. Hidupkan suis "Aktifkan sync automatik" di bahagian Sambungan, kemudian cuba semula.',
     ],
 
     'error' => [
