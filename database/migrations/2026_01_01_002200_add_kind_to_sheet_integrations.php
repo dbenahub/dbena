@@ -10,35 +10,87 @@ use Illuminate\Support\Facades\Schema;
  * Bezakan integrasi Data Kritikal daripada integrasi Master Project.
  *
  * Kedua-duanya menunjuk ke fail Google Sheet yang SAMA tetapi tab yang
- * berbeza, dengan pemetaan lajur yang berbeza sepenuhnya — satu baris
- * dalam tab Data Kritikal ialah metrik mingguan; satu baris dalam tab
- * Master Project ialah projek pelanggan.
+ * berbeza, dengan pemetaan lajur yang berbeza sepenuhnya. service_id NULL
+ * sudah bermakna "tetapan global", dan uniknya menghalang baris NULL
+ * kedua — jadi `kind` ditambah pada kunci unik.
  *
- * service_id NULL sudah bermakna "tetapan global", dan uniknya menghalang
- * baris NULL kedua. Menambah `kind` pada kunci unik membenarkan satu
- * konfigurasi global bagi setiap jenis tanpa melonggarkan jaminan bahawa
- * satu servis hanya boleh ada satu integrasi Data Kritikal.
+ * ═══ Dua perkara yang mematahkan versi pertama ═══
+ *
+ * 1. Susunan lajur. MySQL memerlukan indeks pada lajur kunci asing, dan
+ *    ia menolak untuk menggugurkan indeks terakhir yang berkhidmat untuk
+ *    kunci itu (ralat 1553). Unik (kind, service_id) TIDAK berkhidmat
+ *    untuknya kerana service_id bukan lajur pertama. Dengan
+ *    (service_id, kind), awalan kiri ialah service_id dan kunci asing
+ *    kekal terlindung.
+ *
+ * 2. Urutan. Indeks pengganti mesti WUJUD sebelum yang lama digugurkan,
+ *    bukan selepas.
+ *
+ * Migrasi ini juga idempoten. Percubaan pertama menambah lajur `kind`
+ * kemudian gagal pada perubahan indeks, dan DDL MySQL bukan transaksi —
+ * jadi lajur itu kekal manakala migrasi tidak direkodkan sebagai selesai.
+ * Menjalankannya semula tanpa semakan ini akan gagal dengan "duplicate
+ * column".
  */
 return new class extends Migration
 {
+    private const TABLE = 'sheet_integrations';
+
+    private const OLD_INDEX = 'sheet_integrations_service_id_unique';
+
+    private const NEW_INDEX = 'sheet_integrations_service_id_kind_unique';
+
     public function up(): void
     {
-        Schema::table('sheet_integrations', function (Blueprint $table): void {
-            $table->string('kind')->default('critical')->after('service_id');
-        });
+        if (! Schema::hasColumn(self::TABLE, 'kind')) {
+            Schema::table(self::TABLE, function (Blueprint $table): void {
+                $table->string('kind')->default('critical')->after('service_id');
+            });
+        }
 
-        Schema::table('sheet_integrations', function (Blueprint $table): void {
-            $table->dropUnique(['service_id']);
-            $table->unique(['kind', 'service_id']);
-        });
+        // Cipta pengganti DAHULU supaya kunci asing tidak pernah tanpa indeks.
+        if (! $this->hasIndex(self::NEW_INDEX)) {
+            Schema::table(self::TABLE, function (Blueprint $table): void {
+                $table->unique(['service_id', 'kind'], self::NEW_INDEX);
+            });
+        }
+
+        if ($this->hasIndex(self::OLD_INDEX)) {
+            Schema::table(self::TABLE, function (Blueprint $table): void {
+                $table->dropUnique(self::OLD_INDEX);
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('sheet_integrations', function (Blueprint $table): void {
-            $table->dropUnique(['kind', 'service_id']);
-            $table->unique('service_id');
-            $table->dropColumn('kind');
-        });
+        if (! $this->hasIndex(self::OLD_INDEX)) {
+            Schema::table(self::TABLE, function (Blueprint $table): void {
+                $table->unique('service_id', self::OLD_INDEX);
+            });
+        }
+
+        if ($this->hasIndex(self::NEW_INDEX)) {
+            Schema::table(self::TABLE, function (Blueprint $table): void {
+                $table->dropUnique(self::NEW_INDEX);
+            });
+        }
+
+        if (Schema::hasColumn(self::TABLE, 'kind')) {
+            Schema::table(self::TABLE, function (Blueprint $table): void {
+                $table->dropColumn('kind');
+            });
+        }
+    }
+
+    private function hasIndex(string $name): bool
+    {
+        foreach (Schema::getIndexes(self::TABLE) as $index) {
+            if (($index['name'] ?? null) === $name) {
+                return true;
+            }
+        }
+
+        return false;
     }
 };

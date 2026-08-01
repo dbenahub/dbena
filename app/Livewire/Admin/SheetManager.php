@@ -192,7 +192,14 @@ class SheetManager extends Component
 
     private function integration(): SheetIntegration
     {
-        return SheetIntegration::firstOrCreate(['service_id' => $this->selectedServiceId]);
+        // 'kind' MESTI disertakan. Baris projek turut mempunyai
+        // service_id NULL, jadi mencari mengikut service_id sahaja boleh
+        // memulangkan baris projek — dan sync Data Kritikal akan menulis
+        // konfigurasinya ke integrasi yang salah.
+        return SheetIntegration::firstOrCreate([
+            'kind' => 'critical',
+            'service_id' => $this->selectedServiceId,
+        ]);
     }
 
     /** Simpan konfigurasi tanpa menyentuh data metrik. */
@@ -329,7 +336,7 @@ class SheetManager extends Component
 
         $queued = 0;
 
-        foreach (SheetIntegration::where('sync_enabled', true)->get() as $integration) {
+        foreach (SheetIntegration::critical()->where('sync_enabled', true)->get() as $integration) {
             if ($integration->isReadyToSync()) {
                 SyncSheetJob::dispatch($integration->id, $this->year, $this->month, 'manual', auth()->id());
                 $queued++;

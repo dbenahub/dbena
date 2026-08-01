@@ -181,3 +181,57 @@ it('explains what to do when no sheet is connected', function (): void {
         ->test(ProjectList::class)
         ->assertSee(__('project.no_sheet'));
 });
+
+/*
+|--------------------------------------------------------------------------
+| Integrasi projek mesti terpisah daripada integrasi Data Kritikal
+|--------------------------------------------------------------------------
+*/
+
+it('keeps the project sheet separate from the critical-data sheet', function (): void {
+    // Kedua-duanya mempunyai service_id NULL. Mencari mengikut service_id
+    // sahaja boleh memulangkan baris yang salah, dan sync Data Kritikal
+    // akan menulis konfigurasinya ke integrasi projek.
+    $kritikal = App\Models\SheetIntegration::firstOrCreate(
+        ['kind' => 'critical', 'service_id' => null],
+        ['url' => 'https://docs.google.com/spreadsheets/d/kritikal/edit']
+    );
+
+    $projek = App\Models\SheetIntegration::firstOrCreate(
+        ['kind' => 'project', 'service_id' => null],
+        ['url' => 'https://docs.google.com/spreadsheets/d/projek/edit']
+    );
+
+    expect($kritikal->id)->not->toBe($projek->id)
+        ->and(App\Models\SheetIntegration::critical()->whereNull('service_id')->first()->id)
+        ->toBe($kritikal->id)
+        ->and(App\Models\SheetIntegration::projects()->first()->id)
+        ->toBe($projek->id);
+});
+
+it('never offers the project sheet to the critical-data sync', function (): void {
+    // Enjin Data Kritikal akan cuba membaca tab Master Project dan
+    // melaporkan sheet itu rosak.
+    App\Models\SheetIntegration::create([
+        'kind' => 'project',
+        'service_id' => null,
+        'sync_enabled' => true,
+        'url' => 'https://docs.google.com/spreadsheets/d/projek/edit',
+    ]);
+
+    $untukSync = App\Models\SheetIntegration::critical()
+        ->where('sync_enabled', true)
+        ->pluck('kind')
+        ->unique();
+
+    expect($untukSync)->not->toContain('project');
+});
+
+it('allows one global row per kind', function (): void {
+    // Kunci unik lama pada service_id sahaja menghalang baris NULL kedua,
+    // jadi projek tidak boleh mempunyai konfigurasi globalnya sendiri.
+    App\Models\SheetIntegration::create(['kind' => 'critical', 'service_id' => null]);
+    App\Models\SheetIntegration::create(['kind' => 'project', 'service_id' => null]);
+
+    expect(App\Models\SheetIntegration::whereNull('service_id')->count())->toBe(2);
+});

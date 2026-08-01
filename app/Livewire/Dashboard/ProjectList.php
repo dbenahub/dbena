@@ -126,7 +126,7 @@ class ProjectList extends Component
             'totalProjects' => $total,
             'closedProjects' => $closed,
             'statuses' => ProjectStatus::cases(),
-            'sheet' => SheetIntegration::where('kind', 'project')->first(),
+            'sheet' => SheetIntegration::projects()->first(),
         ])->layoutData([
             'pageTitle' => __('project.page_title'),
             'pageSubtitle' => __('project.page_subtitle'),

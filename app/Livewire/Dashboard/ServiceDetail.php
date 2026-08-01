@@ -288,7 +288,7 @@ class ServiceDetail extends Component
         $this->authorize('manage-sheet-integration');
 
         // Fasa 1: hanya kemas kini penanda masa. Sync sebenar = Fasa 2.
-        SheetIntegration::where('service_id', $this->service()->id)
+        SheetIntegration::critical()->where('service_id', $this->service()->id)
             ->update(['last_synced_at' => now()]);
 
         $this->dispatch('dbena-toast', message: __('service.sheet_synced_toast'));
@@ -298,7 +298,7 @@ class ServiceDetail extends Component
     {
         $this->authorize('manage-sheet-integration');
 
-        $integration = SheetIntegration::where('service_id', $this->service()->id)->first();
+        $integration = SheetIntegration::critical()->where('service_id', $this->service()->id)->first();
 
         $integration?->update(['connected' => false, 'last_synced_at' => null]);
 
@@ -394,7 +394,7 @@ class ServiceDetail extends Component
                 'isGood' => $pct >= (float) config('dbena.service_status_threshold'),
             ],
             'priority' => $service->priorities()->active()->first(),
-            'sheet' => SheetIntegration::firstWhere('service_id', $service->id),
+            'sheet' => SheetIntegration::critical()->firstWhere('service_id', $service->id),
             'canEditTarget' => auth()->user()->can('updateTarget', CriticalMetric::class),
             'canEditWeekly' => auth()->user()->can('updateWeeklyValue', CriticalMetric::class),
             'rawDataJson' => $this->buildRawDataJson($rows),

@@ -24,6 +24,7 @@ class SyncSheetsCommand extends Command
         $month = (int) ($this->option('month') ?: now()->month);
 
         $integrations = SheetIntegration::query()
+            ->critical()
             ->where('sync_enabled', true)
             ->with('service')
             ->when($this->option('service'), fn ($q, $key) => $q->whereHas(

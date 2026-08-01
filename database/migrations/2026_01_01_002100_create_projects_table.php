@@ -23,6 +23,13 @@ return new class extends Migration
 {
     public function up(): void
     {
+        // Migrasi 002200 gagal pada percubaan pertama SELEPAS migrasi ini
+        // berjaya, dan kegagalan itu menghalang kedua-duanya daripada
+        // direkodkan. Jadual ini akan wujud pada percubaan seterusnya.
+        if (Schema::hasTable('projects')) {
+            return;
+        }
+
         Schema::create('projects', function (Blueprint $table): void {
             $table->id();
 

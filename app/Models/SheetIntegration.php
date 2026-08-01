@@ -43,6 +43,24 @@ class SheetIntegration extends Model
         ];
     }
 
+    /**
+     * Integrasi Data Kritikal sahaja.
+     *
+     * Baris projek turut mempunyai service_id NULL. Mana-mana pertanyaan
+     * yang mengumpulkan integrasi untuk disegerakkan MESTI menapis
+     * mengikut jenis, kalau tidak enjin sync Data Kritikal akan cuba
+     * membaca tab Master Project dan melaporkan sheet itu rosak.
+     */
+    public function scopeCritical(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('kind', 'critical');
+    }
+
+    public function scopeProjects(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('kind', 'project');
+    }
+
     public function service(): BelongsTo
     {
         return $this->belongsTo(Service::class);
@@ -60,7 +78,7 @@ class SheetIntegration extends Model
 
     public static function global(): self
     {
-        return static::firstOrCreate(['service_id' => null]);
+        return static::firstOrCreate(['kind' => 'critical', 'service_id' => null]);
     }
 
     public function effectiveUrl(): ?string
