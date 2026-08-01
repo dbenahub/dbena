@@ -198,6 +198,58 @@ class ServiceAccountSheetReader implements SheetReader
         }
     }
 
+    /**
+     * Laporan diagnostik untuk UI.
+     *
+     * Menelan pengecualian dan memulangkan null sahaja menyebabkan panel
+     * berkata "tidak dijumpai atau tidak sah" tanpa memberitahu YANG MANA.
+     * Kaedah ini memulangkan gambaran penuh keadaan supaya admin tahu tepat
+     * apa yang perlu dibetulkan.
+     *
+     * @return array<string, mixed>
+     */
+    public static function diagnose(): array
+    {
+        $encoded = (string) config('dbena.sheets.service_account.credentials_base64', '');
+        $path = (string) config('dbena.sheets.service_account.credentials_path');
+
+        $report = [
+            'source' => null,
+            'base64Length' => strlen($encoded),
+            'filePath' => $path,
+            'fileReadable' => is_readable($path),
+            'email' => null,
+            'projectId' => null,
+            'error' => null,
+        ];
+
+        if ($encoded !== '') {
+            $report['source'] = 'base64';
+        } elseif ($report['fileReadable']) {
+            $report['source'] = 'file';
+        } else {
+            $report['error'] = __('sheets.error.no_credentials_set');
+
+            return $report;
+        }
+
+        try {
+            $credentials = self::credentials();
+            $report['email'] = $credentials['client_email'];
+
+            $raw = $encoded !== ''
+                ? (string) base64_decode($encoded, true)
+                : (string) file_get_contents($path);
+
+            $json = json_decode($raw, true);
+            $report['projectId'] = is_array($json) ? ($json['project_id'] ?? null) : null;
+        } catch (\Throwable $e) {
+            $report['error'] = $e->getMessage();
+        }
+
+        return $report;
+    }
+
     private function base64Url(string $value): string
     {
         return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');

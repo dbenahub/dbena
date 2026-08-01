@@ -43,6 +43,14 @@ return [
     'sa_step5' => 'Enkod fail JSON itu ke base64, tampal ke Environment sebagai GOOGLE_SERVICE_ACCOUNT_BASE64, dan tetapkan DBENA_SHEETS_DRIVER=service',
     'sa_note' => 'Selepas menyimpan Environment, jalankan "php artisan config:clear" melalui tab Commands. Emel service account akan dipaparkan di sini — kongsi sheet dengannya.',
 
+    'diag_base64' => 'GOOGLE_SERVICE_ACCOUNT_BASE64',
+    'diag_file' => 'Fail kunci',
+    'diag_chars' => ':n aksara',
+    'diag_empty' => 'kosong',
+    'diag_found' => 'dijumpai',
+    'diag_not_found' => 'tidak dijumpai',
+    'diag_fix_empty' => 'Nilai itu tidak sampai ke aplikasi. Semak: (1) ia benar-benar ada dalam Forge → Settings → Environment, (2) anda tekan Save, (3) anda jalankan \'php artisan config:clear\' SELEPAS menyimpan. Deploy menjalankan config:cache di hujung, jadi menyimpan Environment selepas deploy memerlukan config:clear.',
+
     'connection' => 'Sambungan',
     'connection_hint' => 'Tampal pautan Google Sheet anda. Pastikan sheet dikongsi — buka Share → General access → "Anyone with the link" → Viewer. Sistem akan mengekstrak ID sheet secara automatik.',
     'url' => 'Pautan Google Sheet',
@@ -157,6 +165,7 @@ return [
         'bad_json' => 'Kelayakan dalam :source bukan JSON yang sah.',
         'missing_key_field' => 'Kelayakan dalam :source tiada medan :field.',
         'unexpected' => 'Ralat tidak dijangka semasa membaca sheet: :message',
+        'no_credentials_set' => 'Tiada kelayakan ditetapkan. GOOGLE_SERVICE_ACCOUNT_BASE64 kosong dan tiada fail kunci pada cakera.',
         'share_tip' => 'Buka sheet → Share → General access → "Anyone with the link" → Viewer. Jika sheet perlu kekal peribadi, tukar DBENA_SHEETS_DRIVER=service dan gunakan service account.',
     ],
 ];

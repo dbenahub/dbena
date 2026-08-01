@@ -45,15 +45,7 @@
     {{-- ══ Service Account — untuk sheet peribadi ══ --}}
     @php
         $driver = config('dbena.sheets.driver');
-        $saEmail = null;
-        $saError = null;
-        if ($driver === 'service') {
-            try {
-                $saEmail = \App\Services\Sheets\ServiceAccountSheetReader::clientEmail();
-            } catch (\Throwable $e) {
-                $saError = $e->getMessage();
-            }
-        }
+        $sa = $driver === 'service' ? \App\Services\Sheets\ServiceAccountSheetReader::diagnose() : null;
     @endphp
 
     <div class="dbena-card p-5 sm:p-6">
@@ -70,19 +62,22 @@
         <p class="mb-4 text-[12px] leading-relaxed text-t55">{{ __('sheets.private_sheet_hint') }}</p>
 
         @if ($driver === 'service')
-            @if ($saEmail)
+            @if ($sa['email'])
                 <div class="rounded-xl px-4 py-3.5"
                      style="background: oklch(0.55 0.15 145/0.08); border: 1px solid oklch(0.55 0.15 145/0.3)">
                     <div class="mb-2 flex items-center gap-2 text-[12.5px] font-bold" style="color: oklch(0.6 0.15 145)">
                         <i class="ph-duotone ph-check-circle text-base" aria-hidden="true"></i>
                         {{ __('sheets.sa_configured') }}
+                        @if ($sa['projectId'])
+                            <span class="font-normal text-t55">· {{ $sa['projectId'] }}</span>
+                        @endif
                     </div>
                     <p class="mb-2 text-[12px] text-t70">{{ __('sheets.sa_share_with') }}</p>
                     <div x-data="{ copied: false }" class="flex flex-wrap items-center gap-2">
-                        <code class="rounded-md px-2.5 py-1.5 text-[12px] break-all"
-                              style="background: var(--hover-bg3); color: oklch(0.78 0.12 85)">{{ $saEmail }}</code>
+                        <code class="break-all rounded-md px-2.5 py-1.5 text-[12px]"
+                              style="background: var(--hover-bg3); color: oklch(0.78 0.12 85)">{{ $sa['email'] }}</code>
                         <button type="button"
-                                x-on:click="navigator.clipboard.writeText('{{ $saEmail }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                                x-on:click="navigator.clipboard.writeText('{{ $sa['email'] }}'); copied = true; setTimeout(() => copied = false, 2000)"
                                 class="rounded-md px-2.5 py-1.5 text-[11.5px] font-semibold"
                                 style="background: var(--hover-bg2); color: var(--t80)">
                             <span x-show="!copied">{{ __('sheets.copy') }}</span>
@@ -91,12 +86,32 @@
                     </div>
                 </div>
             @else
+                {{-- Diagnostik penuh: nyatakan APA yang salah, bukan sekadar bahawa ia salah --}}
                 <div class="rounded-xl px-4 py-3.5 text-[12.5px] leading-relaxed"
-                     style="background: oklch(0.6 0.2 25/0.1); border: 1px solid oklch(0.6 0.2 25/0.35); color: oklch(0.68 0.19 25)">
-                    <i class="ph-duotone ph-warning-circle" aria-hidden="true"></i>
-                    {{ __('sheets.sa_missing') }}
-                    @if ($saError)
-                        <div class="mt-2 text-[11.5px] opacity-80">{{ $saError }}</div>
+                     style="background: oklch(0.6 0.2 25/0.1); border: 1px solid oklch(0.6 0.2 25/0.35); color: oklch(0.7 0.18 25)">
+                    <div class="mb-2.5 flex items-center gap-2 font-bold">
+                        <i class="ph-duotone ph-warning-circle text-base" aria-hidden="true"></i>
+                        {{ $sa['error'] ?? __('sheets.sa_missing') }}
+                    </div>
+
+                    <div class="flex flex-col gap-1 text-[11.5px] text-t70">
+                        <div>
+                            {{ __('sheets.diag_base64') }}:
+                            <b>{{ $sa['base64Length'] > 0
+                                ? __('sheets.diag_chars', ['n' => number_format($sa['base64Length'])])
+                                : __('sheets.diag_empty') }}</b>
+                        </div>
+                        <div>
+                            {{ __('sheets.diag_file') }}:
+                            <b>{{ $sa['fileReadable'] ? __('sheets.diag_found') : __('sheets.diag_not_found') }}</b>
+                            <span class="opacity-70">{{ $sa['filePath'] }}</span>
+                        </div>
+                    </div>
+
+                    @if ($sa['base64Length'] === 0)
+                        <div class="mt-3 rounded-lg px-3 py-2.5" style="background: oklch(0 0 0/0.2)">
+                            {{ __('sheets.diag_fix_empty') }}
+                        </div>
                     @endif
                 </div>
             @endif
