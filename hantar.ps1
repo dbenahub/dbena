@@ -34,16 +34,42 @@ foreach ($kunci in @("HEAD.lock", "index.lock", "config.lock", "objects\maintena
     }
 }
 
-# Apa yang berubah
-Write-Host "Fail yang berubah:" -ForegroundColor Cyan
-git status --short
-Write-Host ""
+# Ada DUA jenis kerja belum siap, dan mengelirukan keduanya bermakna
+# commit yang sudah wujud tidak pernah sampai ke GitHub:
+#
+#   1. Fail berubah yang belum di-commit
+#   2. Commit yang sudah dibuat tetapi belum ditolak ke GitHub
+#
+# Skrip ini mesti mengendalikan kedua-duanya.
 
 $berubah = @(git status --porcelain).Count
-if ($berubah -eq 0) {
-    Write-Host "  Tiada perubahan untuk dihantar." -ForegroundColor Yellow
+
+git fetch --quiet 2>&1 | Out-Null
+$cawangan = (git rev-parse --abbrev-ref HEAD).Trim()
+$belumTolak = @(git log --oneline "origin/$cawangan..HEAD" 2>$null).Count
+
+if ($berubah -eq 0 -and $belumTolak -eq 0) {
+    Write-Host "  Semuanya sudah berada di GitHub." -ForegroundColor Green
     Write-Host ""
     exit 0
+}
+
+if ($belumTolak -gt 0) {
+    Write-Host ("Commit menunggu untuk dihantar (" + $belumTolak + "):") -ForegroundColor Cyan
+    git log --oneline "origin/$cawangan..HEAD"
+    Write-Host ""
+}
+
+if ($berubah -eq 0) {
+    # Tiada fail baharu untuk di-commit, tetapi ada commit menunggu.
+    # Terus ke push — JANGAN keluar.
+    Write-Host "Tiada fail baharu untuk di-commit." -ForegroundColor DarkGray
+    Write-Host ""
+}
+else {
+    Write-Host "Fail yang berubah:" -ForegroundColor Cyan
+    git status --short
+    Write-Host ""
 }
 
 # Semakan keselamatan
@@ -65,14 +91,16 @@ foreach ($d in @("vendor", "node_modules")) {
 }
 if ($bahaya) { Write-Host ""; Write-Host "Dibatalkan." -ForegroundColor Red; exit 1 }
 
-# Mesej commit
-$mesej = Read-Host "Mesej commit (Enter untuk guna lalai)"
-if ([string]::IsNullOrWhiteSpace($mesej)) {
-    $mesej = "fix: kemas kini dari pembangunan"
-}
+# Mesej commit — hanya jika ada sesuatu untuk di-commit
+if ($berubah -gt 0) {
+    $mesej = Read-Host "Mesej commit (Enter untuk guna lalai)"
+    if ([string]::IsNullOrWhiteSpace($mesej)) {
+        $mesej = "fix: kemas kini dari pembangunan"
+    }
 
-git commit -q -m $mesej
-if ($LASTEXITCODE -ne 0) { Write-Host "Commit gagal." -ForegroundColor Red; exit 1 }
+    git commit -q -m $mesej
+    if ($LASTEXITCODE -ne 0) { Write-Host "Commit gagal." -ForegroundColor Red; exit 1 }
+}
 
 Write-Host ""
 Write-Host "Menghantar ke GitHub..." -ForegroundColor Yellow
