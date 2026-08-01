@@ -132,7 +132,8 @@ class ServiceAccountSheetReader implements SheetReader
      * Muatkan kelayakan service account.
      *
      * Dua sumber disokong, mengikut keutamaan:
-     *   1. GOOGLE_SERVICE_ACCOUNT_BASE64 — keseluruhan fail JSON dienkod base64.
+     *   1. GOOGLE_SERVICE_ACCOUNT_BASE64 (melalui config) — keseluruhan fail
+     *      JSON dienkod base64.
      *      Sesuai untuk Forge: tampal terus ke editor Environment, tiada
      *      muat naik fail, dan kunci peribadi berbilang baris tidak merosakkan
      *      penghuraian .env.
@@ -142,7 +143,7 @@ class ServiceAccountSheetReader implements SheetReader
      */
     public static function credentials(): array
     {
-        $encoded = (string) env('GOOGLE_SERVICE_ACCOUNT_BASE64', '');
+        $encoded = (string) config('dbena.sheets.service_account.credentials_base64', '');
 
         if ($encoded !== '') {
             $decoded = base64_decode(trim($encoded), true);

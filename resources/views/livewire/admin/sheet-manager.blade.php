@@ -45,7 +45,15 @@
     {{-- ══ Service Account — untuk sheet peribadi ══ --}}
     @php
         $driver = config('dbena.sheets.driver');
-        $saEmail = $driver === 'service' ? \App\Services\Sheets\ServiceAccountSheetReader::clientEmail() : null;
+        $saEmail = null;
+        $saError = null;
+        if ($driver === 'service') {
+            try {
+                $saEmail = \App\Services\Sheets\ServiceAccountSheetReader::clientEmail();
+            } catch (\Throwable $e) {
+                $saError = $e->getMessage();
+            }
+        }
     @endphp
 
     <div class="dbena-card p-5 sm:p-6">
@@ -87,6 +95,9 @@
                      style="background: oklch(0.6 0.2 25/0.1); border: 1px solid oklch(0.6 0.2 25/0.35); color: oklch(0.68 0.19 25)">
                     <i class="ph-duotone ph-warning-circle" aria-hidden="true"></i>
                     {{ __('sheets.sa_missing') }}
+                    @if ($saError)
+                        <div class="mt-2 text-[11.5px] opacity-80">{{ $saError }}</div>
+                    @endif
                 </div>
             @endif
         @else

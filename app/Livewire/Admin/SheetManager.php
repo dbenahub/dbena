@@ -162,6 +162,17 @@ class SheetManager extends Component
             $this->preview = null;
 
             return;
+        } catch (\Throwable $e) {
+            // Apa sahaja yang tidak dijangka - kegagalan OpenSSL, JSON rosak,
+            // masalah rangkaian - dipaparkan di sini dan bukan menjadi 500.
+            report($e);
+
+            $this->previewError = __('sheets.error.unexpected', [
+                'message' => $e->getMessage(),
+            ]);
+            $this->preview = null;
+
+            return;
         }
 
         // Isi pemetaan yang belum ditetapkan dengan cadangan automatik.
@@ -198,7 +209,17 @@ class SheetManager extends Component
             return;
         }
 
-        $result = $sync->sync($integration, $this->year, $this->month, 'manual', auth()->id());
+        try {
+            $result = $sync->sync($integration, $this->year, $this->month, 'manual', auth()->id());
+        } catch (\Throwable $e) {
+            report($e);
+
+            $this->dispatch('dbena-toast',
+                message: __('sheets.error.unexpected', ['message' => $e->getMessage()]),
+                variant: 'error');
+
+            return;
+        }
 
         $this->dispatch('dbena-toast',
             message: $result['message'],

@@ -156,6 +156,7 @@ return [
         'bad_base64' => 'GOOGLE_SERVICE_ACCOUNT_BASE64 bukan base64 yang sah.',
         'bad_json' => 'Kelayakan dalam :source bukan JSON yang sah.',
         'missing_key_field' => 'Kelayakan dalam :source tiada medan ':field'.',
+        'unexpected' => 'Ralat tidak dijangka semasa membaca sheet: :message',
         'share_tip' => 'Buka sheet → Share → General access → "Anyone with the link" → Viewer. Jika sheet perlu kekal peribadi, tukar DBENA_SHEETS_DRIVER=service dan gunakan service account.',
     ],
 ];

@@ -62,6 +62,13 @@ return [
         'driver' => env('DBENA_SHEETS_DRIVER', 'link'),
 
         'service_account' => [
+            /*
+             * Kelayakan MESTI dibaca melalui config, bukan env() terus.
+             * Selepas `php artisan config:cache` — yang dijalankan setiap deploy —
+             * env() memulangkan null. Meletakkannya di sini memastikan nilai
+             * dibakar ke dalam cache config dan kekal tersedia.
+             */
+            'credentials_base64' => env('GOOGLE_SERVICE_ACCOUNT_BASE64'),
             'credentials_path' => env('GOOGLE_SERVICE_ACCOUNT_JSON', storage_path('app/google/service-account.json')),
         ],
 
