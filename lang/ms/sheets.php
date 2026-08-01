@@ -31,6 +31,18 @@ return [
     'col_owner' => 'Pemilik',
     'targets_updated' => ':count sasaran dikemas kini',
 
+    'private_sheet' => 'Sheet Peribadi (Service Account)',
+    'private_sheet_hint' => 'Kalau sheet anda sulit dan tidak boleh dikongsi secara awam, gunakan service account Google — akaun robot yang anda kongsi sheet dengannya secara individu. Sheet kekal peribadi kepada semua orang lain.',
+    'sa_configured' => 'Service account dikonfigurasi',
+    'sa_share_with' => 'Kongsi Google Sheet anda dengan emel ini (kebenaran Viewer):',
+    'sa_missing' => 'Mod service account aktif tetapi kelayakan tidak dijumpai atau tidak sah. Semak GOOGLE_SERVICE_ACCOUNT_BASE64 dalam Environment.',
+    'sa_step1' => 'Buka console.cloud.google.com → cipta projek baharu (atau guna sedia ada)',
+    'sa_step2' => 'APIs & Services → Library → cari "Google Sheets API" → Enable',
+    'sa_step3' => 'APIs & Services → Credentials → Create Credentials → Service Account → beri nama, Create → Done',
+    'sa_step4' => 'Klik service account yang baru dicipta → tab Keys → Add Key → Create new key → JSON → muat turun',
+    'sa_step5' => 'Enkod fail JSON itu ke base64, tampal ke Environment sebagai GOOGLE_SERVICE_ACCOUNT_BASE64, dan tetapkan DBENA_SHEETS_DRIVER=service',
+    'sa_note' => 'Selepas menyimpan Environment, jalankan "php artisan config:clear" melalui tab Commands. Emel service account akan dipaparkan di sini — kongsi sheet dengannya.',
+
     'connection' => 'Sambungan',
     'connection_hint' => 'Tampal pautan Google Sheet anda. Pastikan sheet dikongsi — buka Share → General access → "Anyone with the link" → Viewer. Sistem akan mengekstrak ID sheet secara automatik.',
     'url' => 'Pautan Google Sheet',
@@ -141,6 +153,9 @@ return [
         'not_configured' => 'Pemetaan lajur belum lengkap. Medan yang tiada: :fields',
         'no_service' => 'Pilih satu servis sebelum menyegerak.',
         'no_rows_matched' => 'Tiada baris dapat dipadankan dengan metrik sistem. Semak pemetaan lajur dan ejaan nama metrik.',
+        'bad_base64' => 'GOOGLE_SERVICE_ACCOUNT_BASE64 bukan base64 yang sah.',
+        'bad_json' => 'Kelayakan dalam :source bukan JSON yang sah.',
+        'missing_key_field' => 'Kelayakan dalam :source tiada medan ':field'.',
         'share_tip' => 'Buka sheet → Share → General access → "Anyone with the link" → Viewer. Jika sheet perlu kekal peribadi, tukar DBENA_SHEETS_DRIVER=service dan gunakan service account.',
     ],
 ];

@@ -87,7 +87,7 @@ class ServiceAccountSheetReader implements SheetReader
     private function accessToken(): string
     {
         return Cache::remember(self::TOKEN_CACHE_KEY, now()->addMinutes(50), function (): string {
-            $credentials = $this->credentials();
+            $credentials = self::credentials();
 
             $now = time();
             $header = ['alg' => 'RS256', 'typ' => 'JWT'];
@@ -128,22 +128,73 @@ class ServiceAccountSheetReader implements SheetReader
         });
     }
 
-    /** @return array{client_email: string, private_key: string} */
-    private function credentials(): array
+    /**
+     * Muatkan kelayakan service account.
+     *
+     * Dua sumber disokong, mengikut keutamaan:
+     *   1. GOOGLE_SERVICE_ACCOUNT_BASE64 — keseluruhan fail JSON dienkod base64.
+     *      Sesuai untuk Forge: tampal terus ke editor Environment, tiada
+     *      muat naik fail, dan kunci peribadi berbilang baris tidak merosakkan
+     *      penghuraian .env.
+     *   2. Fail JSON pada cakera (GOOGLE_SERVICE_ACCOUNT_JSON).
+     *
+     * @return array{client_email: string, private_key: string}
+     */
+    public static function credentials(): array
     {
+        $encoded = (string) env('GOOGLE_SERVICE_ACCOUNT_BASE64', '');
+
+        if ($encoded !== '') {
+            $decoded = base64_decode(trim($encoded), true);
+
+            if ($decoded === false) {
+                throw SheetReadException::badCredentials(__('sheets.error.bad_base64'));
+            }
+
+            return self::parse($decoded, 'GOOGLE_SERVICE_ACCOUNT_BASE64');
+        }
+
         $path = (string) config('dbena.sheets.service_account.credentials_path');
 
         if (! is_readable($path)) {
             throw SheetReadException::missingCredentials($path);
         }
 
-        $json = json_decode((string) file_get_contents($path), true);
+        return self::parse((string) file_get_contents($path), $path);
+    }
 
-        if (! is_array($json) || blank($json['client_email'] ?? null) || blank($json['private_key'] ?? null)) {
-            throw SheetReadException::missingCredentials($path);
+    /** @return array{client_email: string, private_key: string} */
+    private static function parse(string $raw, string $source): array
+    {
+        $json = json_decode($raw, true);
+
+        if (! is_array($json)) {
+            throw SheetReadException::badCredentials(__('sheets.error.bad_json', ['source' => $source]));
         }
 
-        return ['client_email' => $json['client_email'], 'private_key' => $json['private_key']];
+        foreach (['client_email', 'private_key'] as $field) {
+            if (blank($json[$field] ?? null)) {
+                throw SheetReadException::badCredentials(
+                    __('sheets.error.missing_key_field', ['field' => $field, 'source' => $source])
+                );
+            }
+        }
+
+        return [
+            'client_email' => $json['client_email'],
+            // Kunci yang ditampal kadangkala mempunyai \n literal ganti baris baharu.
+            'private_key' => str_replace('\\n', "\n", $json['private_key']),
+        ];
+    }
+
+    /** Emel yang sheet perlu dikongsi dengannya. Null jika belum dikonfigurasi. */
+    public static function clientEmail(): ?string
+    {
+        try {
+            return self::credentials()['client_email'];
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private function base64Url(string $value): string

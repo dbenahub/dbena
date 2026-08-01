@@ -37,4 +37,9 @@ class SheetReadException extends RuntimeException
     {
         return new self(__('sheets.error.missing_credentials', ['path' => $path]));
     }
+
+    public static function badCredentials(string $reason): self
+    {
+        return new self($reason);
+    }
 }

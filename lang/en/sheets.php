@@ -31,6 +31,18 @@ return [
     'col_owner' => 'Owner',
     'targets_updated' => ':count targets updated',
 
+    'private_sheet' => 'Private Sheet (Service Account)',
+    'private_sheet_hint' => 'If your sheet is confidential and cannot be shared publicly, use a Google service account — a robot account you share the sheet with individually. The sheet stays private to everyone else.',
+    'sa_configured' => 'Service account configured',
+    'sa_share_with' => 'Share your Google Sheet with this email (Viewer access):',
+    'sa_missing' => 'Service account mode is active but the credentials were not found or are invalid. Check GOOGLE_SERVICE_ACCOUNT_BASE64 in Environment.',
+    'sa_step1' => 'Open console.cloud.google.com → create a new project (or use an existing one)',
+    'sa_step2' => 'APIs & Services → Library → search "Google Sheets API" → Enable',
+    'sa_step3' => 'APIs & Services → Credentials → Create Credentials → Service Account → give it a name, Create → Done',
+    'sa_step4' => 'Click the new service account → Keys tab → Add Key → Create new key → JSON → download',
+    'sa_step5' => 'Base64-encode that JSON file, paste it into Environment as GOOGLE_SERVICE_ACCOUNT_BASE64, and set DBENA_SHEETS_DRIVER=service',
+    'sa_note' => 'After saving Environment, run "php artisan config:clear" from the Commands tab. The service account email will appear here — share the sheet with it.',
+
     'connection' => 'Connection',
     'connection_hint' => 'Paste your Google Sheet link. Make sure the sheet is shared — open Share → General access → "Anyone with the link" → Viewer. The sheet ID is extracted automatically.',
     'url' => 'Google Sheet Link',
@@ -141,6 +153,9 @@ return [
         'not_configured' => 'Column mapping is incomplete. Missing fields: :fields',
         'no_service' => 'Select a service before syncing.',
         'no_rows_matched' => 'No rows could be matched to system metrics. Check the column mapping and metric name spelling.',
+        'bad_base64' => 'GOOGLE_SERVICE_ACCOUNT_BASE64 is not valid base64.',
+        'bad_json' => 'The credentials in :source are not valid JSON.',
+        'missing_key_field' => 'The credentials in :source are missing the ':field' field.',
         'share_tip' => 'Open the sheet → Share → General access → "Anyone with the link" → Viewer. If the sheet must stay private, set DBENA_SHEETS_DRIVER=service and use a service account.',
     ],
 ];

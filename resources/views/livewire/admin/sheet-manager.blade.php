@@ -42,6 +42,68 @@
         </div>
     </div>
 
+    {{-- ══ Service Account — untuk sheet peribadi ══ --}}
+    @php
+        $driver = config('dbena.sheets.driver');
+        $saEmail = $driver === 'service' ? \App\Services\Sheets\ServiceAccountSheetReader::clientEmail() : null;
+    @endphp
+
+    <div class="dbena-card p-5 sm:p-6">
+        <div class="mb-1 flex flex-wrap items-center justify-between gap-3">
+            <h2 class="text-base font-bold">{{ __('sheets.private_sheet') }}</h2>
+            <span class="rounded-md px-2.5 py-1.5 text-[11.5px] font-semibold"
+                  @style([
+                      'background: oklch(0.55 0.15 145/0.16); color: oklch(0.6 0.15 145)' => $driver === 'service',
+                      'background: var(--hover-bg3); color: var(--t60)' => $driver !== 'service',
+                  ])>
+                {{ $driver === 'service' ? __('sheets.driver.service') : __('sheets.driver.link') }}
+            </span>
+        </div>
+        <p class="mb-4 text-[12px] leading-relaxed text-t55">{{ __('sheets.private_sheet_hint') }}</p>
+
+        @if ($driver === 'service')
+            @if ($saEmail)
+                <div class="rounded-xl px-4 py-3.5"
+                     style="background: oklch(0.55 0.15 145/0.08); border: 1px solid oklch(0.55 0.15 145/0.3)">
+                    <div class="mb-2 flex items-center gap-2 text-[12.5px] font-bold" style="color: oklch(0.6 0.15 145)">
+                        <i class="ph-duotone ph-check-circle text-base" aria-hidden="true"></i>
+                        {{ __('sheets.sa_configured') }}
+                    </div>
+                    <p class="mb-2 text-[12px] text-t70">{{ __('sheets.sa_share_with') }}</p>
+                    <div x-data="{ copied: false }" class="flex flex-wrap items-center gap-2">
+                        <code class="rounded-md px-2.5 py-1.5 text-[12px] break-all"
+                              style="background: var(--hover-bg3); color: oklch(0.78 0.12 85)">{{ $saEmail }}</code>
+                        <button type="button"
+                                x-on:click="navigator.clipboard.writeText('{{ $saEmail }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                                class="rounded-md px-2.5 py-1.5 text-[11.5px] font-semibold"
+                                style="background: var(--hover-bg2); color: var(--t80)">
+                            <span x-show="!copied">{{ __('sheets.copy') }}</span>
+                            <span x-show="copied" x-cloak style="color: oklch(0.72 0.15 145)">{{ __('sheets.copied') }}</span>
+                        </button>
+                    </div>
+                </div>
+            @else
+                <div class="rounded-xl px-4 py-3.5 text-[12.5px] leading-relaxed"
+                     style="background: oklch(0.6 0.2 25/0.1); border: 1px solid oklch(0.6 0.2 25/0.35); color: oklch(0.68 0.19 25)">
+                    <i class="ph-duotone ph-warning-circle" aria-hidden="true"></i>
+                    {{ __('sheets.sa_missing') }}
+                </div>
+            @endif
+        @else
+            <ol class="flex list-inside list-decimal flex-col gap-2 text-[12.5px] leading-relaxed text-t70">
+                <li>{{ __('sheets.sa_step1') }}</li>
+                <li>{{ __('sheets.sa_step2') }}</li>
+                <li>{{ __('sheets.sa_step3') }}</li>
+                <li>{{ __('sheets.sa_step4') }}</li>
+                <li>{{ __('sheets.sa_step5') }}</li>
+            </ol>
+            <p class="mt-3 rounded-lg px-3.5 py-2.5 text-[12px] leading-relaxed"
+               style="background: var(--hover-bg3); color: var(--t65)">
+                {{ __('sheets.sa_note') }}
+            </p>
+        @endif
+    </div>
+
     {{-- ══ Sambungan ══ --}}
     <div class="dbena-card p-5 sm:p-6">
         <h2 class="mb-1 text-base font-bold">{{ __('sheets.connection') }}</h2>
