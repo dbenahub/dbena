@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Dashboard;
 
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
@@ -47,11 +45,6 @@ class Tetapan extends Component
     public string $phone = '';
 
     public ?TemporaryUploadedFile $avatar = null;
-
-    // Kata laluan
-    public string $currentPassword = '';
-    public string $newPassword = '';
-    public string $newPasswordConfirmation = '';
 
     // Paparan
     public string $theme = 'dark';
@@ -134,28 +127,6 @@ class Tetapan extends Component
         }
 
         $this->dispatch('dbena-toast', message: __('tetapan.avatar_removed'));
-    }
-
-    public function changePassword(): void
-    {
-        $this->validate([
-            'currentPassword' => 'required',
-            'newPassword' => ['required', 'confirmed', Password::min(8)->letters()->numbers()],
-        ], attributes: [
-            'currentPassword' => __('tetapan.current_password'),
-            'newPassword' => __('tetapan.new_password'),
-        ]);
-
-        if (! Hash::check($this->currentPassword, auth()->user()->password)) {
-            $this->addError('currentPassword', __('tetapan.current_password_wrong'));
-
-            return;
-        }
-
-        auth()->user()->update(['password' => $this->newPassword]);
-
-        $this->reset(['currentPassword', 'newPassword', 'newPasswordConfirmation']);
-        $this->dispatch('dbena-toast', message: __('tetapan.password_changed'));
     }
 
     public function saveAppearance(): void

@@ -26,11 +26,8 @@ return [
     'avatar_removed' => 'Gambar profil dibuang',
 
     'change_password' => 'Tukar Kata Laluan',
-    'current_password' => 'Kata Laluan Semasa',
-    'new_password' => 'Kata Laluan Baharu',
-    'confirm_password' => 'Sahkan Kata Laluan Baharu',
-    'password_changed' => 'Kata laluan berjaya ditukar',
-    'current_password_wrong' => 'Kata laluan semasa tidak tepat.',
+
+    'password_admin_only' => 'Kata laluan diurus secara berpusat. Hubungi pentadbir sistem untuk menetapkan semula kata laluan anda.',
 
     'appearance' => 'Paparan & Bahasa',
     'theme' => 'Tema',

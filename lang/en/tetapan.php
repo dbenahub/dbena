@@ -26,11 +26,8 @@ return [
     'avatar_removed' => 'Profile photo removed',
 
     'change_password' => 'Change Password',
-    'current_password' => 'Current Password',
-    'new_password' => 'New Password',
-    'confirm_password' => 'Confirm New Password',
-    'password_changed' => 'Password changed successfully',
-    'current_password_wrong' => 'The current password is incorrect.',
+
+    'password_admin_only' => 'Passwords are managed centrally. Contact your system administrator to have your password reset.',
 
     'appearance' => 'Appearance & Language',
     'theme' => 'Theme',

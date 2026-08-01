@@ -70,6 +70,13 @@ return [
     'cannot_deactivate_self' => 'You cannot deactivate your own account.',
     'never' => 'Never',
 
+    'col_password' => 'Password',
+    'reset_password' => 'Reset',
+    'password_reset_confirm' => 'Reset the password for :name? The old password stops working immediately.',
+    'password_reset_done' => 'Password reset for :name',
+    'password_reset_title' => 'New password for :name',
+    'password_reset_note' => 'Deliver this password to the user over a secure channel. It will not be shown again — the system stores only a hash.',
+
     'audit_title' => 'Audit Log',
     'audit_hint' => 'Records every configuration change — who, what, when, and old vs new values.',
     'col_time' => 'Time',
@@ -89,6 +96,7 @@ return [
         'owner.rejected' => 'PIC rejected',
         'target.updated' => 'Metric target updated',
         'user.created' => 'User created',
+        'user.password_reset' => 'Password reset',
         'user.updated' => 'User updated',
     ],
 ];

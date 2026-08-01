@@ -215,22 +215,50 @@
             </button>
         </div>
 
+        @if ($resetPasswordValue)
+            <div class="mb-4 rounded-xl px-4 py-3.5"
+                 style="background: oklch(0.78 0.12 85/0.1); border: 1px solid oklch(0.78 0.12 85/0.45)">
+                <div class="mb-2 flex items-center justify-between gap-3">
+                    <span class="text-[12.5px] font-bold" style="color: oklch(0.8 0.12 85)">
+                        {{ __('admin.password_reset_title', ['name' => $resetPasswordFor]) }}
+                    </span>
+                    <button type="button" wire:click="dismissResetPassword"
+                            class="text-[11.5px] font-semibold text-t60 hover:text-t85">
+                        {{ __('app.close') }}
+                    </button>
+                </div>
+                <div x-data="{ copied: false }" class="flex flex-wrap items-center gap-2">
+                    <code class="rounded-md px-3 py-2 font-display text-[15px] font-bold tracking-wide"
+                          style="background: var(--hover-bg3); color: oklch(0.78 0.12 85)">{{ $resetPasswordValue }}</code>
+                    <button type="button"
+                            x-on:click="navigator.clipboard.writeText('{{ $resetPasswordValue }}'); copied = true; setTimeout(() => copied = false, 2000)"
+                            class="rounded-md px-2.5 py-1.5 text-[11.5px] font-semibold"
+                            style="background: var(--hover-bg2); color: var(--t80)">
+                        <span x-show="!copied">{{ __('sheets.copy') }}</span>
+                        <span x-show="copied" x-cloak style="color: oklch(0.72 0.15 145)">{{ __('sheets.copied') }}</span>
+                    </button>
+                </div>
+                <p class="mt-2 text-[11.5px] leading-relaxed text-t65">{{ __('admin.password_reset_note') }}</p>
+            </div>
+        @endif
+
         <div class="overflow-x-auto">
-            <div class="min-w-[700px]">
+            <div class="min-w-[760px]">
                 <div class="grid gap-3.5 border-b pb-2.5 text-[11px] font-bold uppercase text-t60"
-                     style="grid-template-columns: 1.6fr 1.2fr 1.8fr 1fr 1.2fr 0.8fr; border-color: var(--border2)">
+                     style="grid-template-columns: 1.5fr 1.1fr 1.7fr 0.9fr 1.1fr 0.7fr 1fr; border-color: var(--border2)">
                     <div>{{ __('admin.col_name') }}</div>
                     <div>{{ __('admin.col_username') }}</div>
                     <div>{{ __('admin.col_email') }}</div>
                     <div>{{ __('admin.col_role') }}</div>
                     <div>{{ __('admin.col_last_login') }}</div>
                     <div>{{ __('admin.col_active') }}</div>
+                    <div>{{ __('admin.col_password') }}</div>
                 </div>
 
                 @foreach ($users as $u)
                     <div wire:key="user-{{ $u->id }}"
                          class="grid items-center gap-3.5 border-b py-3 text-[12.5px]"
-                         style="grid-template-columns: 1.6fr 1.2fr 1.8fr 1fr 1.2fr 0.8fr; border-color: var(--border3)">
+                         style="grid-template-columns: 1.5fr 1.1fr 1.7fr 0.9fr 1.1fr 0.7fr 1fr; border-color: var(--border3)">
                         <div class="font-semibold">{{ $u->name }}</div>
                         <div class="text-t70">{{ $u->username }}</div>
                         <div class="truncate text-t70">{{ $u->email }}</div>
@@ -252,6 +280,14 @@
                                     style="width: 38px; height: 22px; background: {{ $u->is_active ? 'oklch(0.72 0.15 145)' : 'var(--switch-off)' }}">
                                 <span class="absolute rounded-full bg-white transition-[left] duration-150"
                                       style="top: 2px; left: {{ $u->is_active ? '18px' : '2px' }}; width: 18px; height: 18px"></span>
+                            </button>
+                        </div>
+                        <div>
+                            <button type="button" wire:click="resetUserPassword({{ $u->id }})"
+                                    wire:confirm="{{ __('admin.password_reset_confirm', ['name' => $u->name]) }}"
+                                    class="rounded-md px-2.5 py-1.5 text-[11.5px] font-semibold"
+                                    style="border: 1px solid var(--border2); color: var(--t75)">
+                                {{ __('admin.reset_password') }}
                             </button>
                         </div>
                     </div>

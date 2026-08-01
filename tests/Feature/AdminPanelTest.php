@@ -83,6 +83,51 @@ it('creates a user with a generated password that is never stored in plain text'
         ->and($created->password)->toStartWith('$2y$');
 });
 
+it('resets a user password to a fresh random value', function (): void {
+    $target = User::where('role', UserRole::User)->firstOrFail();
+    $before = $target->password;
+
+    $component = Livewire::actingAs($this->admin)
+        ->test(ConfigPanel::class)
+        ->call('resetUserPassword', $target->id);
+
+    $new = $component->get('resetPasswordValue');
+
+    expect($new)->toBeString()->not->toBeEmpty()
+        ->and($target->fresh()->password)->not->toBe($before)
+        // Disimpan di-hash, tidak pernah sebagai teks biasa
+        ->and($target->fresh()->password)->not->toBe($new)
+        ->and($target->fresh()->password)->toStartWith('$2y$');
+
+    $this->assertDatabaseHas('audit_logs', ['action' => 'user.password_reset']);
+});
+
+it('cancels outstanding OTPs when a password is reset', function (): void {
+    $target = User::where('role', UserRole::User)->firstOrFail();
+
+    App\Models\Otp::create([
+        'user_id' => $target->id,
+        'code_hash' => bcrypt('123456'),
+        'type' => App\Enums\OtpType::Login,
+        'expires_at' => now()->addMinutes(5),
+    ]);
+
+    Livewire::actingAs($this->admin)
+        ->test(ConfigPanel::class)
+        ->call('resetUserPassword', $target->id);
+
+    expect(App\Models\Otp::where('user_id', $target->id)->whereNull('consumed_at')->count())->toBe(0);
+});
+
+it('does not let a plain user reset anyone password', function (): void {
+    $user = User::where('role', UserRole::User)->firstOrFail();
+
+    Livewire::actingAs($user)
+        ->test(ConfigPanel::class)
+        ->call('resetUserPassword', $this->admin->id)
+        ->assertForbidden();
+})->throws(Illuminate\Auth\Access\AuthorizationException::class);
+
 it('refuses to let an admin deactivate their own account', function (): void {
     Livewire::actingAs($this->admin)
         ->test(ConfigPanel::class)

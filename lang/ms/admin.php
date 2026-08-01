@@ -70,6 +70,13 @@ return [
     'cannot_deactivate_self' => 'Anda tidak boleh menyahaktifkan akaun anda sendiri.',
     'never' => 'Belum pernah',
 
+    'col_password' => 'Kata Laluan',
+    'reset_password' => 'Tetapkan Semula',
+    'password_reset_confirm' => 'Tetapkan semula kata laluan untuk :name? Kata laluan lama akan berhenti berfungsi serta-merta.',
+    'password_reset_done' => 'Kata laluan :name ditetapkan semula',
+    'password_reset_title' => 'Kata laluan baharu untuk :name',
+    'password_reset_note' => 'Sampaikan kata laluan ini kepada pengguna melalui saluran selamat. Ia tidak akan dipapar semula — sistem menyimpannya dalam bentuk hash sahaja.',
+
     'audit_title' => 'Log Audit',
     'audit_hint' => 'Rekod setiap perubahan konfigurasi — siapa, apa, bila, dan nilai lama berbanding nilai baharu.',
     'col_time' => 'Masa',
@@ -89,6 +96,7 @@ return [
         'owner.rejected' => 'Tolak PIC',
         'target.updated' => 'Kemaskini sasaran metrik',
         'user.created' => 'Cipta pengguna',
+        'user.password_reset' => 'Tetapkan semula kata laluan',
         'user.updated' => 'Kemaskini pengguna',
     ],
 ];

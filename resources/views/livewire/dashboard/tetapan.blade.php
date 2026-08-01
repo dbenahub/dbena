@@ -94,35 +94,16 @@
         </form>
     </div>
 
-    {{-- ══ Tukar Kata Laluan ══ --}}
-    <div class="dbena-card p-5 sm:p-6">
-        <div class="mb-5 flex items-center gap-2.5">
-            <i class="ph-duotone ph-lock-key text-xl" style="color: oklch(0.78 0.12 85)" aria-hidden="true"></i>
+    {{-- Kata laluan diurus secara berpusat oleh Admin --}}
+    <div class="dbena-card flex items-start gap-3 p-5 sm:p-6">
+        <i class="ph-duotone ph-lock-key mt-0.5 shrink-0 text-xl"
+           style="color: oklch(0.78 0.12 85)" aria-hidden="true"></i>
+        <div>
             <h2 class="text-base font-bold">{{ __('tetapan.change_password') }}</h2>
+            <p class="mt-1 text-[12.5px] leading-relaxed text-t65">
+                {{ __('tetapan.password_admin_only') }}
+            </p>
         </div>
-
-        <form wire:submit="changePassword" class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            @foreach ([
-                ['model' => 'currentPassword', 'label' => __('tetapan.current_password'), 'auto' => 'current-password'],
-                ['model' => 'newPassword', 'label' => __('tetapan.new_password'), 'auto' => 'new-password'],
-                ['model' => 'newPasswordConfirmation', 'label' => __('tetapan.confirm_password'), 'auto' => 'new-password'],
-            ] as $field)
-                <div>
-                    <label for="p-{{ $field['model'] }}" class="mb-1.5 block text-[11.5px] text-t55">{{ $field['label'] }}</label>
-                    <input id="p-{{ $field['model'] }}" type="password" autocomplete="{{ $field['auto'] }}"
-                           wire:model="{{ $field['model'] }}" class="dbena-input">
-                    @error($field['model'])
-                        <p class="mt-1.5 text-[12px]" style="color: oklch(0.65 0.2 25)">{{ $message }}</p>
-                    @enderror
-                </div>
-            @endforeach
-
-            <div class="sm:col-span-3">
-                <button type="submit" class="dbena-btn-gold w-full py-3 text-[13.5px] sm:w-auto sm:px-8">
-                    {{ __('tetapan.change_password') }}
-                </button>
-            </div>
-        </form>
     </div>
 
     {{-- ══ Paparan & Bahasa ══ --}}

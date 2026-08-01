@@ -54,6 +54,10 @@ class ConfigPanel extends Component
     public string $userRole = 'user';
     public ?string $generatedPassword = null;
 
+    /** Kata laluan yang baru ditetapkan semula — dipapar sekali sahaja. */
+    public ?string $resetPasswordFor = null;
+    public ?string $resetPasswordValue = null;
+
     public function mount(): void
     {
         $this->authorize('access-admin-panel');
@@ -304,6 +308,39 @@ class ConfigPanel extends Component
         $this->userRole = 'user';
 
         $this->dispatch('dbena-toast', message: __('admin.user_created', ['name' => $user->name]));
+    }
+
+    /**
+     * Tetapkan semula kata laluan pengguna.
+     *
+     * Kata laluan diurus secara berpusat — pengguna tidak boleh menukar sendiri.
+     * Kata laluan baharu dijana rawak dan dipaparkan SEKALI sahaja; ia disimpan
+     * di-hash dan tidak pernah boleh dibaca semula, termasuk oleh Admin.
+     */
+    public function resetUserPassword(int $userId, AuditLogger $audit): void
+    {
+        $this->authorize('manage-users');
+
+        $user = User::findOrFail($userId);
+        $password = Str::password(16, symbols: false);
+
+        $user->update(['password' => $password]);
+
+        // Batalkan sebarang OTP belum guna — sesi lama tidak boleh diteruskan.
+        $user->otps()->whereNull('consumed_at')->update(['consumed_at' => now()]);
+
+        $audit->log('user.password_reset', $user, $user->name);
+
+        $this->resetPasswordFor = $user->name;
+        $this->resetPasswordValue = $password;
+
+        $this->dispatch('dbena-toast', message: __('admin.password_reset_done', ['name' => $user->name]));
+    }
+
+    public function dismissResetPassword(): void
+    {
+        $this->resetPasswordFor = null;
+        $this->resetPasswordValue = null;
     }
 
     public function toggleUserActive(int $userId, AuditLogger $audit): void
