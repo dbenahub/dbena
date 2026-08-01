@@ -124,6 +124,19 @@
             text-align: center; font-size: 7px; color: #a4aab5;
             border-top: 1px solid #e6e9ee; padding-top: 4px;
         }
+        /* Tajuk blok servis — cukup kuat untuk dilihat semasa mengimbas,
+           supaya pembaca tahu jadual mana milik servis mana. */
+        .svc {
+            background: #2f3644; color: #fff;
+            padding: 6px 10px; margin: 14px 0 0;
+            font-size: 11px; font-weight: bold; letter-spacing: 0.4px;
+        }
+        .svc .meta { float: right; font-weight: normal; font-size: 8.5px; color: #cfd5df; }
+        .svc-note {
+            background: #f4f6f9; border: 1px solid #dde1e8; border-top: none;
+            padding: 5px 10px; font-size: 8px; color: #5b6270; margin: 0 0 4px;
+        }
+
         .break { page-break-before: always; }
         .avoid { page-break-inside: avoid; }
     </style>
@@ -212,15 +225,21 @@
 @if ($x['priorities'])
     <table class="data avoid">
         <tr>
-            <th style="width: 9%">{{ __('exec.priority_table.rank') }}</th>
-            <th style="width: 26%">{{ __('exec.priority_table.issue') }}</th>
-            <th style="width: 24%">{{ __('exec.priority_table.evidence') }}</th>
+            <th style="width: 8%">{{ __('exec.priority_table.rank') }}</th>
+            @if ($x['multiService'])
+                <th style="width: 15%">{{ __('exec.col_service') }}</th>
+            @endif
+            <th style="width: 24%">{{ __('exec.priority_table.issue') }}</th>
+            <th style="width: 21%">{{ __('exec.priority_table.evidence') }}</th>
             <th>{{ __('exec.priority_table.implication') }}</th>
         </tr>
         @foreach ($x['priorities'] as $p)
             <tr>
                 <td class="c"><span class="rank">{{ $p['rank'] }}</span></td>
-                <td><b>{{ $p['issue'] }}</b></td>
+                @if ($x['multiService'])
+                    <td><b>{{ $p['service'] }}</b></td>
+                @endif
+                <td>{{ $p['issue'] }}</td>
                 <td>{{ $p['evidence'] }}</td>
                 <td>{{ $p['implication'] }}</td>
             </tr>
@@ -231,7 +250,7 @@
 <h2>{{ __('exec.summary_heading') }}</h2>
 <ul>
     @foreach ($x['priorities'] as $p)
-        <li><b>{{ $p['issue'] }}</b> — {{ $p['implication'] }}</li>
+        <li>@if ($x['multiService'])<b>{{ $p['service'] }}</b> — @endif{{ $p['issue'] }}: {{ $p['implication'] }}</li>
     @endforeach
     @if ($x['noPlanCount'] > 0)
         <li>{{ __('exec.no_plan_note', ['count' => $x['noPlanCount']]) }}</li>
@@ -244,30 +263,48 @@
 {{-- ══════════ 2. SCORECARD ══════════ --}}
 <h1 class="break">{{ __('exec.s2') }}</h1>
 
-<table class="data">
-    <tr>
-        <th style="width: 26%">{{ __('exec.scorecard.metric') }}</th>
-        <th style="width: 12%">{{ __('exec.scorecard.pic') }}</th>
-        <th style="width: 13%">{{ __('exec.scorecard.actual') }}</th>
-        <th style="width: 13%">{{ __('exec.scorecard.target') }}</th>
-        <th style="width: 11%">{{ __('exec.scorecard.pct') }}</th>
-        <th style="width: 11%">{{ __('exec.scorecard.status') }}</th>
-        <th>{{ __('exec.scorecard.gap') }}</th>
-    </tr>
-    @foreach ($x['scorecard'] as $m)
+{{-- Satu blok setiap servis. Versi pertama meratakan semuanya ke dalam
+     satu jadual, jadi "No of Lead — ZIKRI — 600" muncul lima kali dengan
+     nombor berbeza dan tiada apa menunjukkan servis mana. --}}
+@foreach ($x['services'] as $i => $svc)
+    <div class="svc avoid">
+        {{ $x['multiService'] ? '2.'.($i + 1).' ' : '' }}{{ mb_strtoupper($svc['name']) }}
+        <span class="meta">
+            {{ __('exec.scorecard.pct') }} {{ $svc['score'] }}% ·
+            {{ $svc['green'] }}/{{ $svc['total'] }} {{ __('exec.tile.achieved') }}
+            @if ($svc['gap'] > 0) · {{ __('exec.tile.gap') }} RM{{ number_format($svc['gap']) }} @endif
+        </span>
+    </div>
+    <div class="svc-note">
+        {{ __('exec.col_pic') }}: {{ implode(', ', $svc['owners']) }}
+    </div>
+
+    <table class="data">
         <tr>
-            <td>{{ $m['label'] }}</td>
-            <td>{{ $m['ownerName'] }}</td>
-            <td class="n">{{ $m['actualLabel'] }}</td>
-            <td class="n">{{ $m['targetLabel'] }}</td>
-            <td class="n"><b>{{ $m['pctLabel'] }}</b></td>
-            <td class="c"><span class="pill" style="background: {{ $statusColor($m['status']) }}">{{ $m['statusLabel'] }}</span></td>
-            <td class="n">{{ $m['gapLabel'] }}</td>
+            <th style="width: 30%">{{ __('exec.scorecard.metric') }}</th>
+            <th style="width: 13%">{{ __('exec.scorecard.pic') }}</th>
+            <th style="width: 13%">{{ __('exec.scorecard.actual') }}</th>
+            <th style="width: 13%">{{ __('exec.scorecard.target') }}</th>
+            <th style="width: 11%">{{ __('exec.scorecard.pct') }}</th>
+            <th style="width: 11%">{{ __('exec.scorecard.status') }}</th>
+            <th>{{ __('exec.scorecard.gap') }}</th>
         </tr>
-    @endforeach
-</table>
+        @foreach ($svc['metrics'] as $m)
+            <tr>
+                <td>{{ $m['label'] }}</td>
+                <td>{{ $m['ownerName'] }}</td>
+                <td class="n">{{ $m['actualLabel'] }}</td>
+                <td class="n">{{ $m['targetLabel'] }}</td>
+                <td class="n"><b>{{ $m['pctLabel'] }}</b></td>
+                <td class="c"><span class="pill" style="background: {{ $statusColor($m['status']) }}">{{ $m['statusLabel'] }}</span></td>
+                <td class="n">{{ $m['gapLabel'] }}</td>
+            </tr>
+        @endforeach
+    </table>
+@endforeach
 
 <h2>{{ __('exec.pic_heading') }}</h2>
+<p style="font-size: 8.5px; color: #6b7280">{{ __('exec.pic_heading_note') }}</p>
 <table class="data avoid">
     <tr>
         <th style="width: 15%">{{ __('exec.pic_table.pic') }}</th>
@@ -284,9 +321,6 @@
             <td class="c"><b>{{ $o['grade'] }}</b></td>
             <td class="c">{{ $o['green'] }} / {{ $o['total'] }}</td>
             <td class="c">{{ $o['pending'] }}</td>
-            {{-- commentary() memulangkan SENARAI ayat, bukan satu rentetan.
-                 Paparan dashboard membacanya sebagai senarai; di sini ia
-                 dicantumkan menjadi satu perenggan supaya muat dalam sel. --}}
             <td>{{ collect($o['commentary'])->implode(' ') }}</td>
         </tr>
     @endforeach
@@ -304,57 +338,67 @@
 {{-- ══════════ 3. PUNCA AKAR ══════════ --}}
 <h1 class="break">{{ __('exec.s3') }}</h1>
 
-<h2>{{ __('exec.s3_1') }}</h2>
-@if (! empty($x['journey']['stages']))
-    <table class="chain avoid">
-        <tr>
-            @foreach ($x['journey']['stages'] as $i => $st)
-                @if ($i > 0)
-                    <td class="ar">&#8594;</td>
-                @endif
-                @php
-                    $sc = match ($st['status']) {
-                        'red' => '#c0392b',
-                        'amber' => '#c98a12',
-                        'green' => '#1e8449',
-                        default => '#8a8f9c',
-                    };
-                @endphp
-                <td style="border-top: 3px solid {{ $sc }}">
-                    <span class="st" style="color: {{ $sc }}">{{ $st['title'] }}</span>
-                    <span class="vl">{{ $st['actualLabel'] }} / {{ $st['targetLabel'] }}</span>
-                    <span class="pc" style="color: {{ $sc }}">{{ $st['pctLabel'] }}</span>
-                </td>
-            @endforeach
-        </tr>
-    </table>
-@endif
+{{-- Rantaian corong dikira PER SERVIS. Menghimpunkan lead semua servis
+     dan membahagikannya dengan site visit semua servis menghasilkan
+     nombor yang tidak menerangkan apa-apa tentang mana-mana servis. --}}
+@foreach ($x['services'] as $i => $svc)
+    @php $j = $svc['journey']; @endphp
 
-@if ($x['rootCauses'])
-    <table class="data">
-        <tr>
-            <th style="width: 32%">{{ __('exec.root_table.cause') }}</th>
-            <th style="width: 21%">{{ __('exec.root_table.evidence') }}</th>
-            <th>{{ __('exec.root_table.effect') }}</th>
-            <th style="width: 13%">{{ __('exec.root_table.level') }}</th>
-        </tr>
-        @foreach ($x['rootCauses'] as $rc)
+    <div class="svc avoid">
+        {{ $x['multiService'] ? '3.'.($i + 1).' ' : '' }}{{ mb_strtoupper($svc['name']) }}
+        <span class="meta">{{ __('exec.s3_1') }}</span>
+    </div>
+
+    @if (! empty($j['stages']))
+        <table class="chain avoid">
             <tr>
-                <td>{{ $rc['cause'] }}</td>
-                <td>{{ $rc['evidence'] }}</td>
-                <td>{{ $rc['effect'] }}</td>
-                <td class="c">{{ $rc['level'] }}</td>
+                @foreach ($j['stages'] as $k => $st)
+                    @if ($k > 0)
+                        <td class="ar">&#8594;</td>
+                    @endif
+                    @php
+                        $sc = match ($st['status']) {
+                            'red' => '#c0392b',
+                            'amber' => '#c98a12',
+                            'green' => '#1e8449',
+                            default => '#8a8f9c',
+                        };
+                    @endphp
+                    <td style="border-top: 3px solid {{ $sc }}">
+                        <span class="st" style="color: {{ $sc }}">{{ $st['title'] }}</span>
+                        <span class="vl">{{ $st['actualLabel'] }} / {{ $st['targetLabel'] }}</span>
+                        <span class="pc" style="color: {{ $sc }}">{{ $st['pctLabel'] }}</span>
+                    </td>
+                @endforeach
             </tr>
-        @endforeach
-    </table>
-@endif
+        </table>
+    @endif
 
-<h2>{{ __('exec.s3_2') }}</h2>
-<div class="callout {{ $x['journey']['healthy'] ? 'ok' : '' }}">
-    {{ $x['journey']['healthy']
-        ? __('exec.diagnosis_clear')
-        : __('exec.diagnosis_break', ['stage' => $x['journey']['firstBreak']['title']]) }}
-</div>
+    <div class="callout {{ $j['healthy'] ? 'ok' : '' }}">
+        {{ $j['healthy']
+            ? __('exec.diagnosis_clear')
+            : __('exec.diagnosis_break', ['stage' => $j['firstBreak']['title']]) }}
+    </div>
+
+    @if ($svc['rootCauses'])
+        <table class="data avoid">
+            <tr>
+                <th style="width: 34%">{{ __('exec.root_table.cause') }}</th>
+                <th style="width: 21%">{{ __('exec.root_table.evidence') }}</th>
+                <th>{{ __('exec.root_table.effect') }}</th>
+                <th style="width: 13%">{{ __('exec.root_table.level') }}</th>
+            </tr>
+            @foreach ($svc['rootCauses'] as $rc)
+                <tr>
+                    <td>{{ $rc['cause'] }}</td>
+                    <td>{{ $rc['evidence'] }}</td>
+                    <td>{{ $rc['effect'] }}</td>
+                    <td class="c">{{ $rc['level'] }}</td>
+                </tr>
+            @endforeach
+        </table>
+    @endif
+@endforeach
 
 <h2>{{ __('exec.s3_3') }}</h2>
 <ul>
@@ -371,14 +415,20 @@
 @if ($x['weeklyTargets'])
     <table class="data">
         <tr>
-            <th style="width: 27%">{{ __('exec.weekly_table.metric') }}</th>
-            <th style="width: 17%">{{ __('exec.weekly_table.weekly') }}</th>
-            <th style="width: 15%">{{ __('exec.weekly_table.owner') }}</th>
-            <th style="width: 17%">{{ __('exec.weekly_table.cadence') }}</th>
+            @if ($x['multiService'])
+                <th style="width: 15%">{{ __('exec.col_service') }}</th>
+            @endif
+            <th style="width: 23%">{{ __('exec.weekly_table.metric') }}</th>
+            <th style="width: 15%">{{ __('exec.weekly_table.weekly') }}</th>
+            <th style="width: 13%">{{ __('exec.weekly_table.owner') }}</th>
+            <th style="width: 15%">{{ __('exec.weekly_table.cadence') }}</th>
             <th>{{ __('exec.weekly_table.trigger') }}</th>
         </tr>
         @foreach ($x['weeklyTargets'] as $w)
             <tr>
+                @if ($x['multiService'])
+                    <td><b>{{ $w['service'] }}</b></td>
+                @endif
                 <td>{{ $w['label'] }}</td>
                 <td class="n"><b>{{ $w['weekly'] }}</b></td>
                 <td>{{ $w['owner'] }}</td>
@@ -396,28 +446,39 @@
     <h2>5.{{ $i + 1 }} {{ $o['name'] }} — {{ $o['scorePct'] }}% ({{ $o['grade'] }})</h2>
 
     @php
-        $kritikal = collect($o['metrics'])
+        // Diambil daripada scorecard yang sudah membawa nama servis. Baris
+        // "No of Lead 2/600" tanpa servis tidak boleh ditindaklanjuti apabila
+        // PIC yang sama memegang lima servis.
+        $kritikal = collect($x['scorecard'])
+            ->where('ownerName', $o['name'])
             ->filter(fn (array $m) => $nilaiStatus($m['status']) === 'red')
-            ->take(6);
+            ->sortBy('pct')
+            ->take(8);
     @endphp
 
     @if ($kritikal->isNotEmpty())
         <table class="data avoid">
             <tr>
-                <th style="width: 26%">{{ __('exec.pic_focus_table.focus') }}</th>
-                <th style="width: 20%">{{ __('exec.pic_focus_table.problem') }}</th>
+                @if ($x['multiService'])
+                    <th style="width: 15%">{{ __('exec.col_service') }}</th>
+                @endif
+                <th style="width: 23%">{{ __('exec.pic_focus_table.focus') }}</th>
+                <th style="width: 19%">{{ __('exec.pic_focus_table.problem') }}</th>
                 <th>{{ __('exec.pic_focus_table.action') }}</th>
-                <th style="width: 16%">{{ __('exec.pic_focus_table.kpi') }}</th>
             </tr>
             @foreach ($kritikal as $m)
                 <tr>
-                    <td><b>{{ $m['label'] }}</b></td>
-                    <td>{{ $m['actualLabel'] }} / {{ $m['targetLabel'] }}</td>
+                    @if ($x['multiService'])
+                        <td><b>{{ $m['serviceName'] }}</b></td>
+                    @endif
+                    <td>{{ $m['label'] }}</td>
+                    <td>{{ $m['actualLabel'] }} / {{ $m['targetLabel'] }} ({{ $m['pctLabel'] }})</td>
                     <td>{{ filled($m['actionPlan']) ? $m['actionPlan'] : __('exec.no_action_recorded') }}</td>
-                    <td class="n">{{ $m['targetLabel'] }}</td>
                 </tr>
             @endforeach
         </table>
+    @else
+        <p style="font-size: 8.5px; color: #6b7280">{{ __('exec.pic_no_red') }}</p>
     @endif
 @endforeach
 
@@ -432,24 +493,30 @@
 <h1 class="break">{{ __('exec.s6') }}</h1>
 
 <h2>{{ __('exec.s6_1') }}</h2>
-@if (! empty($x['journey']['stages']))
-    <table class="data avoid">
-        <tr>
-            <th style="width: 24%">{{ __('exec.huddle_table.agenda') }}</th>
-            <th style="width: 32%">{{ __('exec.huddle_table.data') }}</th>
-            <th style="width: 16%">{{ __('exec.huddle_table.owner') }}</th>
-            <th>{{ __('exec.huddle_table.decision') }}</th>
-        </tr>
-        @foreach ($x['journey']['stages'] as $st)
+<table class="data avoid">
+    <tr>
+        @if ($x['multiService'])
+            <th style="width: 14%">{{ __('exec.col_service') }}</th>
+        @endif
+        <th style="width: 20%">{{ __('exec.huddle_table.agenda') }}</th>
+        <th style="width: 30%">{{ __('exec.huddle_table.data') }}</th>
+        <th style="width: 14%">{{ __('exec.huddle_table.owner') }}</th>
+        <th>{{ __('exec.huddle_table.decision') }}</th>
+    </tr>
+    @foreach ($x['services'] as $svc)
+        @foreach ($svc['journey']['stages'] as $st)
             <tr>
-                <td><b>{{ $st['title'] }}</b></td>
+                @if ($x['multiService'])
+                    <td><b>{{ $svc['name'] }}</b></td>
+                @endif
+                <td>{{ $st['title'] }}</td>
                 <td>{{ $st['metricLabel'] }} — {{ $st['actualLabel'] }} / {{ $st['targetLabel'] }}</td>
                 <td>{{ $st['owner'] ?? __('exec.none') }}</td>
                 <td>{{ $st['perWeekLabel'] ? __('journey.target').': '.$st['perWeekLabel'] : '—' }}</td>
             </tr>
         @endforeach
-    </table>
-@endif
+    @endforeach
+</table>
 
 <h2>{{ __('exec.s6_2') }}</h2>
 <ul>
@@ -478,7 +545,7 @@
         </tr>
         @foreach ($x['weeklyTargets'] as $w)
             <tr>
-                <td>{{ $w['label'] }}</td>
+                <td>@if ($x['multiService']){{ $w['service'] }} — @endif{{ $w['label'] }}</td>
                 <td>{{ $w['weekly'] }} · {{ $w['owner'] }} · {{ $w['cadence'] }}</td>
                 <td>{{ __('exec.approver') }}</td>
                 <td>{{ __('exec.immediately') }}</td>
@@ -489,7 +556,11 @@
 
 <h2>{{ __('exec.conclusion_heading') }}</h2>
 <ul>
-    <li>{{ __('exec.conclusion_cause', ['cause' => $x['rootCauses'][0]['cause'] ?? __('exec.diagnosis_clear')]) }}</li>
+    <li>{{ __('exec.conclusion_cause', [
+        'cause' => isset($x['rootCauses'][0])
+            ? ($x['multiService'] ? $x['rootCauses'][0]['service'].' — ' : '').$x['rootCauses'][0]['cause']
+            : __('exec.diagnosis_clear'),
+    ]) }}</li>
     <li>{{ __('exec.conclusion_action') }}</li>
     <li>{{ __('exec.conclusion_success') }}</li>
 </ul>

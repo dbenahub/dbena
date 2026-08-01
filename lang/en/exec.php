@@ -24,6 +24,11 @@ return [
         'stable' => 'STABLE',
     ],
 
+    'col_service' => 'Service',
+    'col_pic' => 'Owner',
+    'pic_heading_note' => 'Owner scores span every service they hold.',
+    'pic_no_red' => 'No critical metrics for this owner in this period.',
+
     's1' => '1. Executive Summary',
     'exec_lead' => 'Overall team performance for :period is :severity. :green of :total metrics reached target, while :red metrics are critical.',
     'tile' => [

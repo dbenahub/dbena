@@ -27,6 +27,11 @@ return [
     ],
 
     // ── 1. Ringkasan Eksekutif ────────────────────────────────────────
+    'col_service' => 'Servis',
+    'col_pic' => 'PIC',
+    'pic_heading_note' => 'Skor PIC merangkumi semua servis yang dipegangnya.',
+    'pic_no_red' => 'Tiada metrik kritikal bagi PIC ini dalam tempoh ini.',
+
     's1' => '1. Ringkasan Eksekutif',
     'exec_lead' => 'Prestasi keseluruhan pasukan bagi :period berada pada tahap :severity. :green daripada :total metrik mencapai sasaran, manakala :red metrik berstatus kritikal.',
     'tile' => [

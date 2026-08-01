@@ -345,3 +345,104 @@ it('renders the PDF for a single owner without error', function (): void {
         ]))
         ->assertOk();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Laporan semua servis mesti dipecahkan mengikut servis
+|--------------------------------------------------------------------------
+*/
+
+it('splits the all-services report into one block per service', function (): void {
+    // Versi pertama meratakan setiap metrik ke dalam satu jadual, jadi
+    // "No of Lead — ZIKRI — 600" muncul lima kali dengan nombor berbeza dan
+    // tiada apa menunjukkan servis mana.
+    $report = app(OwnerReportService::class)->build(ReportPeriod::Monthly, 2026, 8);
+    $exec = app(App\Services\ExecutiveReportService::class)->build($report);
+
+    expect($exec['multiService'])->toBeTrue()
+        ->and($exec['services']->count())->toBeGreaterThan(1);
+});
+
+it('names the service on every scorecard row', function (): void {
+    $report = app(OwnerReportService::class)->build(ReportPeriod::Monthly, 2026, 8);
+    $exec = app(App\Services\ExecutiveReportService::class)->build($report);
+
+    foreach ($exec['scorecard'] as $row) {
+        expect($row['serviceName'])->not->toBeEmpty();
+    }
+});
+
+it('computes a separate funnel for each service', function (): void {
+    // Corong dikira daripada senarai rata, dan kunci metrik yang sama
+    // daripada lima servis bertindih. Rantaian yang dilabel "syarikat"
+    // sebenarnya nombor satu servis rawak — angka yang salah, bukan sekadar
+    // susun atur yang mengelirukan.
+    $report = app(OwnerReportService::class)->build(ReportPeriod::Monthly, 2026, 8);
+    $exec = app(App\Services\ExecutiveReportService::class)->build($report);
+
+    foreach ($exec['services'] as $svc) {
+        expect($svc['journey'])->toHaveKey('stages');
+    }
+
+    // Tiada corong peringkat syarikat apabila banyak servis — ia tidak
+    // bermakna, jadi lebih baik tiada daripada salah.
+    expect($exec['journey'])->toBeNull();
+});
+
+it('keeps a single company funnel when one service is selected', function (): void {
+    $service = Service::where('key', 'renovation')->firstOrFail();
+
+    $report = app(OwnerReportService::class)
+        ->build(ReportPeriod::Monthly, 2026, 8, null, $service->id);
+    $exec = app(App\Services\ExecutiveReportService::class)->build($report);
+
+    expect($exec['multiService'])->toBeFalse()
+        ->and($exec['journey'])->not->toBeNull();
+});
+
+it('tags every priority issue with its service', function (): void {
+    $report = app(OwnerReportService::class)->build(ReportPeriod::Monthly, 2026, 8);
+    $exec = app(App\Services\ExecutiveReportService::class)->build($report);
+
+    foreach ($exec['priorities'] as $p) {
+        expect($p['service'])->not->toBe('—');
+    }
+});
+
+it('does not repeat the same missing-target metric once per service', function (): void {
+    // "Sales Collection (Progress Claim)" muncul lima kali berturut-turut
+    // dalam senarai dan kelihatan seperti pepijat.
+    $report = app(OwnerReportService::class)->build(ReportPeriod::Monthly, 2026, 8);
+    $exec = app(App\Services\ExecutiveReportService::class)->build($report);
+
+    expect($exec['missingTargets']->count())
+        ->toBe($exec['missingTargets']->unique()->count());
+});
+
+it('gives each service its own weekly targets', function (): void {
+    $report = app(OwnerReportService::class)->build(ReportPeriod::Monthly, 2026, 8);
+    $exec = app(App\Services\ExecutiveReportService::class)->build($report);
+
+    foreach ($exec['weeklyTargets'] as $w) {
+        expect($w['service'])->not->toBeEmpty();
+    }
+
+    $servis = collect($exec['weeklyTargets'])->pluck('service')->unique();
+    expect($servis->count())->toBeGreaterThan(1);
+});
+
+it('reports every service total adding up to the company total', function (): void {
+    $report = app(OwnerReportService::class)->build(ReportPeriod::Monthly, 2026, 8);
+    $exec = app(App\Services\ExecutiveReportService::class)->build($report);
+
+    expect($exec['services']->sum('total'))->toBe($exec['scorecard']->count());
+});
+
+it('renders the all-services PDF without error', function (): void {
+    $admin = User::where('role', UserRole::Admin)->firstOrFail();
+
+    $this->actingAs($admin)
+        ->get(route('laporan.owner.pdf', ['tempoh' => 'monthly', 'tahun' => 2026, 'bulan' => 8]))
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+});

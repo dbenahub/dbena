@@ -15,13 +15,20 @@ use Illuminate\Support\Collection;
  * memantau, tetapi bukan sesuatu yang boleh dibentangkan dalam mesyuarat
  * pengurusan atau diserahkan kepada seseorang sebagai arahan.
  *
- * Perkhidmatan ini menambah lapisan yang menjadikannya dokumen: keterukan
- * keseluruhan, isu mengikut keutamaan, rantaian punca-kesan, sasaran
- * mingguan bernama, dan keputusan yang perlu diluluskan pengurusan.
+ * PENGUMPULAN MENGIKUT SERVIS ialah keputusan utama di sini. Laporan
+ * "semua servis" versi pertama meratakan setiap metrik ke dalam satu
+ * jadual, jadi "No of Lead — ZIKRI — 600" muncul lima kali berturut-turut
+ * dengan nombor berbeza dan tiada apa-apa menunjukkan servis mana. Pembaca
+ * tidak boleh mempercayai satu baris pun.
  *
- * Semua angka datang daripada laporan sedia ada — tiada satu pun ditaip
- * semula. Laporan yang mengandungi nombor yang tidak sepadan dengan
- * dashboard akan meruntuhkan kepercayaan pada kedua-duanya.
+ * Lebih teruk: corong jualan dikira daripada senarai rata itu, dan
+ * kunci metrik yang sama daripada lima servis bertindih antara satu sama
+ * lain. Rantaian yang dipaparkan sebagai "syarikat" sebenarnya nombor satu
+ * servis rawak. Itu bukan susun atur yang mengelirukan — itu angka yang
+ * salah.
+ *
+ * Kini setiap servis mendapat blok sendiri: metriknya, corongnya, punca
+ * akarnya, sasaran mingguannya. Tahap syarikat hanya menghimpunkan.
  */
 class ExecutiveReportService
 {
@@ -36,11 +43,14 @@ class ExecutiveReportService
         'sales_collection_new' => 'mingguan',
     ];
 
-    private const PRIORITY_LIMIT = 4;
+    private const PRIORITY_LIMIT = 5;
 
     private const ROOT_CAUSE_LIMIT = 6;
 
-    public function __construct(private readonly SalesJourneyService $journey) {}
+    public function __construct(
+        private readonly SalesJourneyService $journey,
+        private readonly FunnelAnalysisService $funnel,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $report  Hasil OwnerReportService::build()
@@ -52,7 +62,14 @@ class ExecutiveReportService
         $owners = $report['owners'];
 
         $metrics = $owners->flatMap(fn (array $o) => $this->ownerMetrics($o));
-        $diagnoses = $owners->flatMap(fn (array $o) => $o['diagnoses']);
+
+        $services = $this->byService($metrics);
+
+        // Isu daripada SETIAP servis, disatukan dan diisih semula. Setiap
+        // satu membawa nama servisnya, jadi jadual keutamaan di muka depan
+        // tidak lagi menyenaraikan empat baris "No of New Quotation" yang
+        // kelihatan serupa.
+        $diagnoses = $services->flatMap(fn (array $s) => $s['diagnoses']);
 
         $score = (int) $report['summary']['teamScore'];
 
@@ -60,20 +77,90 @@ class ExecutiveReportService
             'severity' => $this->severity($score),
             'severityKey' => $this->severityKey($score),
             'gapTotal' => $this->gapTotal($metrics),
+
+            'multiService' => $services->count() > 1,
+            'services' => $services,
+
             'scorecard' => $metrics->sortBy('pct', SORT_REGULAR)->values(),
             'priorities' => $this->priorities($diagnoses),
-            'journey' => $this->journey->build($this->journeyRows($metrics)),
             'rootCauses' => $this->rootCauses($diagnoses),
-            'observations' => $this->observations($metrics),
-            'weeklyTargets' => $this->weeklyTargets($metrics),
-            'missingTargets' => $metrics->whereNull('target')->pluck('label')->values(),
+            'observations' => $services->flatMap(fn (array $s) => $s['observations'])->values()->all(),
+            'weeklyTargets' => $services->flatMap(fn (array $s) => $s['weeklyTargets'])->values()->all(),
+
+            // Nama metrik berulang merentas servis. Tanpa dedup, senarai
+            // "tiada sasaran" menyebut Sales Collection (Progress Claim)
+            // lima kali dan kelihatan seperti pepijat.
+            'missingTargets' => $metrics
+                ->whereNull('target')
+                ->map(fn (array $m) => $m['serviceName'].' — '.$m['label'])
+                ->unique()
+                ->values(),
+
             'noPlanCount' => $metrics->where('hasPlan', false)->where('status', MetricStatus::Red)->count(),
+
+            // Corong peringkat syarikat hanya bermakna apabila satu servis
+            // dipilih. Merentas servis, setiap satu ada corongnya sendiri.
+            'journey' => $services->count() === 1
+                ? $services->first()['journey']
+                : null,
         ];
     }
 
     /**
-     * Ratakan metrik setiap pemilik menjadi satu senarai dengan nama PIC
-     * dilekatkan, supaya scorecard boleh dibaca sebagai satu jadual.
+     * Satu blok setiap servis: metrik, corong, punca, sasaran mingguan.
+     *
+     * @param  Collection<int, array<string, mixed>>  $metrics
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function byService(Collection $metrics): Collection
+    {
+        return $metrics
+            ->groupBy('serviceId')
+            ->map(function (Collection $rows): array {
+                $pertama = $rows->first();
+                $funnelRows = $this->funnelRows($rows);
+
+                $diagnoses = $this->funnel
+                    ->diagnoseOwner($funnelRows, $funnelRows)
+                    ->map(function (array $d) use ($pertama): array {
+                        $d['serviceName'] = $pertama['serviceName'];
+
+                        return $d;
+                    });
+
+                $total = $rows->count();
+                $green = $rows->where('status', MetricStatus::Green)->count();
+
+                return [
+                    'id' => $pertama['serviceId'],
+                    'name' => $pertama['serviceName'],
+                    'sort' => $pertama['serviceSort'],
+
+                    'total' => $total,
+                    'green' => $green,
+                    'red' => $rows->where('status', MetricStatus::Red)->count(),
+                    'score' => $total > 0 ? (int) round($green / $total * 100) : 0,
+                    'gap' => $this->gapTotal($rows),
+
+                    // Pemilik yang menyentuh servis ini — supaya tajuk kecil
+                    // boleh menyebut siapa bertanggungjawab tanpa pembaca
+                    // perlu mengimbas seluruh jadual.
+                    'owners' => $rows->pluck('ownerName')->unique()->sort()->values()->all(),
+
+                    'metrics' => $rows->sortBy('pct', SORT_REGULAR)->values(),
+                    'journey' => $this->journey->build($funnelRows),
+                    'diagnoses' => $diagnoses,
+                    'rootCauses' => $this->rootCauses($diagnoses),
+                    'observations' => $this->observations($rows),
+                    'weeklyTargets' => $this->weeklyTargets($rows),
+                ];
+            })
+            ->sortBy('sort')
+            ->values();
+    }
+
+    /**
+     * Ratakan metrik seorang pemilik, dengan servis DAN nama PIC dilekatkan.
      *
      * @param  array<string, mixed>  $owner
      * @return Collection<int, array<string, mixed>>
@@ -84,6 +171,11 @@ class ExecutiveReportService
             'metricKey' => $m['metric']->metric_key,
             'label' => $m['label'],
             'ownerName' => $owner['name'],
+
+            'serviceId' => $m['metric']->service_id,
+            'serviceName' => $m['metric']->service->name,
+            'serviceSort' => $m['metric']->service->sort_order,
+
             'actual' => $m['actual'],
             'actualLabel' => $m['actualLabel'],
             'target' => $m['target'],
@@ -93,6 +185,7 @@ class ExecutiveReportService
             'pctLabel' => $m['pct'] !== null ? number_format((float) $m['pct'], 1).'%' : '—',
             'status' => $m['status'],
             'statusLabel' => $m['status']->label(),
+            'actionPlan' => $m['actionPlan'],
             'hasPlan' => filled($m['actionPlan']),
             'gapLabel' => $this->gapLabel($m),
         ]);
@@ -144,12 +237,9 @@ class ExecutiveReportService
     }
 
     /**
-     * Isu mengikut keutamaan — diambil daripada diagnosis corong yang
-     * sedia ada dan diisih mengikut bilangan metrik hilir yang terjejas.
-     *
-     * Isu yang menyekat empat metrik lain mendahului isu yang menyekat
-     * satu, walaupun peratusannya lebih baik. Itu perbezaan antara
-     * senarai masalah dan senarai keutamaan.
+     * Isu mengikut keutamaan, diisih mengikut bilangan metrik hilir yang
+     * disekat. Isu yang menyekat empat metrik lain mendahului isu yang
+     * menyekat satu, walaupun peratusannya lebih baik.
      *
      * @param  Collection<int, array<string, mixed>>  $diagnoses
      * @return array<int, array<string, mixed>>
@@ -157,12 +247,12 @@ class ExecutiveReportService
     private function priorities(Collection $diagnoses): array
     {
         return $diagnoses
-            ->unique('metricKey')
             ->sortByDesc(fn (array $d) => [count($d['impacts']), -(float) ($d['pct'] ?? 100)])
             ->take(self::PRIORITY_LIMIT)
             ->values()
             ->map(fn (array $d, int $i) => [
                 'rank' => $i + 1,
+                'service' => $d['serviceName'] ?? '—',
                 'issue' => $d['label'],
                 'evidence' => $d['actualLabel'].' / '.$d['targetLabel']
                     .($d['pct'] !== null ? ' ('.number_format((float) $d['pct'], 1).'%)' : ''),
@@ -183,11 +273,11 @@ class ExecutiveReportService
     private function rootCauses(Collection $diagnoses): array
     {
         return $diagnoses
-            ->unique('metricKey')
             ->sortByDesc(fn (array $d) => count($d['impacts']))
             ->take(self::ROOT_CAUSE_LIMIT)
             ->values()
             ->map(fn (array $d) => [
+                'service' => $d['serviceName'] ?? '—',
                 'cause' => $d['points'][0]['text'] ?? $d['label'],
                 'evidence' => $d['actualLabel'].' / '.$d['targetLabel'],
                 'effect' => $d['impacts'] !== []
@@ -203,8 +293,9 @@ class ExecutiveReportService
     /**
      * Nisbah antara peringkat corong, dinyatakan sebagai ayat.
      *
-     * "474 lead menghasilkan 11 site visit" memberitahu lebih banyak
-     * daripada dua baris berasingan yang menunjukkan 79% dan 45.8%.
+     * Dikira PER SERVIS. Membahagikan jumlah lead semua servis dengan
+     * jumlah site visit semua servis menghasilkan nombor yang tidak
+     * menerangkan apa-apa tentang mana-mana servis.
      *
      * @param  Collection<int, array<string, mixed>>  $metrics
      * @return array<int, string>
@@ -212,6 +303,7 @@ class ExecutiveReportService
     private function observations(Collection $metrics): array
     {
         $byKey = $metrics->keyBy('metricKey');
+        $servis = $metrics->first()['serviceName'] ?? '';
         $nilai = fn (string $k) => $byKey->has($k) && $byKey[$k]['actual'] !== null
             ? (float) $byKey[$k]['actual']
             : null;
@@ -225,35 +317,37 @@ class ExecutiveReportService
         $sales = $nilai('revenue_sales');
         $ads = $byKey->get('ads_spend');
 
+        $awalan = fn (string $teks) => $servis === '' ? $teks : $servis.': '.$teks;
+
         if ($ads && $ads['pct'] !== null && $byKey->has('no_of_lead') && $byKey['no_of_lead']['pct'] !== null) {
-            $out[] = __('exec.obs.ads_vs_lead', [
+            $out[] = $awalan(__('exec.obs.ads_vs_lead', [
                 'ads' => number_format((float) $ads['pct'], 1),
                 'lead' => number_format((float) $byKey['no_of_lead']['pct'], 1),
-            ]);
+            ]));
         }
 
         if ($lead > 0 && $visit !== null) {
-            $out[] = __('exec.obs.lead_to_visit', [
+            $out[] = $awalan(__('exec.obs.lead_to_visit', [
                 'lead' => number_format($lead),
                 'visit' => number_format($visit),
                 'rate' => number_format($visit / $lead * 100, 1),
-            ]);
+            ]));
         }
 
         if ($visit > 0 && $quote !== null) {
-            $out[] = __('exec.obs.visit_to_quote', [
+            $out[] = $awalan(__('exec.obs.visit_to_quote', [
                 'visit' => number_format($visit),
                 'quote' => number_format($quote),
                 'rate' => number_format($quote / $visit * 100, 1),
-            ]);
+            ]));
         }
 
         if ($amount > 0 && $sales !== null) {
-            $out[] = __('exec.obs.quote_to_sales', [
+            $out[] = $awalan(__('exec.obs.quote_to_sales', [
                 'amount' => 'RM'.number_format($amount),
                 'sales' => 'RM'.number_format($sales),
                 'rate' => number_format($sales / $amount * 100, 1),
-            ]);
+            ]));
         }
 
         return $out;
@@ -269,6 +363,7 @@ class ExecutiveReportService
             ->filter(fn (array $m) => isset(self::OPERATIONAL[$m['metricKey']]) && $m['target'] !== null)
             ->unique('metricKey')
             ->map(fn (array $m) => [
+                'service' => $m['serviceName'],
                 'label' => $m['label'],
                 'weekly' => $m['valueType']->format(ceil((float) $m['target'] / 4)),
                 'owner' => $m['ownerName'],
@@ -285,12 +380,12 @@ class ExecutiveReportService
     }
 
     /**
-     * Bina baris untuk peta perjalanan daripada scorecard yang diratakan.
+     * Baris untuk analisis corong dan peta perjalanan.
      *
      * @param  Collection<int, array<string, mixed>>  $metrics
      * @return Collection<int, array<string, mixed>>
      */
-    private function journeyRows(Collection $metrics): Collection
+    private function funnelRows(Collection $metrics): Collection
     {
         return $metrics->map(fn (array $m) => [
             'metricKey' => $m['metricKey'],
@@ -302,7 +397,8 @@ class ExecutiveReportService
             'valueType' => $m['valueType'],
             'pct' => $m['pct'],
             'status' => $m['status'],
+            'actionPlan' => $m['actionPlan'],
             'ownerName' => $m['ownerName'],
-        ]);
+        ])->values();
     }
 }
