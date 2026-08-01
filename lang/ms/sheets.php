@@ -92,6 +92,9 @@ return [
     'sync_all' => 'Segerak Semua Servis',
     'queued_all' => ':count servis dibaris gilirkan untuk sync',
 
+    'month_mismatch' => 'Header sheet menunjukkan data untuk :sheet, tetapi anda memilih :selected. Sync akan menulis ke bulan yang salah.',
+    'use_sheet_month' => 'Tukar ke :month',
+
     'realtime' => 'Kemas Kini Masa-Nyata (Apps Script)',
     'realtime_hint' => 'Pasang skrip ini dalam Google Sheet anda supaya dashboard dikemas kini beberapa saat selepas sebarang suntingan — tanpa menunggu jadual.',
     'show_script' => 'Papar Skrip',

@@ -92,6 +92,9 @@ return [
     'sync_all' => 'Sync All Services',
     'queued_all' => ':count services queued for sync',
 
+    'month_mismatch' => 'The sheet header shows data for :sheet, but you selected :selected. Syncing would write to the wrong month.',
+    'use_sheet_month' => 'Switch to :month',
+
     'realtime' => 'Real-time Updates (Apps Script)',
     'realtime_hint' => 'Install this script in your Google Sheet so the dashboard updates seconds after any edit — without waiting for the schedule.',
     'show_script' => 'Show Script',

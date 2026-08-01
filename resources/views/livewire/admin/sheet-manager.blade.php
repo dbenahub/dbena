@@ -412,6 +412,38 @@
             {{ __('sheets.run_sync_hint', ['minutes' => config('dbena.sheets.sync_interval_minutes')]) }}
         </p>
 
+        @if ($preview && ! empty($preview['headers']))
+            @php
+                // Header minggu selalunya membawa julat tarikh seperti "[01/07-09/07]".
+                // Kalau bulan dalam tarikh itu tidak sepadan dengan bulan yang dipilih,
+                // sync akan menulis ke tempoh yang salah - beri amaran.
+                $headerMonth = null;
+                foreach ($preview['headers'] as $h) {
+                    if (preg_match('#\b\d{2}/(\d{2})\s*-#', (string) $h, $m)) {
+                        $headerMonth = (int) $m[1];
+                        break;
+                    }
+                }
+            @endphp
+
+            @if ($headerMonth && $headerMonth !== (int) $month)
+                <div class="mb-4 flex items-start gap-2.5 rounded-xl px-4 py-3 text-[12.5px] leading-relaxed"
+                     style="background: oklch(0.78 0.15 85/0.1); border: 1px solid oklch(0.78 0.15 85/0.4); color: oklch(0.82 0.14 85)">
+                    <i class="ph-duotone ph-warning-circle mt-px shrink-0 text-base" aria-hidden="true"></i>
+                    <div>
+                        {{ __('sheets.month_mismatch', [
+                            'sheet' => $months[$headerMonth - 1],
+                            'selected' => $months[$month - 1],
+                        ]) }}
+                        <button type="button" wire:click="$set('month', {{ $headerMonth }})"
+                                class="ml-1 font-bold underline">
+                            {{ __('sheets.use_sheet_month', ['month' => $months[$headerMonth - 1]]) }}
+                        </button>
+                    </div>
+                </div>
+            @endif
+        @endif
+
         <div class="flex flex-wrap items-end gap-3">
             <div>
                 <label for="sync-year" class="mb-1.5 block text-[11.5px] text-t55">{{ __('dashboard.year') }}</label>

@@ -17,19 +17,21 @@ it('seeds exactly the five DBENA services', function (): void {
         ->toBe(['bina-rumah', 'divider', 'kabinet', 'mihrab', 'renovation']);
 });
 
-it('seeds all 49 critical metric rows from the prototype', function (): void {
-    expect(CriticalMetric::count())->toBe(49);
+it('seeds every critical metric row', function (): void {
+    // 40 dari prototaip + 3 metrik Divider yang hanya wujud dalam sheet sebenar
+    expect(CriticalMetric::count())->toBe(52);
 });
 
-it('gives each service the row count the prototype had', function (): void {
-    // Divider sengaja mempunyai 9 baris, bukan 10.
+it('gives each service the row count its sheet section has', function (): void {
+    // Divider sengaja berbeza daripada empat servis yang lain.
     $counts = Service::withCount('criticalMetrics')->get()->pluck('critical_metrics_count', 'key');
 
     expect($counts['renovation'])->toBe(10)
         ->and($counts['kabinet'])->toBe(10)
         ->and($counts['bina-rumah'])->toBe(10)
         ->and($counts['mihrab'])->toBe(10)
-        ->and($counts['divider'])->toBe(9);
+        // Divider membawa 3 metrik tambahan yang khas kepadanya
+        ->and($counts['divider'])->toBe(12);
 });
 
 it('omits site visit for Divider and uses appointment for Bina Rumah', function (): void {

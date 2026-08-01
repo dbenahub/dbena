@@ -72,7 +72,14 @@ class CriticalMetricSeeder extends Seeder
             ['cost_per_lead',              'Cost Per Lead (CPL)',               'Cost Per Lead (CPL)',               'avg',   'currency', 15,      null,       'INFO'],
             ['cost_per_appointment',       'Cost Per Appointment (CPA)',        'Cost Per Appointment (CPA)',        'avg',   'currency', 75,      null,       'INFO'],
         ],
-        // 9 baris sahaja — tiada Site Visit, guna CPQ ganti CPA.
+        /*
+         * Divider tiada Site Visit dan menggunakan CPQ ganti CPA.
+         *
+         * Tiga metrik terakhir khas kepada Divider — ia wujud dalam Google
+         * Sheet DBENA sebenar tetapi tiada dalam prototaip. Sasarannya
+         * dibiarkan NULL kerana nilainya tidak diketahui; hidupkan "Import
+         * Monthly Target dari sheet" supaya lajur H mengisinya.
+         */
         'divider' => [
             ['sales_collection_new',       'Sales Collection (New)',            'Sales Collection (New)',            'total', 'currency', 20000,   null,       'ZIKRI'],
             ['revenue_sales',              'Revenue/Sales',                     'Revenue/Sales',                     'total', 'currency', 40000,   null,       'ZIKRI'],
@@ -83,6 +90,9 @@ class CriticalMetricSeeder extends Seeder
             ['no_of_lead',                 'No of Lead',                        'No of Lead',                        'total', 'number',   80,      null,       'ZIKRI'],
             ['cost_per_lead',              'Cost Per Lead (CPL)',               'Cost Per Lead (CPL)',               'avg',   'currency', 15,      null,       'INFO'],
             ['cost_per_quotation',         'Cost Per Quotation (CPQ)',          'Cost Per Quotation (CPQ)',          'avg',   'currency', 75,      null,       'INFO'],
+            ['total_value_complete',       'Total Value Complete (RM)',         'Total Value Complete (RM)',         'total', 'currency', null,    null,       'ZIKRI'],
+            ['bilangan_papan',             'Bilangan Papan (PCS)',              'Number of Boards (PCS)',            'total', 'number',   null,    null,       'ZIKRI'],
+            ['value_per_papan',            'Value Per Papan (RM)',              'Value Per Board (RM)',              'avg',   'currency', null,    null,       'INFO'],
         ],
     ];
 
