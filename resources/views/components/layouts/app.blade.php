@@ -121,14 +121,20 @@
                          keseluruhan baris sebagai suis bermakna tiada cara untuk
                          pergi ke Dashboard Utama itu sendiri tanpa menutup
                          senarai servis. --}}
+                    {{-- Hanya berat DUOTONE Phosphor diimport dalam app.css.
+                         Versi pertama butang ini menggunakan ph-bold, yang
+                         tidak wujud — jadi anak panah tidak dirender langsung
+                         dan butang itu kelihatan seperti ruang kosong. --}}
                     <button type="button" x-on:click="buka = ! buka"
                             :aria-expanded="buka ? 'true' : 'false'"
                             aria-controls="nav-servis"
                             aria-label="{{ __('app.nav.services') }}"
-                            class="flex w-9 shrink-0 items-center justify-center rounded-[10px] transition-colors hover:bg-hover">
-                        <i class="ph-bold text-[13px] transition-transform duration-200"
-                           :class="buka ? 'ph-caret-up' : 'ph-caret-down'"
-                           style="color: var(--t60)" aria-hidden="true"></i>
+                            :title="buka ? '{{ __('app.nav.hide_services') }}' : '{{ __('app.nav.show_services') }}'"
+                            class="flex w-10 shrink-0 items-center justify-center rounded-[10px] transition-colors hover:bg-hover"
+                            style="background: var(--hover-bg3); border: 1px solid var(--border2)">
+                        <i class="ph-duotone ph-caret-down text-[18px] transition-transform duration-200"
+                           :class="buka ? 'rotate-180' : ''"
+                           style="color: oklch(0.78 0.12 85)" aria-hidden="true"></i>
                     </button>
                 </div>
 

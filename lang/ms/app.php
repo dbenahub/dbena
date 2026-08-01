@@ -32,6 +32,8 @@ return [
         'user' => 'Pengguna',
     ],
     'nav' => [
+        'show_services' => 'Tunjuk senarai servis',
+        'hide_services' => 'Sorok senarai servis',
         'services' => 'Servis',
         'dashboard' => 'Dashboard Utama',
         'laporan' => 'Laporan',

@@ -32,6 +32,8 @@ return [
         'user' => 'User',
     ],
     'nav' => [
+        'show_services' => 'Show service list',
+        'hide_services' => 'Hide service list',
         'services' => 'Services',
         'dashboard' => 'Main Dashboard',
         'laporan' => 'Reports',

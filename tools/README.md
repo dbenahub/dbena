@@ -70,3 +70,20 @@ penggunaan menghasilkan bunyi bising, dan pemeriksa yang bising akan
 diabaikan.
 
     python3 tools/check-blade-echo.py
+
+## check-icons.py
+
+Mengesan ikon Phosphor yang menggunakan berat yang tidak diimport.
+
+Phosphor mengedarkan setiap berat sebagai fail CSS berasingan. Menggunakan
+`ph-fill` sedangkan hanya `duotone` diimport tidak menghasilkan ralat, tiada
+amaran, dan tiada apa dalam konsol — ikon itu sekadar tidak dirender. Ruang
+kosong di tempatnya kelihatan seperti pelapik yang salah, bukan ikon yang
+hilang.
+
+Ditulis selepas butang buka/tutup sidebar dihantar dengan `ph-bold`. Anak
+panahnya tidak pernah muncul, dan butang itu kelihatan seperti ruang kosong.
+Enam ikon lain dalam Peta Perjalanan sudah tidak kelihatan atas sebab yang
+sama tanpa disedari.
+
+    python3 tools/check-icons.py

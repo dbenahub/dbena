@@ -83,7 +83,7 @@
              style="background: linear-gradient(180deg, oklch(0.62 0.16 150/0.14), oklch(0.62 0.16 150/0.06));
                     border: 1px solid oklch(0.62 0.16 150/0.35);
                     box-shadow: inset 0 1px 0 oklch(0.62 0.16 150/0.25)">
-            <i class="ph-fill ph-check-circle mt-px text-xl shrink-0"
+            <i class="ph-duotone ph-check-circle mt-px text-xl shrink-0"
                style="color: oklch(0.62 0.16 150)" aria-hidden="true"></i>
             <div>
                 <div class="text-[13px] font-extrabold" style="color: oklch(0.66 0.16 150)">
@@ -99,7 +99,7 @@
                     box-shadow: 0 6px 18px -10px oklch(0.63 0.22 25/0.7), inset 0 1px 0 oklch(0.63 0.22 25/0.3)">
 
             <div class="flex gap-3 px-4 pb-3 pt-3.5">
-                <i class="ph-fill ph-warning-octagon mt-px text-xl shrink-0"
+                <i class="ph-duotone ph-warning-octagon mt-px text-xl shrink-0"
                    style="color: oklch(0.66 0.21 25)" aria-hidden="true"></i>
                 <div class="min-w-0">
                     <div class="text-[13.5px] font-extrabold" style="color: oklch(0.7 0.2 25)">
@@ -120,7 +120,7 @@
                  style="background: oklch(0.72 0.17 60/0.12); border-top: 1px solid oklch(0.72 0.17 60/0.3)">
                 <span class="flex items-center gap-1.5 rounded-md px-2 py-1 text-[10.5px] font-extrabold tracking-wide"
                       style="background: oklch(0.72 0.17 60); color: oklch(0.18 0.02 260)">
-                    <i class="ph-fill ph-flag-banner" aria-hidden="true"></i>
+                    <i class="ph-duotone ph-flag-banner" aria-hidden="true"></i>
                     {{ filled($break['owner']) && $break['owner'] !== '—'
                         ? __('journey.action_owner', ['owner' => $break['owner']])
                         : __('journey.action_owner_none') }}
@@ -309,7 +309,7 @@
                      style="background: linear-gradient(180deg, oklch(0.78 0.17 60), oklch(0.66 0.17 55));
                             color: oklch(0.18 0.02 260);
                             box-shadow: 0 5px 14px -6px oklch(0.72 0.17 60), inset 0 1px 0 oklch(0.88 0.12 70)">
-                    <i class="ph-fill ph-flag-checkered" aria-hidden="true"></i>
+                    <i class="ph-duotone ph-flag-checkered" aria-hidden="true"></i>
                     {{ __('journey.goal') }}
                 </div>
             </div>
@@ -342,7 +342,7 @@
                                     border-bottom: 1px solid color-mix(in oklch, {{ $s['accent'] }} 30%, transparent)">
                             <span class="truncate text-[11px] font-extrabold tracking-wide"
                                   style="color: {{ $s['accent'] }}">{{ $s['title'] }}</span>
-                            <i class="ph-fill {{ $s['icon'] }} ml-auto shrink-0 text-[15px]"
+                            <i class="ph-duotone {{ $s['icon'] }} ml-auto shrink-0 text-[15px]"
                                style="color: {{ $s['accent'] }}" aria-hidden="true"></i>
                         </div>
 
@@ -405,7 +405,7 @@
                             <div class="px-3 py-2"
                                  style="background: oklch(0.63 0.22 25/0.14); border-top: 1px solid oklch(0.63 0.22 25/0.35)">
                                 <div class="flex items-start gap-1.5">
-                                    <i class="ph-fill ph-x-circle mt-px shrink-0 text-[13px]"
+                                    <i class="ph-duotone ph-x-circle mt-px shrink-0 text-[13px]"
                                        style="color: oklch(0.68 0.21 25)" aria-hidden="true"></i>
                                     <div class="min-w-0">
                                         <div class="text-[10.5px] font-extrabold leading-tight"
