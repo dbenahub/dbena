@@ -44,8 +44,22 @@ class ServiceAccountSheetReader implements SheetReader
             throw SheetReadException::notFound();
         }
 
-        $range = filled($integration->tab_name)
-            ? "'".str_replace("'", "''", $integration->tab_name)."'"
+        /*
+         * Google Sheets API merujuk tab mengikut NAMA, bukan gid.
+         *
+         * Endpoint eksport CSV (driver 'link') menerima gid, jadi pautan yang
+         * sama berfungsi di sana. Di sini gid diabaikan senyap-senyap dan API
+         * memulangkan tab PERTAMA - yang kelihatan seperti "tiada baris
+         * dipadankan" dan bukan ralat sebenar.
+         *
+         * Kami terjemahkan gid kepada nama tab dahulu.
+         */
+        $tab = filled($integration->tab_name)
+            ? $integration->tab_name
+            : $this->resolveTabName($id, $integration->gid);
+
+        $range = filled($tab)
+            ? "'".str_replace("'", "''", $tab)."'"
             : 'A:ZZ';
 
         try {
@@ -186,6 +200,66 @@ class ServiceAccountSheetReader implements SheetReader
             // Kunci yang ditampal kadangkala mempunyai \n literal ganti baris baharu.
             'private_key' => str_replace('\\n', "\n", $json['private_key']),
         ];
+    }
+
+    /**
+     * Terjemah gid berangka kepada nama tab melalui metadata spreadsheet.
+     *
+     * Dicache 5 minit - nama tab jarang berubah, dan ini mengelakkan panggilan
+     * API tambahan pada setiap sync berjadual.
+     */
+    private function resolveTabName(string $spreadsheetId, ?string $gid): ?string
+    {
+        if (blank($gid)) {
+            return null;
+        }
+
+        $tabs = $this->listTabs($spreadsheetId);
+
+        foreach ($tabs as $tab) {
+            if ((string) $tab['gid'] === (string) $gid) {
+                return $tab['title'];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Senaraikan semua tab dalam spreadsheet.
+     *
+     * @return array<int, array{gid: string, title: string, index: int}>
+     */
+    public function listTabs(string $spreadsheetId): array
+    {
+        $key = 'dbena.sheets.tabs.'.$spreadsheetId;
+
+        return Cache::remember($key, now()->addMinutes(5), function () use ($spreadsheetId): array {
+            try {
+                $response = Http::withToken($this->accessToken())
+                    ->timeout((int) config('dbena.sheets.timeout_seconds'))
+                    ->get("https://sheets.googleapis.com/v4/spreadsheets/{$spreadsheetId}", [
+                        'fields' => 'sheets.properties(sheetId,title,index)',
+                    ]);
+            } catch (\Throwable) {
+                return [];
+            }
+
+            if (! $response->successful()) {
+                return [];
+            }
+
+            return collect($response->json('sheets', []))
+                ->map(fn (array $sheet) => [
+                    'gid' => (string) ($sheet['properties']['sheetId'] ?? ''),
+                    'title' => (string) ($sheet['properties']['title'] ?? ''),
+                    'index' => (int) ($sheet['properties']['index'] ?? 0),
+                ])
+                ->filter(fn (array $t) => $t['title'] !== '')
+                ->sortBy('index')
+                ->values()
+                ->all();
+        });
     }
 
     /** Emel yang sheet perlu dikongsi dengannya. Null jika belum dikonfigurasi. */

@@ -176,8 +176,22 @@
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
                     <label for="tab-name" class="mb-1.5 block text-[11.5px] text-t55">{{ __('sheets.tab_name') }}</label>
-                    <input id="tab-name" type="text" wire:model="tabName" class="dbena-input"
-                           placeholder="{{ __('sheets.tab_placeholder') }}">
+                    @php $tabs = $this->availableTabs(); @endphp
+
+                    @if ($tabs !== [])
+                        <select id="tab-name" wire:model="tabName" class="dbena-input">
+                            <option value="">{{ __('sheets.tab_auto') }}</option>
+                            @foreach ($tabs as $tab)
+                                <option value="{{ $tab['title'] }}">
+                                    {{ $tab['title'] }}{{ (string) $tab['gid'] === (string) $integration->gid ? ' ✓' : '' }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <p class="mt-1 text-[11px] text-t50">{{ __('sheets.tab_list_hint') }}</p>
+                    @else
+                        <input id="tab-name" type="text" wire:model="tabName" class="dbena-input"
+                               placeholder="{{ __('sheets.tab_placeholder') }}">
+                    @endif
                 </div>
                 <div>
                     <label for="header-row" class="mb-1.5 block text-[11.5px] text-t55">

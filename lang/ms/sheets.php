@@ -56,6 +56,9 @@ return [
     'url' => 'Pautan Google Sheet',
     'tab_name' => 'Nama Tab',
     'tab_placeholder' => 'cth. Renovation',
+    'tab_auto' => 'Auto (dari gid dalam pautan)',
+    'tab_list_hint' => 'Tab bertanda ✓ ialah yang dirujuk oleh pautan anda.',
+
     'header_row' => 'Baris Header',
     'match_mode' => 'Padanan Baris',
     'match_label' => 'Ikut nama metrik',

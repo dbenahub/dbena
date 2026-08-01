@@ -254,6 +254,35 @@ class SheetManager extends Component
         $this->dispatch('dbena-toast', message: __('sheets.secret_regenerated'));
     }
 
+    /**
+     * Tab yang tersedia dalam spreadsheet.
+     *
+     * Hanya berfungsi dengan driver service account - endpoint CSV awam tidak
+     * mendedahkan metadata. Kembalikan kosong jika tidak tersedia.
+     *
+     * @return array<int, array{gid: string, title: string, index: int}>
+     */
+    public function availableTabs(): array
+    {
+        $integration = $this->integration();
+
+        if (blank($integration->spreadsheet_id) || config('dbena.sheets.driver') !== 'service') {
+            return [];
+        }
+
+        $reader = app(\App\Contracts\SheetReader::class);
+
+        if (! $reader instanceof \App\Services\Sheets\ServiceAccountSheetReader) {
+            return [];
+        }
+
+        try {
+            return $reader->listTabs($integration->spreadsheet_id);
+        } catch (\Throwable) {
+            return [];
+        }
+    }
+
     /** Skrip yang admin salin ke Extensions → Apps Script dalam sheet mereka. */
     public function appsScript(): string
     {

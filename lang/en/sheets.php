@@ -56,6 +56,9 @@ return [
     'url' => 'Google Sheet Link',
     'tab_name' => 'Tab Name',
     'tab_placeholder' => 'e.g. Renovation',
+    'tab_auto' => 'Auto (from gid in the link)',
+    'tab_list_hint' => 'The tab marked ✓ is the one your link points to.',
+
     'header_row' => 'Header Row',
     'match_mode' => 'Row Matching',
     'match_label' => 'By metric name',
