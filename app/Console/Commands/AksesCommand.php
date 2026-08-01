@@ -99,12 +99,20 @@ class AksesCommand extends Command
             return self::FAILURE;
         }
 
-        if (mb_strlen($kataLaluan) < 12) {
+        // Minimum 6 aksara sahaja. OTP bertindak sebagai faktor kedua, jadi
+        // kata laluan pendek tidak memadai untuk masuk dengan sendirinya.
+        // Had yang lebih ketat hanya akan menghalang pemilik daripada
+        // menetapkan kata laluan yang dia mahu di sistemnya sendiri.
+        if (mb_strlen($kataLaluan) < 6) {
             $this->newLine();
-            $this->error('  Kata laluan terlalu pendek — minimum 12 aksara.');
+            $this->error('  Kata laluan terlalu pendek — minimum 6 aksara.');
             $this->newLine();
 
             return self::FAILURE;
+        }
+
+        if (mb_strlen($kataLaluan) < 12) {
+            $this->warn('  Nota: kata laluan pendek ('.mb_strlen($kataLaluan).' aksara).');
         }
 
         $perubahan = ['password' => $kataLaluan];
