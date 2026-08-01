@@ -47,6 +47,10 @@ return [
     'saved' => 'Sheet settings saved',
     'auto_mapped' => ':count columns matched automatically',
 
+    'raw_rows' => 'Raw Rows from Google',
+    'raw_rows_hint' => 'The first 8 rows exactly as received, before any mapping. The row marked ← is the one treated as the header. A dot (·) means an empty cell; ⏎ means a line break inside the cell.',
+    'widest_row' => 'widest row: :n columns',
+
     'mapping' => 'Column Mapping',
     'mapping_hint' => 'Match your sheet columns to system fields. :rows rows read. Fields marked * are required.',
     'field' => [
@@ -66,13 +70,19 @@ return [
     'preview_matched_to' => 'Matched to',
     'matched' => 'Matched',
     'unmatched' => 'Unmatched',
-    'unmatched_hint' => ':count rows could not be matched to any metric. These will be skipped during sync — check the metric name spelling in your sheet.',
+    'unmatched_hint' => ':count rows could not be matched to any metric and will be skipped during sync:',
 
     'section_skipped' => 'summary section — skipped',
     'row_ignored' => 'inside skipped section',
     'skipped_sections' => 'Skipped sections',
     'skipped_sections_hint' => 'These sections hold totals calculated by the sheet. The dashboard computes its own totals from the service data, so importing them would double-count.',
     'matched_hint' => ':count metric rows matched and will be synced.',
+
+    'total_metric_rows' => 'Metric rows',
+    'total_matched' => 'Matched',
+    'total_unmatched' => 'Unmatched',
+    'total_ignored' => 'Skipped',
+    'preview_truncated' => 'The preview shows the first :shown rows only. The counts above cover the whole sheet.',
 
     'run_sync' => 'Run Sync',
     'run_sync_hint' => 'Automatic sync runs every :minutes minutes. Use the button below to pull immediately.',

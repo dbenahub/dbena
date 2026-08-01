@@ -47,6 +47,10 @@ return [
     'saved' => 'Tetapan sheet disimpan',
     'auto_mapped' => ':count lajur dipadankan secara automatik',
 
+    'raw_rows' => 'Baris Mentah dari Google',
+    'raw_rows_hint' => '8 baris pertama tepat seperti diterima, sebelum sebarang pemetaan. Baris bertanda ← ialah yang dianggap header. Titik (·) bermakna sel kosong; ⏎ bermakna baris baharu dalam sel.',
+    'widest_row' => 'baris terlebar: :n lajur',
+
     'mapping' => 'Pemetaan Lajur',
     'mapping_hint' => 'Padankan lajur sheet anda dengan medan sistem. :rows baris dibaca. Medan bertanda * adalah wajib.',
     'field' => [
@@ -66,13 +70,19 @@ return [
     'preview_matched_to' => 'Dipadankan dengan',
     'matched' => 'Dipadankan',
     'unmatched' => 'Tidak dipadankan',
-    'unmatched_hint' => ':count baris tidak dapat dipadankan dengan mana-mana metrik. Baris ini akan dilangkau semasa sync — semak ejaan nama metrik dalam sheet.',
+    'unmatched_hint' => ':count baris tidak dapat dipadankan dengan mana-mana metrik dan akan dilangkau semasa sync:',
 
     'section_skipped' => 'bahagian ringkasan — dilangkau',
     'row_ignored' => 'dalam bahagian dilangkau',
     'skipped_sections' => 'Bahagian dilangkau',
     'skipped_sections_hint' => 'Bahagian ini mengandungi jumlah yang dikira oleh sheet. Dashboard mengira jumlahnya sendiri daripada data servis, jadi mengimportnya akan menyebabkan kiraan berganda.',
     'matched_hint' => ':count baris metrik berjaya dipadankan dan akan disegerak.',
+
+    'total_metric_rows' => 'Baris metrik',
+    'total_matched' => 'Dipadankan',
+    'total_unmatched' => 'Tidak dipadankan',
+    'total_ignored' => 'Dilangkau',
+    'preview_truncated' => 'Pratonton memaparkan :shown baris pertama sahaja. Kiraan di atas meliputi seluruh sheet.',
 
     'run_sync' => 'Jalankan Sync',
     'run_sync_hint' => 'Sync automatik berjalan setiap :minutes minit. Gunakan butang di bawah untuk tarik segera.',

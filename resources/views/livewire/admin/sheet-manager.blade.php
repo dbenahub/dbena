@@ -147,6 +147,49 @@
                 {{ __('sheets.mapping_hint', ['rows' => $preview['totalRows']]) }}
             </p>
 
+            {{-- ══ Baris mentah - apa yang Google sebenarnya pulangkan ══ --}}
+            <div class="mb-5 rounded-xl p-4" style="background: var(--hover-bg3); border: 1px solid var(--border3)">
+                <div class="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+                    <h3 class="text-[12.5px] font-bold">{{ __('sheets.raw_rows') }}</h3>
+                    <span class="text-[11.5px] text-t55">
+                        {{ __('sheets.widest_row', ['n' => $preview['widestRow'] ?? 0]) }}
+                    </span>
+                </div>
+                <p class="mb-3 text-[11.5px] leading-relaxed text-t55">{{ __('sheets.raw_rows_hint') }}</p>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-[11px]" style="min-width: 700px">
+                        <thead>
+                            <tr class="text-t50">
+                                <th class="pb-1.5 pr-2 text-left font-bold">#</th>
+                                @foreach (array_slice($preview['columnLetters'], 0, 12) as $letter)
+                                    <th class="pb-1.5 pr-2 text-left font-bold">{{ $letter }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($preview['rawRows'] ?? [] as $raw)
+                                <tr class="border-t" style="border-color: var(--border3)">
+                                    <td class="py-1.5 pr-2 font-bold"
+                                        style="color: {{ $raw['isHeader'] ? 'oklch(0.78 0.12 85)' : 'var(--t50)' }}">
+                                        {{ $raw['number'] }}{{ $raw['isHeader'] ? ' ←' : '' }}
+                                    </td>
+                                    @for ($i = 0; $i < 12; $i++)
+                                        @php $cell = $raw['cells'][$i] ?? ''; @endphp
+                                        <td class="max-w-[110px] truncate py-1.5 pr-2"
+                                            title="{{ $cell }}"
+                                            style="color: {{ $cell === '' ? 'var(--t40)' : 'var(--t85)' }}">
+                                            {{ $cell === '' ? '·' : \Illuminate\Support\Str::limit(str_replace("
+", ' ⏎ ', $cell), 18) }}
+                                        </td>
+                                    @endfor
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             {{-- Header dikesan --}}
             <div class="mb-5 overflow-x-auto">
                 <div class="flex gap-1.5 pb-1">
@@ -309,25 +352,54 @@
                 </div>
             </div>
 
-            @php
-                $unmatchedCount = collect($preview['rows'])
-                    ->where('type', 'metric')->where('matched', false)->count();
-                $matchedCount = collect($preview['rows'])
-                    ->where('type', 'metric')->where('matched', true)->count();
-            @endphp
-            @if ($matchedCount > 0)
+            @php $t = $preview['totals'] ?? ['metrics' => 0, 'matched' => 0, 'unmatched' => 0, 'ignored' => 0]; @endphp
+
+            {{-- Ringkasan meliputi SELURUH sheet, bukan hanya tetingkap paparan --}}
+            <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                @foreach ([
+                    ['label' => __('sheets.total_metric_rows'), 'value' => $t['metrics'], 'color' => null],
+                    ['label' => __('sheets.total_matched'), 'value' => $t['matched'], 'color' => 'oklch(0.55 0.15 145)'],
+                    ['label' => __('sheets.total_unmatched'), 'value' => $t['unmatched'], 'color' => $t['unmatched'] > 0 ? 'oklch(0.6 0.2 25)' : null],
+                    ['label' => __('sheets.total_ignored'), 'value' => $t['ignored'], 'color' => null],
+                ] as $stat)
+                    <div class="rounded-xl p-3.5" style="background: var(--hover-bg3); border: 1px solid var(--border3)">
+                        <div class="text-[11px] leading-tight text-t60">{{ $stat['label'] }}</div>
+                        <div class="mt-1 font-display text-[20px] font-extrabold"
+                             @if ($stat['color']) style="color: {{ $stat['color'] }}" @endif>{{ $stat['value'] }}</div>
+                    </div>
+                @endforeach
+            </div>
+
+            @if ($t['matched'] > 0)
                 <p class="mt-3 rounded-lg px-3.5 py-2.5 text-[12px] leading-relaxed"
                    style="background: oklch(0.55 0.15 145/0.1); border: 1px solid oklch(0.55 0.15 145/0.3); color: oklch(0.6 0.15 145)">
                     <i class="ph-duotone ph-check-circle" aria-hidden="true"></i>
-                    {{ __('sheets.matched_hint', ['count' => $matchedCount]) }}
+                    {{ __('sheets.matched_hint', ['count' => $t['matched']]) }}
                 </p>
             @endif
 
-            @if ($unmatchedCount > 0)
-                <p class="mt-3 rounded-lg px-3.5 py-2.5 text-[12px] leading-relaxed"
-                   style="background: oklch(0.78 0.15 85/0.1); border: 1px solid oklch(0.78 0.15 85/0.3); color: oklch(0.8 0.14 85)">
-                    <i class="ph-duotone ph-info" aria-hidden="true"></i>
-                    {{ __('sheets.unmatched_hint', ['count' => $unmatchedCount]) }}
+            @if ($t['unmatched'] > 0)
+                <div class="mt-3 rounded-lg px-3.5 py-2.5 text-[12px] leading-relaxed"
+                     style="background: oklch(0.6 0.2 25/0.1); border: 1px solid oklch(0.6 0.2 25/0.3); color: oklch(0.68 0.19 25)">
+                    <i class="ph-duotone ph-warning-circle" aria-hidden="true"></i>
+                    {{ __('sheets.unmatched_hint', ['count' => $t['unmatched']]) }}
+
+                    @if (! empty($preview['unmatchedLabels']))
+                        <div class="mt-2 flex flex-col gap-1 text-t70">
+                            @foreach (array_slice($preview['unmatchedLabels'], 0, 10) as $label)
+                                <div>• {{ $label }}</div>
+                            @endforeach
+                            @if (count($preview['unmatchedLabels']) > 10)
+                                <div class="text-t50">… {{ count($preview['unmatchedLabels']) - 10 }} lagi</div>
+                            @endif
+                        </div>
+                    @endif
+                </div>
+            @endif
+
+            @if (($preview['displayed'] ?? 0) < ($t['metrics'] + $t['ignored'] + ($t['bands'] ?? 0)))
+                <p class="mt-3 text-[11.5px] italic text-t50">
+                    {{ __('sheets.preview_truncated', ['shown' => $preview['displayed']]) }}
                 </p>
             @endif
         </div>

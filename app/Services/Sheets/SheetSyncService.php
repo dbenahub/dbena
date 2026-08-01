@@ -418,7 +418,7 @@ class SheetSyncService
      *
      * @return array<string, mixed>
      */
-    public function preview(SheetIntegration $integration, int $limit = 40): array
+    public function preview(SheetIntegration $integration, int $limit = 60): array
     {
         $grid = $this->reader->read($integration);
 
@@ -436,11 +436,13 @@ class SheetSyncService
         $detected = [];
         $skipped = [];
 
-        foreach (array_slice($grid, $headerRow) as $raw) {
-            if (count($rows) >= $limit) {
-                break;
-            }
+        // Kiraan meliputi SELURUH sheet; $rows hanya memegang tetingkap paparan.
+        // Memaparkan 26 daripada 40 baris pertama sambil melabelnya "akan
+        // disegerak" adalah mengelirukan - sync memproses setiap baris.
+        $totals = ['metrics' => 0, 'matched' => 0, 'unmatched' => 0, 'ignored' => 0, 'bands' => 0];
+        $unmatchedLabels = [];
 
+        foreach (array_slice($grid, $headerRow) as $raw) {
             if ($this->isBlankRow($raw)) {
                 continue;
             }
@@ -456,51 +458,102 @@ class SheetSyncService
 
                 if ($band['isBand']) {
                     $currentService = $band['service'];
+                    $totals['bands']++;
 
                     if ($band['service']) {
                         $detected[$band['service']->id] = $band['service']->name;
-                        $rows[] = ['type' => 'band', 'label' => $label, 'service' => $band['service']->name];
+
+                        if (count($rows) < $limit) {
+                            $rows[] = ['type' => 'band', 'label' => $label, 'service' => $band['service']->name];
+                        }
                     } else {
                         $skipped[] = $label;
-                        $rows[] = ['type' => 'skipped', 'label' => $label, 'service' => null];
+
+                        if (count($rows) < $limit) {
+                            $rows[] = ['type' => 'skipped', 'label' => $label, 'service' => null];
+                        }
                     }
 
                     continue;
                 }
             }
 
-            $metric = null;
+            if ($currentService === null) {
+                $totals['ignored']++;
 
-            if ($currentService) {
-                $lookups[$currentService->id] ??= $this->buildLookup(
-                    $currentService->criticalMetrics()->get(),
-                    $integration->match_mode ?? 'label'
-                );
-                $metric = $this->findMetric($lookups[$currentService->id], $label);
+                if (count($rows) < $limit) {
+                    $rows[] = ['type' => 'ignored', 'label' => $label, 'service' => null,
+                        'matched' => false, 'matchedTo' => null,
+                        'weeks' => [1 => null, 2 => null, 3 => null, 4 => null],
+                        'target' => null, 'owner' => null];
+                }
+
+                continue;
             }
 
-            $rows[] = [
-                'type' => $currentService === null ? 'ignored' : 'metric',
-                'label' => $label,
-                'service' => $currentService?->name,
-                'matched' => $metric !== null,
-                'matchedTo' => $metric?->label,
-                'weeks' => collect(range(1, 4))
-                    ->mapWithKeys(fn (int $w) => [$w => $this->toNumber($this->cell($raw, $map["week{$w}"] ?? null))])
-                    ->all(),
-                'target' => filled($map['target'] ?? null) ? $this->cell($raw, $map['target']) : null,
-                'owner' => filled($map['owner'] ?? null) ? $this->cell($raw, $map['owner']) : null,
+            $lookups[$currentService->id] ??= $this->buildLookup(
+                $currentService->criticalMetrics()->get(),
+                $integration->match_mode ?? 'label'
+            );
+
+            $metric = $this->findMetric($lookups[$currentService->id], $label);
+
+            $totals['metrics']++;
+
+            if ($metric) {
+                $totals['matched']++;
+            } else {
+                $totals['unmatched']++;
+                $unmatchedLabels[] = $currentService->name.' › '.$label;
+            }
+
+            if (count($rows) < $limit) {
+                $rows[] = [
+                    'type' => 'metric',
+                    'label' => $label,
+                    'service' => $currentService->name,
+                    'matched' => $metric !== null,
+                    'matchedTo' => $metric?->label,
+                    'weeks' => collect(range(1, 4))
+                        ->mapWithKeys(fn (int $w) => [$w => $this->toNumber($this->cell($raw, $map["week{$w}"] ?? null))])
+                        ->all(),
+                    'target' => filled($map['target'] ?? null) ? $this->cell($raw, $map['target']) : null,
+                    'owner' => filled($map['owner'] ?? null) ? $this->cell($raw, $map['owner']) : null,
+                ];
+            }
+        }
+
+        // Baris mentah untuk diagnosis - apa yang Google BENAR-BENAR pulangkan,
+        // sebelum sebarang pemetaan atau padanan. Tanpa ini, sheet yang tidak
+        // dijangka hanya menghasilkan pratonton kosong tanpa petunjuk sebab.
+        $rawRows = [];
+        foreach (array_slice($grid, 0, 8) as $index => $raw) {
+            $rawRows[] = [
+                'number' => $index + 1,
+                'cells' => array_slice($raw, 0, 12),
+                'cellCount' => count($raw),
+                'isHeader' => ($index + 1) === $headerRow,
             ];
+        }
+
+        $widest = 0;
+        foreach ($grid as $raw) {
+            $widest = max($widest, count($raw));
         }
 
         return [
             'headers' => $headers,
             'headerRow' => $headerRow,
-            'columnLetters' => $this->columnLetters(max(count($headers), 12)),
+            'rawRows' => $rawRows,
+            'widestRow' => $widest,
+            'columnLetters' => $this->columnLetters(max(count($headers), $widest, 12)),
             'rows' => $rows,
             'totalRows' => count($grid),
             'detectedServices' => array_values($detected),
             'skippedSections' => array_values(array_unique($skipped)),
+            'totals' => $totals,
+            'displayed' => count($rows),
+            'unmatchedLabels' => array_values(array_unique($unmatchedLabels)),
             'suggestions' => $this->suggestMapping($headers),
         ];
     }
