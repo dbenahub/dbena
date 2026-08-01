@@ -108,6 +108,13 @@ trait HandlesOtpFlow
 
         RateLimiter::clear($throttleKey);
 
+        // OTP dimatikan — kata laluan sudah memadai. Masuk terus.
+        if (! self::otpEnabled()) {
+            $this->completeLogin($user);
+
+            return;
+        }
+
         // Kelayakan sah — hantar OTP. Kod TIDAK dikembalikan ke komponen.
         try {
             $otp->issue($user, OtpType::Login, request()->ip());
@@ -159,6 +166,22 @@ trait HandlesOtpFlow
             return;
         }
 
+        $this->completeLogin($user);
+    }
+
+    /** Adakah langkah kod 6 angka dihidupkan? */
+    public static function otpEnabled(): bool
+    {
+        return (bool) config('dbena.otp.enabled', true);
+    }
+
+    /**
+     * Satu tempat untuk membuka sesi, tak kira sama ada pengguna melalui
+     * OTP atau tidak. Menduplikasi ini bermakna satu laluan akan terlepas
+     * penjanaan semula sesi suatu hari nanti.
+     */
+    protected function completeLogin(User $user): void
+    {
         Auth::login($user, remember: false);
         request()->session()->regenerate();
         $user->update(['last_login_at' => now()]);

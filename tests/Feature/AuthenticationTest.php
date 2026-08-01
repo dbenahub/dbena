@@ -232,6 +232,76 @@ it('never sends an empty body, which Brevo rejects', function (): void {
     expect($payload)->toHaveKey('textContent');
 });
 
+/*
+|--------------------------------------------------------------------------
+| OTP boleh dimatikan
+|--------------------------------------------------------------------------
+*/
+
+it('logs a user straight in when OTP is switched off', function (): void {
+    config(['dbena.otp.enabled' => false]);
+
+    Livewire::test(UserLoginFlow::class)
+        ->set('username', $this->user->username)
+        ->set('password', 'kata-laluan-ujian')
+        ->call('submitLogin')
+        ->assertSet('step', 'success');
+
+    expect(auth()->id())->toBe($this->user->id);
+});
+
+it('never issues an OTP when the step is switched off', function (): void {
+    config(['dbena.otp.enabled' => false]);
+
+    Livewire::test(UserLoginFlow::class)
+        ->set('username', $this->user->username)
+        ->set('password', 'kata-laluan-ujian')
+        ->call('submitLogin');
+
+    Notification::assertNothingSent();
+    expect(Otp::count())->toBe(0);
+});
+
+it('still rejects a wrong password when OTP is switched off', function (): void {
+    // Mematikan OTP mengalih keluar faktor KEDUA, bukan yang pertama.
+    config(['dbena.otp.enabled' => false]);
+
+    Livewire::test(UserLoginFlow::class)
+        ->set('username', $this->user->username)
+        ->set('password', 'kata-laluan-salah')
+        ->call('submitLogin')
+        ->assertSet('step', 'login');
+
+    expect(auth()->check())->toBeFalse();
+});
+
+it('still rejects an inactive account when OTP is switched off', function (): void {
+    config(['dbena.otp.enabled' => false]);
+    $this->user->update(['is_active' => false]);
+
+    Livewire::test(UserLoginFlow::class)
+        ->set('username', $this->user->username)
+        ->set('password', 'kata-laluan-ujian')
+        ->call('submitLogin')
+        ->assertSet('step', 'login');
+
+    expect(auth()->check())->toBeFalse();
+});
+
+it('regenerates the session on both login paths', function (): void {
+    // Kedua-dua laluan mesti menjana semula sesi. Menduplikasi logik log
+    // masuk bermakna satu laluan akan terlepas langkah ini suatu hari.
+    config(['dbena.otp.enabled' => false]);
+    $sebelum = session()->getId();
+
+    Livewire::test(UserLoginFlow::class)
+        ->set('username', $this->user->username)
+        ->set('password', 'kata-laluan-ujian')
+        ->call('submitLogin');
+
+    expect(session()->getId())->not->toBe($sebelum);
+});
+
 it('sends the OTP immediately instead of queueing it', function (): void {
     // Kod OTP sah beberapa minit sahaja dan pengguna sedang menunggu di
     // skrin. Jika notifikasi ini melaksanakan ShouldQueue, emel hanya

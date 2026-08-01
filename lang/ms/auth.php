@@ -80,6 +80,8 @@ return [
     // Emel OTP
     'otp_send_failed' => 'Kod tidak dapat dihantar ke emel. Sistem emel bermasalah — sila hubungi pentadbir.',
 
+    'password_via_admin' => 'Lupa kata laluan? Hubungi pentadbir sistem.',
+
     'mail' => [
         'subject_login' => 'Kod Log Masuk DBENA Dashboard',
         'subject_reset' => 'Kod Set Semula Kata Laluan DBENA',

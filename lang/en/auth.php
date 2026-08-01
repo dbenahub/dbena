@@ -71,6 +71,8 @@ return [
 
     'otp_send_failed' => 'The code could not be emailed. The mail system is not working — please contact your administrator.',
 
+    'password_via_admin' => 'Forgot your password? Contact your system administrator.',
+
     'mail' => [
         'subject_login' => 'Your DBENA Dashboard Sign-In Code',
         'subject_reset' => 'Your DBENA Password Reset Code',

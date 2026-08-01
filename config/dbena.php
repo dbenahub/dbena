@@ -31,6 +31,20 @@ return [
     ],
 
     'otp' => [
+        /*
+         * Hidupkan atau matikan langkah kod 6 angka.
+         *
+         * OTP memerlukan emel yang berfungsi. Apabila emel tidak dapat
+         * dihantar — port SMTP disekat, tiada penyedia tersedia — OTP
+         * berubah daripada lapisan keselamatan kepada pintu terkunci yang
+         * tiada sesiapa boleh lalui.
+         *
+         * Apabila dimatikan, kata laluan menjadi satu-satunya penghalang.
+         * Gunakan kata laluan yang kuat, dan hidupkan semula sebaik sahaja
+         * emel berfungsi.
+         */
+        'enabled' => filter_var(env('DBENA_OTP_ENABLED', true), FILTER_VALIDATE_BOOL),
+
         'ttl_minutes' => (int) env('DBENA_OTP_TTL_MINUTES', 5),
         'max_attempts' => (int) env('DBENA_OTP_MAX_ATTEMPTS', 3),
         'resend_cooldown' => (int) env('DBENA_OTP_RESEND_COOLDOWN', 60),

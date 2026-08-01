@@ -67,10 +67,20 @@
             <span wire:loading wire:target="submitLogin">{{ __('app.loading') }}</span>
         </button>
 
-        <button type="button" wire:click="goForgot"
-                class="text-center text-[12.5px] font-semibold" style="color: {{ $accent }}">
-            {{ __('auth.forgot_password') }}
-        </button>
+        {{-- Set semula kata laluan menghantar kod melalui emel. Apabila OTP
+             dimatikan, emel tidak berfungsi — pautan ini hanya akan membawa
+             pengguna ke jalan buntu. Admin menetapkan kata laluan di Admin
+             Panel. --}}
+        @if (App\Livewire\Concerns\HandlesOtpFlow::otpEnabled())
+            <button type="button" wire:click="goForgot"
+                    class="text-center text-[12.5px] font-semibold" style="color: {{ $accent }}">
+                {{ __('auth.forgot_password') }}
+            </button>
+        @else
+            <p class="text-center text-[11.5px] text-t50">
+                {{ __('auth.password_via_admin') }}
+            </p>
+        @endif
     </form>
 @endif
 
