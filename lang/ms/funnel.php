@@ -36,6 +36,16 @@ return [
     ],
 
     // Tindakan
+    // Poin ringkas — versi naratif yang dipendekkan
+    'point' => [
+        'cause_zero' => 'Punca: :metric langsung tiada aktiviti.',
+        'cause_no_data' => 'Punca: :metric tiada data — tidak boleh diurus tanpa diukur.',
+        'cause_low' => 'Punca: :metric hanya :pct% daripada sasaran.',
+        'cause_conversion' => 'Punca: aktiviti :driver mencukupi, penukaran yang lemah (:pct%).',
+        'impact' => 'Kesan: :downstream turut terjejas:more.',
+        'impact_more' => ' dan :count lagi',
+    ],
+
     'action' => [
         'raise_upstream' => 'Tambah :count :driver untuk menutup jurang',
         'raise_upstream_detail' => 'Bermakna kira-kira :perWeek setiap minggu. Anda kini ada :have. Anggaran ini :basis.',

@@ -180,15 +180,26 @@
                                             </span>
                                         </div>
 
-                                        <p class="text-[11.5px] leading-relaxed text-t75">{{ $d['narrative'] }}</p>
+                                        {{-- Poin ringkas. Naratif penuh masih ada
+                                             dalam laporan PDF bagi yang mahukannya. --}}
+                                        <ul class="flex flex-col gap-1">
+                                            @foreach ($d['points'] as $pt)
+                                                <li class="flex gap-1.5 text-[11.5px] leading-snug text-t75">
+                                                    <span class="mt-[3px] h-1 w-1 shrink-0 rounded-full"
+                                                          style="background: {{ $dColor }}"></span>
+                                                    <span>{{ $pt['text'] }}</span>
+                                                </li>
+                                            @endforeach
+                                        </ul>
 
                                         @if (! empty($d['actions']))
                                             <div class="mt-2 flex flex-col gap-1">
-                                                @foreach (array_slice($d['actions'], 0, 2) as $act)
-                                                    <div class="flex gap-1.5 text-[11.5px] leading-relaxed text-t70">
+                                                @foreach ($d['actions'] as $act)
+                                                    <div class="flex gap-1.5 text-[11.5px] leading-snug text-t70"
+                                                         title="{{ $act['detail'] }}">
                                                         <i class="ph-duotone ph-arrow-elbow-down-right mt-px shrink-0"
                                                            style="color: {{ $dColor }}" aria-hidden="true"></i>
-                                                        <span><b>{{ $act['label'] }}</b> — {{ $act['detail'] }}</span>
+                                                        <span><b>{{ $act['label'] }}</b></span>
                                                     </div>
                                                 @endforeach
                                             </div>

@@ -63,6 +63,12 @@ class FunnelAnalysisService
     /** Ambang: di atas ini, pemacu dianggap sihat — masalahnya penukaran. */
     private const DRIVER_HEALTHY_THRESHOLD = 80.0;
 
+    /** Bilangan metrik hiliran dinamakan sebelum diringkaskan kepada kiraan. */
+    private const POINT_IMPACT_LIMIT = 3;
+
+    /** Bilangan tindakan dipaparkan. Senarai panjang tidak dibaca. */
+    private const ACTION_LIMIT = 2;
+
     public function __construct(private readonly DashboardMetricsService $metrics) {}
 
     /**
@@ -96,6 +102,7 @@ class FunnelAnalysisService
             'required' => $required,
             'severity' => $row['status'] === MetricStatus::Red ? 'critical' : 'warning',
             'narrative' => $this->narrative($row, $causes, $impacts),
+            'points' => $this->points($row, $causes, $impacts),
             'actions' => $this->actions($key, $row, $causes, $required),
         ];
     }
@@ -303,6 +310,16 @@ class FunnelAnalysisService
             $needed = (int) ceil($gap / $rate);
             $have = (int) round((float) ($driver['actual'] ?? 0));
 
+            /*
+             * Kadar hanya bermakna sebagai peratusan apabila kedua-dua
+             * metrik menggunakan unit yang sama. RM886,050 dibahagi 6
+             * quotation ialah RM147,675 setiap quotation — memaparkannya
+             * sebagai "kadar penukaran 14,767,496.7%" adalah karut, dan
+             * karut itu muncul dalam laporan yang pemilik dijangka
+             * mempercayainya.
+             */
+            $unitPadan = $driver['valueType'] === $row['valueType'];
+
             $required[] = [
                 'metricKey' => $driverKey,
                 'label' => $driver['label'],
@@ -310,6 +327,7 @@ class FunnelAnalysisService
                 'have' => $have,
                 'perWeek' => (int) ceil($needed / 4),
                 'rate' => $rate,
+                'showRate' => $unitPadan,
                 'isActual' => $driver['actual'] !== null && (float) $driver['actual'] > 0 && (float) $row['actual'] > 0,
             ];
 
@@ -373,6 +391,68 @@ class FunnelAnalysisService
         return implode(' ', $parts);
     }
 
+    /**
+     * Versi ringkas naratif, dalam bentuk poin.
+     *
+     * Naratif penuh menerangkan setiap kaitan dalam ayat lengkap. Berguna
+     * untuk satu metrik; melelahkan apabila sepuluh kad dipaparkan sekali
+     * gus dan setiap satu mengulangi ayat penutup yang sama. Pemilik
+     * berhenti membaca, dan bahagian yang penting hilang bersama.
+     *
+     * Setiap poin di sini satu baris pendek: apa yang salah, apa kesannya.
+     *
+     * @param  array<int, array<string, mixed>>  $causes
+     * @param  array<int, array<string, mixed>>  $impacts
+     * @return array<int, array<string, string>>
+     */
+    private function points(array $row, array $causes, array $impacts): array
+    {
+        $points = [];
+
+        $upstream = collect($causes)->whereIn('type', ['driver_failed', 'driver_zero', 'driver_no_data']);
+
+        if ($upstream->isNotEmpty()) {
+            // Satu punca sahaja — yang paling langsung. Menyenaraikan tiga
+            // pemacu hulu memindahkan kerja memilih kepada pembaca.
+            $c = $upstream->first();
+
+            $points[] = [
+                'type' => 'cause',
+                'text' => match ($c['type']) {
+                    'driver_zero' => __('funnel.point.cause_zero', ['metric' => $c['label']]),
+                    'driver_no_data' => __('funnel.point.cause_no_data', ['metric' => $c['label']]),
+                    default => __('funnel.point.cause_low', [
+                        'metric' => $c['label'],
+                        'pct' => number_format((float) $c['pct'], 1),
+                    ]),
+                },
+            ];
+        } elseif ($conv = collect($causes)->firstWhere('type', 'conversion')) {
+            $points[] = [
+                'type' => 'cause',
+                'text' => __('funnel.point.cause_conversion', [
+                    'driver' => $conv['label'],
+                    'pct' => number_format((float) $conv['pct'], 1),
+                ]),
+            ];
+        }
+
+        if ($impacts !== []) {
+            $names = collect($impacts)->pluck('label');
+            $lebih = $names->count() - self::POINT_IMPACT_LIMIT;
+
+            $points[] = [
+                'type' => 'impact',
+                'text' => __('funnel.point.impact', [
+                    'downstream' => $names->take(self::POINT_IMPACT_LIMIT)->implode(', '),
+                    'more' => $lebih > 0 ? __('funnel.point.impact_more', ['count' => $lebih]) : '',
+                ]),
+            ];
+        }
+
+        return $points;
+    }
+
     // ══ Tindakan ══════════════════════════════════════════════════════════
 
     /**
@@ -395,7 +475,7 @@ class FunnelAnalysisService
                 'detail' => __('funnel.action.raise_upstream_detail', [
                     'perWeek' => number_format($need['perWeek']),
                     'have' => number_format($need['have']),
-                    'basis' => $need['isActual']
+                    'basis' => ($need['isActual'] && $need['showRate'])
                         ? __('funnel.basis_actual', ['rate' => number_format($need['rate'] * 100, 1)])
                         : __('funnel.basis_target'),
                 ]),
@@ -439,8 +519,15 @@ class FunnelAnalysisService
             ];
         }
 
-        // 6. Tiada pelan tindakan direkodkan
-        if (collect($causes)->contains('type', 'no_action_plan')) {
+        /*
+         * 6. Tiada pelan tindakan direkodkan.
+         *
+         * Hanya ditunjukkan apabila tiada tindakan konkrit lain. Ia muncul
+         * pada hampir setiap metrik, jadi memaparkannya di sebelah cadangan
+         * sebenar bermakna separuh senarai ialah nota pentadbiran yang sama
+         * berulang kali — dan cadangan yang berguna tenggelam bersamanya.
+         */
+        if ($actions === [] && collect($causes)->contains('type', 'no_action_plan')) {
             $actions[] = [
                 'priority' => 'high',
                 'label' => __('funnel.action.write_plan', ['metric' => $row['label']]),
@@ -448,7 +535,7 @@ class FunnelAnalysisService
             ];
         }
 
-        return $actions;
+        return array_slice($actions, 0, self::ACTION_LIMIT);
     }
 
     private function gapLabel(array $row): string

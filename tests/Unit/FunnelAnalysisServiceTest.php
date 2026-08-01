@@ -34,6 +34,19 @@ function row(
     ];
 }
 
+
+/** Baris yang meniru keadaan sebenar DBENA dalam tangkapan skrin. */
+function dbenaFunnelRows(): Illuminate\Support\Collection
+{
+    return collect([
+        row('no_of_lead', 474, 1035),
+        row('no_of_site_visit', 11, 24),
+        row('no_of_new_quotation', 6, 16),
+        row('amount_quotation_release', 886050, 2400000, MetricStatus::Red, null, MetricValueType::Currency),
+        row('revenue_sales', 233000, 500000, MetricStatus::Red, null, MetricValueType::Currency),
+    ]);
+}
+
 /*
 |--------------------------------------------------------------------------
 | Kesan punca di HULU corong
@@ -262,4 +275,57 @@ it('orders diagnoses worst-first', function (): void {
     $out = $this->funnel->diagnoseOwner($rows, $rows);
 
     expect($out->first()['severity'])->toBe('critical');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Ringkas dan boleh diambil tindakan
+|--------------------------------------------------------------------------
+*/
+
+it('keeps each bullet to a single short line', function (): void {
+    // Kad diagnosis dipaparkan sepuluh sekali gus. Perenggan panjang
+    // bermakna pemilik berhenti membaca, dan cadangan berguna hilang
+    // bersamanya.
+    $rows = dbenaFunnelRows();
+    $diagnosis = $this->funnel->diagnose($rows->firstWhere('metricKey', 'no_of_new_quotation'), $rows);
+
+    expect($diagnosis['points'])->not->toBeEmpty();
+
+    foreach ($diagnosis['points'] as $point) {
+        expect(mb_strlen($point['text']))->toBeLessThan(120);
+    }
+});
+
+it('shows at most two actions', function (): void {
+    $rows = dbenaFunnelRows();
+    $diagnosis = $this->funnel->diagnose($rows->firstWhere('metricKey', 'no_of_new_quotation'), $rows);
+
+    expect(count($diagnosis['actions']))->toBeLessThanOrEqual(2);
+});
+
+it('does not repeat the write-a-plan note beside a real suggestion', function (): void {
+    // Nota itu terpakai pada hampir setiap metrik. Memaparkannya di sebelah
+    // cadangan sebenar bermakna separuh senarai ialah nota pentadbiran yang
+    // sama berulang kali.
+    $rows = dbenaFunnelRows();
+    $diagnosis = $this->funnel->diagnose($rows->firstWhere('metricKey', 'no_of_new_quotation'), $rows);
+
+    $labels = collect($diagnosis['actions'])->pluck('label');
+
+    if ($labels->count() > 1) {
+        expect($labels->filter(fn (string $l) => str_contains($l, 'pelan tindakan')))->toBeEmpty();
+    }
+});
+
+it('never reports a conversion rate between different units', function (): void {
+    // RM886,050 dibahagi 6 quotation ialah RM147,675 setiap quotation.
+    // Memaparkannya sebagai "kadar penukaran 14,767,496.7%" adalah karut,
+    // dan karut itu muncul dalam laporan yang pemilik dijangka percayai.
+    $rows = dbenaFunnelRows();
+    $diagnosis = $this->funnel->diagnose($rows->firstWhere('metricKey', 'amount_quotation_release'), $rows);
+
+    foreach ($diagnosis['actions'] as $action) {
+        expect($action['detail'])->not->toMatch('/\d{4,},?\d*\.\d%/');
+    }
 });

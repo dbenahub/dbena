@@ -33,6 +33,16 @@ return [
         'no_action_plan' => 'No action plan',
     ],
 
+    // Short bullets — a condensed version of the narrative
+    'point' => [
+        'cause_zero' => 'Cause: :metric has no activity at all.',
+        'cause_no_data' => 'Cause: :metric has no data — it cannot be managed without being measured.',
+        'cause_low' => 'Cause: :metric is only :pct% of target.',
+        'cause_conversion' => 'Cause: :driver activity is sufficient; conversion is weak (:pct%).',
+        'impact' => 'Impact: :downstream also affected:more.',
+        'impact_more' => ' and :count more',
+    ],
+
     'action' => [
         'raise_upstream' => 'Add :count :driver to close the gap',
         'raise_upstream_detail' => 'That is roughly :perWeek per week. You currently have :have. This estimate is :basis.',

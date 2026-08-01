@@ -229,8 +229,19 @@
                                         </span>
                                     </div>
 
-                                    {{-- Naratif diagnosis --}}
-                                    <p class="mb-3 text-[12.5px] leading-relaxed text-t80">{{ $d['narrative'] }}</p>
+                                    {{-- Poin ringkas. Bahagian berlabel di bawah
+                                         sudah memberi butiran; perenggan penuh di
+                                         sini hanya mengulanginya dalam bentuk yang
+                                         lebih sukar diimbas. --}}
+                                    <ul class="mb-3 flex flex-col gap-1">
+                                        @foreach ($d['points'] as $pt)
+                                            <li class="flex gap-2 text-[12.5px] leading-snug text-t80">
+                                                <span class="mt-[6px] h-1 w-1 shrink-0 rounded-full"
+                                                      style="background: {{ $dColor }}"></span>
+                                                <span>{{ $pt['text'] }}</span>
+                                            </li>
+                                        @endforeach
+                                    </ul>
 
                                     {{-- Punca berlabel --}}
                                     @if (! empty($d['causes']))

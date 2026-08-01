@@ -103,6 +103,8 @@
         }
         .diag-head { font-size: 10px; font-weight: bold; margin-bottom: 3px; }
         .diag-nums { font-weight: normal; color: #6b7280; font-size: 8.5px; margin-left: 5px; }
+        .diag-points { margin: 0 0 8px 16px; padding: 0; }
+        .diag-points li { font-size: 10.5px; line-height: 1.45; margin-bottom: 2px; }
         .diag-text { font-size: 9px; color: #374151; line-height: 1.45; }
         .diag-impact {
             font-size: 8.5px; color: #b42318; margin-top: 4px;
@@ -232,7 +234,11 @@
                         {{ $d['label'] }}
                         <span class="diag-nums">{{ $d['actualLabel'] }} / {{ $d['targetLabel'] }}</span>
                     </div>
-                    <div class="diag-text">{{ $d['narrative'] }}</div>
+                    <ul class="diag-points">
+                        @foreach ($d['points'] as $pt)
+                            <li>{{ $pt['text'] }}</li>
+                        @endforeach
+                    </ul>
 
                     @if (! empty($d['impacts']))
                         <div class="diag-impact">
