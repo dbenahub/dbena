@@ -44,7 +44,10 @@ return [
     'break_title' => 'Jalan terputus di :stage',
     'break_body' => 'Sasaran jualan dan kutipan syarikat bergantung pada peringkat ini. Selagi :stage tidak dibetulkan, :count peringkat di hilirnya tidak akan capai sasaran walau apa pun usaha di sana.',
     'break_body_single' => 'Sasaran jualan dan kutipan syarikat bergantung pada peringkat ini. Betulkan :stage dahulu — peringkat selepasnya bergantung sepenuhnya padanya.',
-    'break_action' => 'Tindakan diperlukan daripada pemilik data: sediakan justifikasi dan pelan kontingensi untuk :stage minggu ini.',
+    'break_action' => 'Sediakan justifikasi dan pelan kontingensi untuk :stage minggu ini.',
+    'action_owner' => 'TINDAKAN OLEH :owner',
+    'action_owner_none' => 'TINDAKAN DIPERLUKAN',
+    'owner_label' => 'PIC',
 
     'legend_ok' => 'Capai sasaran',
     'legend_warn' => 'Hampir sasaran',

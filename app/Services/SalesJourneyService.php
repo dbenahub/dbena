@@ -173,6 +173,13 @@ class SalesJourneyService
             'amountTargetLabel' => $amount['targetLabel'] ?? null,
             'amountTitle' => $amount !== null ? __('journey.amount.'.$def['key']) : null,
 
+            /*
+             * Pemilik dibawa ke dalam peta. Peringkat yang gagal tanpa nama
+             * ialah masalah yang setiap orang harap orang lain uruskan;
+             * dengan nama, ia menjadi tugas seseorang.
+             */
+            'owner' => $row['ownerName'] ?? null,
+
             'status' => $status,
             'broken' => $status === 'red',
             'blocked' => false,

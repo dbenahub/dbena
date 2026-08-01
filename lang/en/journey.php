@@ -43,7 +43,10 @@ return [
     'break_title' => 'The road breaks at :stage',
     'break_body' => 'Company sales and collection targets depend on this stage. Until :stage is fixed, the :count stages downstream will not reach target no matter what effort goes into them.',
     'break_body_single' => 'Company sales and collection targets depend on this stage. Fix :stage first — the stages after it depend entirely on it.',
-    'break_action' => 'Action required from the data owner: prepare a justification and contingency plan for :stage this week.',
+    'break_action' => 'Prepare a justification and contingency plan for :stage this week.',
+    'action_owner' => 'ACTION BY :owner',
+    'action_owner_none' => 'ACTION REQUIRED',
+    'owner_label' => 'PIC',
 
     'legend_ok' => 'On target',
     'legend_warn' => 'Near target',
