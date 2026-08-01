@@ -346,7 +346,7 @@
 
 <h2>{{ __('exec.s3_3') }}</h2>
 <ul>
-    @foreach (__('exec.risks') as $risk)
+    @foreach ((array) __('exec.risks') as $risk)
         <li>{{ $risk }}</li>
     @endforeach
 </ul>
@@ -407,7 +407,7 @@
 
 <h2>{{ __('exec.accountability_heading') }}</h2>
 <ul>
-    @foreach (__('exec.accountability') as $rule)
+    @foreach ((array) __('exec.accountability') as $rule)
         <li>{{ $rule }}</li>
     @endforeach
 </ul>
@@ -437,7 +437,7 @@
 
 <h2>{{ __('exec.s6_2') }}</h2>
 <ul>
-    @foreach (__('exec.weekly_review') as $step)
+    @foreach ((array) __('exec.weekly_review') as $step)
         <li>{{ $step }}</li>
     @endforeach
 </ul>
