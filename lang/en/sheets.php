@@ -166,6 +166,7 @@ return [
 
     'error' => [
         'not_shared' => 'Google refused the request. This sheet does not appear to be publicly shared.',
+        'not_shared_service' => 'Google refused the request. This file has not been shared with the service account. Open it in Google Sheets → Share → add :email as a Viewer → leave Notify people unticked. Keep General access on Restricted; the file does not need to be public. Sharing is per-file, so every new file needs this once.',
         'not_found' => 'Sheet not found. Double-check the link.',
         'too_large' => 'The sheet exceeds the :mb MB limit.',
         'empty' => 'The sheet is empty or the tab was not found.',

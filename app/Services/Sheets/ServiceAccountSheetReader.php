@@ -74,7 +74,10 @@ class ServiceAccountSheetReader implements SheetReader
         }
 
         if ($response->status() === 403) {
-            throw SheetReadException::notShared();
+            // Sertakan emel robot. Tanpa itu, pemilik sheet tidak tahu
+            // alamat mana untuk ditambah, dan mesej lalai menyuruh mereka
+            // menjadikan fail sulit itu awam.
+            throw SheetReadException::notShared(static::serviceAccountEmail());
         }
 
         if ($response->status() === 404) {
@@ -155,6 +158,16 @@ class ServiceAccountSheetReader implements SheetReader
      *
      * @return array{client_email: string, private_key: string}
      */
+    /** Emel robot yang perlu ditambah pada Share sheet. */
+    public static function serviceAccountEmail(): ?string
+    {
+        try {
+            return static::credentials()['client_email'] ?? null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     public static function credentials(): array
     {
         $encoded = (string) config('dbena.sheets.service_account.credentials_base64', '');

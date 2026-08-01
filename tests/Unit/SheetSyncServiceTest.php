@@ -282,3 +282,26 @@ it('finds a header buried under several banner rows', function (): void {
 
     expect((new SheetSyncService(fakeReader($grid)))->detectHeaderRow($grid))->toBe(4);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Mesej 403 mesti sepadan dengan pemacu
+|--------------------------------------------------------------------------
+*/
+
+it('tells a service-account user which email to share with, not to go public', function (): void {
+    // Menyuruh pemilik sheet SULIT menjadikannya awam ialah nasihat yang
+    // salah dan berbahaya. Yang diperlukan hanyalah satu emel robot pada
+    // senarai Share.
+    $e = App\Exceptions\SheetReadException::notShared('dbena-sync@dbena-dashboard.iam.gserviceaccount.com');
+
+    expect($e->getMessage())
+        ->toContain('dbena-sync@dbena-dashboard.iam.gserviceaccount.com')
+        ->and($e->getMessage())->toContain('Restricted');
+});
+
+it('keeps the public-sharing wording only for the link driver', function (): void {
+    $e = App\Exceptions\SheetReadException::notShared();
+
+    expect($e->getMessage())->toBe(__('sheets.error.not_shared'));
+});

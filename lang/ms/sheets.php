@@ -166,6 +166,7 @@ return [
 
     'error' => [
         'not_shared' => 'Google menolak permintaan. Sheet ini nampaknya tidak dikongsi secara awam.',
+        'not_shared_service' => 'Google menolak permintaan. Fail ini belum dikongsi dengan service account. Buka fail di Google Sheets → Share → tambah :email sebagai Viewer → jangan tanda Notify people. Biarkan General access kekal Restricted; fail anda tidak perlu dijadikan awam. Perkongsian adalah per-fail, jadi setiap fail baharu memerlukan langkah ini sekali.',
         'not_found' => 'Sheet tidak dijumpai. Semak semula pautan.',
         'too_large' => 'Sheet melebihi had :mb MB.',
         'empty' => 'Sheet kosong atau tab tidak dijumpai.',

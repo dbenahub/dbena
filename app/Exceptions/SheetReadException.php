@@ -8,9 +8,25 @@ use RuntimeException;
 
 class SheetReadException extends RuntimeException
 {
-    public static function notShared(): self
+    /**
+     * HTTP 403 daripada Google.
+     *
+     * Maksudnya berbeza sepenuhnya mengikut pemacu, dan mesej lama hanya
+     * betul untuk satu daripadanya:
+     *
+     *   pemacu 'link'    — sheet tidak dikongsi secara awam
+     *   pemacu 'service' — sheet tidak dikongsi dengan SATU emel robot
+     *
+     * Memberitahu pemilik sheet SULIT untuk "kongsi secara awam" ialah
+     * nasihat yang salah dan berbahaya. Perkongsian juga per-FAIL, jadi
+     * fail kedua memerlukan langkah yang sama walaupun yang pertama sudah
+     * berfungsi.
+     */
+    public static function notShared(?string $serviceAccount = null): self
     {
-        return new self(__('sheets.error.not_shared'));
+        return new self(filled($serviceAccount)
+            ? __('sheets.error.not_shared_service', ['email' => $serviceAccount])
+            : __('sheets.error.not_shared'));
     }
 
     public static function notFound(): self
