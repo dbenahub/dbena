@@ -77,7 +77,7 @@
             ['label' => __('laporan.total_revenue'), 'value' => $totalRevenueLabel, 'hint' => null],
             ['label' => __('laporan.total_quotations'), 'value' => $totalQuotationLabel, 'hint' => null],
             ['label' => __('laporan.conversion_rate'), 'value' => $conversionRateLabel, 'hint' => __('laporan.conversion_hint')],
-            ['label' => __('laporan.avg_deal_value'), 'value' => $avgDealLabel, 'hint' => null],
+            ['label' => __('laporan.avg_quotation_value'), 'value' => $avgQuotationLabel, 'hint' => __('laporan.avg_quotation_hint')],
         ] as $kpi)
             <div class="dbena-card p-5">
                 <div class="text-[12.5px] text-t60">{{ $kpi['label'] }}</div>
@@ -102,25 +102,23 @@
         {{-- Desktop --}}
         <div class="hidden md:block">
             <div class="grid gap-4 border-b pb-3 text-[11.5px] text-t55"
-                 style="grid-template-columns: 2fr 1.2fr 1.2fr 1fr 1.6fr 1.4fr; border-color: var(--border)">
+                 style="grid-template-columns: 2fr 1.3fr 1.3fr 1.8fr 1.4fr; border-color: var(--border)">
                 <div>{{ __('laporan.col_service') }}</div>
                 <div>{{ __('laporan.col_sales') }}</div>
                 <div>{{ __('laporan.col_target') }}</div>
-                <div>{{ __('laporan.col_projects') }}</div>
                 <div>{{ __('laporan.col_achievement') }}</div>
                 <div>{{ __('laporan.col_status') }}</div>
             </div>
 
             @foreach ($rows as $row)
                 <div class="grid items-center gap-4 border-b py-3.5 text-[13px]"
-                     style="grid-template-columns: 2fr 1.2fr 1.2fr 1fr 1.6fr 1.4fr; border-color: var(--border3)">
+                     style="grid-template-columns: 2fr 1.3fr 1.3fr 1.8fr 1.4fr; border-color: var(--border3)">
                     <div class="flex items-center gap-2.5 font-semibold">
                         <i class="ph-duotone {{ $row['icon'] }} text-[17px]" style="color: oklch(0.78 0.12 85)" aria-hidden="true"></i>
                         {{ $row['name'] }}
                     </div>
                     <div class="font-semibold">{{ $row['salesLabel'] }}</div>
                     <div class="text-t70">{{ $row['targetLabel'] }}</div>
-                    <div>{{ $row['projectCount'] }}</div>
                     <div><x-progress-bar :pct="$row['pct']" :color="$row['barColor']" label-width="46px" /></div>
                     <x-status-dot :color="$row['statusColor']" :label="$row['statusLabel']" size="7px" />
                 </div>
@@ -136,7 +134,7 @@
                         <span class="flex-1 text-sm font-semibold">{{ $row['name'] }}</span>
                         <x-status-dot :color="$row['statusColor']" size="8px" />
                     </div>
-                    <div class="mb-2.5 grid grid-cols-3 gap-2 text-[12px]">
+                    <div class="mb-2.5 grid grid-cols-2 gap-2 text-[12px]">
                         <div>
                             <div class="text-t55">{{ __('laporan.col_sales') }}</div>
                             <div class="mt-0.5 font-semibold">{{ $row['salesLabel'] }}</div>
@@ -144,10 +142,6 @@
                         <div>
                             <div class="text-t55">{{ __('laporan.col_target') }}</div>
                             <div class="mt-0.5 text-t70">{{ $row['targetLabel'] }}</div>
-                        </div>
-                        <div>
-                            <div class="text-t55">{{ __('laporan.col_projects') }}</div>
-                            <div class="mt-0.5">{{ $row['projectCount'] }}</div>
                         </div>
                     </div>
                     <x-progress-bar :pct="$row['pct']" :color="$row['barColor']" />

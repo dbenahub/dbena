@@ -66,7 +66,6 @@ class Laporan extends Component
                 'salesLabel' => $metrics->formatRm($actual),
                 'target' => $target,
                 'targetLabel' => $metrics->formatRm($target),
-                'projectCount' => $service->projects()->forPeriod($this->year, $this->month)->count(),
                 'pct' => $pct,
                 'status' => $status,
                 'statusLabel' => $status->label(),
@@ -76,7 +75,6 @@ class Laporan extends Component
         });
 
         $totalRevenue = $rows->sum('actual');
-        $projectCount = $rows->sum('projectCount');
 
         // PEMBETULAN isu #16 — jumlah quotation SEBENAR, bukan revenue × 3.83.
         $totalQuotation = $metrics->sumMetricActual(
@@ -107,7 +105,9 @@ class Laporan extends Component
             'totalRevenueLabel' => $metrics->formatRm($totalRevenue),
             'totalQuotationLabel' => $metrics->formatRm($totalQuotation),
             'conversionRateLabel' => $metrics->formatPercent($conversionRate),
-            'avgDealLabel' => $metrics->formatRm($metrics->calculateAvgDealValue($totalRevenue, $projectCount)),
+            'avgQuotationLabel' => $metrics->formatRm(
+                $metrics->calculateAvgQuotationValue($this->year, $this->month, $selected?->id)
+            ),
             'reportChart' => $metrics->buildChart($monthLabels, $chartActuals, $chartTargets),
             'monthLabels' => $monthLabels,
             'monthsFull' => __('calendar.months_full'),

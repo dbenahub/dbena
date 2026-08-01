@@ -16,7 +16,6 @@ class DatabaseSeeder extends Seeder
             IndexTierSeeder::class,
             YearGrowthFactorSeeder::class,
             CriticalMetricSeeder::class,
-            ProjectSeeder::class,
             PrioritySeeder::class,
             AdminSettingSeeder::class,
             UserSeeder::class,

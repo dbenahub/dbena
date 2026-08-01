@@ -208,7 +208,7 @@
             <div class="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
                 @foreach ([
                     ['icon' => 'ph-target', 'label' => __('service.tile_achievement'), 'value' => number_format($pct, 1).'%', 'note' => __('service.gap_note', ['amount' => $analysis['gapLabel']])],
-                    ['icon' => 'ph-chart-line-up', 'label' => __('service.tile_avg_project'), 'value' => $analysis['avgProject'], 'note' => __('service.active_projects', ['count' => $analysis['projectCount']])],
+                    ['icon' => 'ph-chart-line-up', 'label' => __('service.tile_avg_quotation'), 'value' => $analysis['avgQuotation'], 'note' => __('service.avg_quotation_note')],
                     ['icon' => 'ph-gauge', 'label' => __('service.tile_run_rate'), 'value' => $analysis['runRate'].__('service.per_month'), 'note' => __('service.run_rate_note', ['months' => $analysis['monthsLeft']])],
                 ] as $tile)
                     <div class="rounded-xl p-4" style="background: var(--hover-bg3); border: 1px solid var(--border3)">

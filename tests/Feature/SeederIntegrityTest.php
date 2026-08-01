@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Models\CriticalMetric;
 use App\Models\IndexTier;
 use App\Models\Owner;
-use App\Models\Project;
 use App\Models\Service;
 use App\Models\YearGrowthFactor;
 
@@ -68,10 +67,6 @@ it('gives every PIC a distinct colour from one source of truth', function (): vo
     $colours = Owner::where('is_system', false)->pluck('color_token');
 
     expect($colours->unique()->count())->toBe($colours->count());
-});
-
-it('seeds the 16 demo projects', function (): void {
-    expect(Project::count())->toBe(16);
 });
 
 it('seeds growth factors with 2026 as the 1.0 baseline', function (): void {

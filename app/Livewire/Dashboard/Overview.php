@@ -78,7 +78,7 @@ class Overview extends Component
         $periodMode = $this->periodMode();
         $yearFactor = $metrics->yearFactor($this->year);
 
-        $services = Service::orderBy('sort_order')->withCount('projects')->get();
+        $services = Service::orderBy('sort_order')->get();
         $tiers = IndexTier::orderBy('sort_order')->get();
 
         // ── Jualan sebenar per servis per bulan (dari data kritikal) ──
@@ -164,7 +164,6 @@ class Overview extends Component
                 'statusLabel' => $status->label(),
                 'statusColor' => $status->color(),
                 'barColor' => $status->barColor(),
-                'projectCount' => $service->projects_count,
             ];
         });
 

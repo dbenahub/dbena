@@ -357,9 +357,6 @@ class ServiceDetail extends Component
         // ── Carta mingguan ──
         $weekLabels = collect(range(1, 4))->map(fn (int $n) => 'M'.$n)->all();
 
-        // Jadual Projek dibuang dari UI atas permintaan DBENA.
-        // Kiraan dikekalkan kerana ia memacu tile "Purata Nilai Projek".
-        $projectCount = $service->projects()->count();
         $gap = max(0, $target - $actual);
 
         return view('livewire.dashboard.service-detail', [
@@ -391,8 +388,9 @@ class ServiceDetail extends Component
             'analysis' => [
                 'gap' => $gap,
                 'gapLabel' => $metrics->formatRm($gap),
-                'avgProject' => $metrics->formatRm($metrics->calculateAvgProjectValue($actual, $projectCount)),
-                'projectCount' => $projectCount,
+                'avgQuotation' => $metrics->formatRm(
+                    $metrics->calculateAvgQuotationValue($this->year, $this->month, $service->id)
+                ),
                 'runRate' => $metrics->formatRm($metrics->calculateRequiredRunRate($gap)),
                 'monthsLeft' => $metrics->monthsLeftInFiscalYear(),
                 'isGood' => $pct >= (float) config('dbena.service_status_threshold'),

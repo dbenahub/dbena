@@ -46,7 +46,6 @@ class ReportExportController extends Controller
                 __('laporan.csv.service'),
                 __('laporan.csv.sales'),
                 __('laporan.csv.target'),
-                __('laporan.csv.projects'),
                 __('laporan.csv.achievement'),
                 __('laporan.csv.status'),
             ]);
@@ -66,7 +65,6 @@ class ReportExportController extends Controller
                     $service->name,
                     number_format($actual, 2, '.', ''),
                     number_format($target, 2, '.', ''),
-                    $service->projects()->forPeriod($year, $month)->count(),
                     number_format($pct, 1, '.', ''),
                     $metrics->calculateServiceStatus($pct)->label(),
                 ]);
@@ -77,7 +75,6 @@ class ReportExportController extends Controller
                 'TOTAL',
                 number_format($totalActual, 2, '.', ''),
                 number_format($totalTarget, 2, '.', ''),
-                '',
                 $totalTarget > 0 ? number_format($totalActual / $totalTarget * 100, 1, '.', '') : '0.0',
                 '',
             ]);

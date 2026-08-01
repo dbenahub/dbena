@@ -184,6 +184,19 @@ it('converts a monthly figure into the selected period unit', function (): void 
 
 /*
 |--------------------------------------------------------------------------
+| Kadar penukaran & purata quotation - kini dari data sheet, bukan projek
+|--------------------------------------------------------------------------
+*/
+
+it('no longer depends on the dropped projects table', function (): void {
+    // Kedua-dua kaedah lama dibuang bersama jadual `projects`.
+    expect(method_exists($this->metrics, 'calculateAvgProjectValue'))->toBeFalse()
+        ->and(method_exists($this->metrics, 'calculateAvgDealValue'))->toBeFalse()
+        ->and(method_exists($this->metrics, 'calculateAvgQuotationValue'))->toBeTrue();
+});
+
+/*
+|--------------------------------------------------------------------------
 | Piramid tier
 |--------------------------------------------------------------------------
 */

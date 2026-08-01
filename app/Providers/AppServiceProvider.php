@@ -6,10 +6,8 @@ namespace App\Providers;
 
 use App\Models\CriticalMetric;
 use App\Models\Owner;
-use App\Models\Project;
 use App\Policies\CriticalMetricPolicy;
 use App\Policies\OwnerPolicy;
-use App\Policies\ProjectPolicy;
 use App\Contracts\SheetReader;
 use App\Services\DashboardMetricsService;
 use App\Services\Sheets\LinkSheetReader;
@@ -37,7 +35,6 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(CriticalMetric::class, CriticalMetricPolicy::class);
         Gate::policy(Owner::class, OwnerPolicy::class);
-        Gate::policy(Project::class, ProjectPolicy::class);
 
         Gate::define('access-admin-panel', fn ($user) => $user->isAdmin());
         Gate::define('manage-users', fn ($user) => $user->isAdmin());

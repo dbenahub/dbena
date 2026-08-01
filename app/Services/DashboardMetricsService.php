@@ -11,7 +11,6 @@ use App\Enums\ServiceStatus;
 use App\Enums\ViewMode;
 use App\Models\CriticalMetric;
 use App\Models\IndexTier;
-use App\Models\Project;
 use App\Models\Service;
 use App\Models\YearGrowthFactor;
 use Carbon\CarbonImmutable;
@@ -226,31 +225,36 @@ class DashboardMetricsService
         return $gap / $this->monthsLeftInFiscalYear($now);
     }
 
-    public function calculateAvgProjectValue(float $sales, int $projectCount): float
-    {
-        return $projectCount > 0 ? $sales / $projectCount : 0.0;
-    }
-
     /**
+     * Kadar penukaran corong jualan: berapa banyak lead menjadi quotation.
+     *
      * PEMBETULAN isu #15: prototaip mengunci '8.2%'.
-     * Kini: (projek disahkan ÷ quotation dikeluarkan) × 100.
+     *
+     * Takrifan asal kami (projek disahkan ÷ quotation) bergantung pada jadual
+     * `projects` yang kini digugurkan. Takrifan ini menggunakan data yang
+     * DBENA benar-benar kemas kini setiap minggu dalam Google Sheet, jadi ia
+     * bergerak dengan prestasi sebenar dan bukan data demo yang basi.
      */
     public function calculateConversionRate(int $year, ?int $month = null, ?int $serviceId = null): float
     {
-        $projects = Project::query()
-            ->converted()
-            ->forPeriod($year, $month)
-            ->when($serviceId, fn ($q) => $q->where('service_id', $serviceId))
-            ->count();
-
         $quotations = $this->sumMetricActual(['no_of_new_quotation'], $year, $month, $serviceId);
+        $leads = $this->sumMetricActual(['no_of_lead'], $year, $month, $serviceId);
 
-        return $quotations > 0 ? ($projects / $quotations) * 100 : 0.0;
+        return $leads > 0 ? ($quotations / $leads) * 100 : 0.0;
     }
 
-    public function calculateAvgDealValue(float $revenue, int $projectCount): float
+    /**
+     * Purata nilai satu quotation.
+     *
+     * Menggantikan "Purata Nilai Deal" yang dahulu membahagi hasil dengan
+     * bilangan projek. Kedua-dua nilai di sini datang terus dari sheet.
+     */
+    public function calculateAvgQuotationValue(int $year, ?int $month = null, ?int $serviceId = null): float
     {
-        return $projectCount > 0 ? $revenue / $projectCount : 0.0;
+        $amount = $this->sumMetricActual(['amount_quotation_release'], $year, $month, $serviceId);
+        $count = $this->sumMetricActual(['no_of_new_quotation'], $year, $month, $serviceId);
+
+        return $count > 0 ? $amount / $count : 0.0;
     }
 
     // ── Period (keputusan D3) ─────────────────────────────────────────────

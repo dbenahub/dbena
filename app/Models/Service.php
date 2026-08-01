@@ -32,11 +32,6 @@ class Service extends Model
         return $this->hasMany(CriticalMetric::class)->orderBy('sort_order');
     }
 
-    public function projects(): HasMany
-    {
-        return $this->hasMany(Project::class);
-    }
-
     public function priorities(): HasMany
     {
         return $this->hasMany(Priority::class);
