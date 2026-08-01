@@ -59,10 +59,12 @@
     </div>
 
     {{-- ══ DESKTOP: grid 11 lajur, skrol mendatar, lajur 1 melekat ══ --}}
-    @php $grid = 'grid-template-columns: 250px 95px 95px 95px 95px 80px 115px 140px 90px 130px minmax(200px, 1fr);'; @endphp
+    {{-- Pelan tindakan mendapat lajur paling lebar. Ia satu-satunya lajur
+     yang mengandungi ayat penuh; selebihnya nombor dan label pendek. --}}
+@php $grid = 'grid-template-columns: 250px 95px 95px 95px 95px 80px 115px 140px 90px 130px minmax(320px, 2fr);'; @endphp
 
     <div class="sticky-col-table hidden overflow-x-auto lg:block">
-        <div class="min-w-[1385px]">
+        <div class="min-w-[1505px]">
             <div class="grid gap-2.5 border-b-2 pb-3 text-[11px] font-bold uppercase tracking-wide text-t60"
                  style="{{ $grid }} border-color: var(--border2)">
                 <div class="sticky-col">{{ __('service.col_metric') }}</div>
@@ -79,7 +81,7 @@
 
             @foreach ($displayRows as $row)
                 <div wire:key="row-{{ $row['id'] }}"
-                     class="grid items-center gap-2.5 border-b py-3 text-[12.5px]"
+                     class="grid items-start gap-2.5 border-b py-3 text-[12.5px]"
                      style="{{ $grid }} border-color: var(--border3)">
 
                     <div class="sticky-col pr-2 font-semibold">{{ $row['label'] }}</div>
@@ -146,12 +148,18 @@
                         </div>
                     @endcan
 
-                    <input type="text" wire:model.blur="rowPlans.{{ $row['id'] }}"
-                           wire:change="saveRowPlan({{ $row['id'] }})"
-                           placeholder="{{ __('service.action_plan_placeholder') }}"
-                           aria-label="{{ $row['label'] }} — {{ __('service.col_action_plan') }}"
-                           class="w-full rounded-[7px] bg-transparent px-2.5 py-1.5 text-[12px] text-t85 focus:outline-none"
-                           style="border: 1px solid var(--border2)">
+                    {{-- Dahulunya <input> satu baris, jadi pelan yang panjang
+                         terpotong dan tidak boleh dibaca langsung. Kini ia
+                         membesar mengikut kandungan sehingga had tertentu. --}}
+                    <textarea rows="2" data-autogrow x-data x-init="$nextTick(() => window.dbenaAutoGrow($el))"
+                              x-on:input="window.dbenaAutoGrow($el)"
+                              wire:model.blur="rowPlans.{{ $row['id'] }}"
+                              wire:change="saveRowPlan({{ $row['id'] }})"
+                              placeholder="{{ __('service.action_plan_placeholder') }}"
+                              aria-label="{{ $row['label'] }} — {{ __('service.col_action_plan') }}"
+                              class="w-full resize-y overflow-y-auto rounded-[7px] bg-transparent px-2.5 py-1.5 text-[12px] leading-relaxed text-t85 focus:outline-none"
+                              style="border: 1px solid var(--border2); min-height: 42px; max-height: 190px"
+                    >{{ $rowPlans[$row['id']] ?? '' }}</textarea>
                 </div>
             @endforeach
         </div>
@@ -224,10 +232,17 @@
 
                     <div>
                         <label class="mb-1 block text-[11px] text-t55">{{ __('service.col_action_plan') }}</label>
-                        <textarea wire:model.blur="rowPlans.{{ $row['id'] }}" wire:change="saveRowPlan({{ $row['id'] }})"
-                                  rows="2" placeholder="{{ __('service.action_plan_placeholder') }}"
-                                  class="w-full rounded-lg bg-transparent px-2.5 py-2 text-[12.5px] text-t85 focus:outline-none"
-                                  style="border: 1px solid var(--border2)"></textarea>
+                        {{-- Kandungan mesti dipaparkan di antara tag. Tanpa ini,
+                             pelan yang sudah disimpan tidak muncul langsung
+                             pada telefon — kotak sentiasa kelihatan kosong. --}}
+                        <textarea rows="3" data-autogrow x-data x-init="$nextTick(() => window.dbenaAutoGrow($el))"
+                                  x-on:input="window.dbenaAutoGrow($el)"
+                                  wire:model.blur="rowPlans.{{ $row['id'] }}"
+                                  wire:change="saveRowPlan({{ $row['id'] }})"
+                                  placeholder="{{ __('service.action_plan_placeholder') }}"
+                                  class="w-full resize-y overflow-y-auto rounded-lg bg-transparent px-2.5 py-2 text-[12.5px] leading-relaxed text-t85 focus:outline-none"
+                                  style="border: 1px solid var(--border2); min-height: 64px; max-height: 260px"
+                        >{{ $rowPlans[$row['id']] ?? '' }}</textarea>
                     </div>
 
                     @unless ($canEditTarget)
