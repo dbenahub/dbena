@@ -15,10 +15,18 @@ class CriticalMetricPolicy
         return $user->is_active;
     }
 
-    /** Kedua-dua role boleh mengisi nilai mingguan. */
+    /**
+     * Hanya Admin boleh mengubah nilai mingguan.
+     *
+     * Nilai ini datang daripada lajur MINGGU 1-4 dalam Google Sheet dan
+     * ditulis semula pada setiap sync. Suntingan oleh pengguna akan hilang
+     * tanpa amaran, jadi medan itu dipaparkan sebagai teks di Dashboard
+     * Pengguna. Admin mengekalkan medan boleh-sunting sebagai penindihan
+     * sementara apabila sheet belum dikemas kini.
+     */
     public function updateWeeklyValue(User $user): bool
     {
-        return $user->is_active;
+        return $user->isAdmin() && $user->is_active;
     }
 
     /** Kedua-dua role boleh menulis pelan tindakan. */

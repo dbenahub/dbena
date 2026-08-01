@@ -35,6 +35,7 @@ return [
     'col_owner' => 'Owner',
     'col_action_plan' => 'Action Plan',
     'action_plan_placeholder' => 'Enter action plan…',
+    'weekly_admin_only' => 'Weekly values come from the Google Sheet. Only an Admin can change them.',
     'target_admin_only' => 'Can only be changed in Admin Panel',
     'legend_green' => 'Green — On track',
     'legend_yellow' => 'Yellow — Behind target, action plan in place',

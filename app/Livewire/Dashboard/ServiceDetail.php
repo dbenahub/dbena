@@ -394,6 +394,7 @@ class ServiceDetail extends Component
             'priority' => $service->priorities()->active()->first(),
             'sheet' => SheetIntegration::firstWhere('service_id', $service->id),
             'canEditTarget' => auth()->user()->can('updateTarget', CriticalMetric::class),
+            'canEditWeekly' => auth()->user()->can('updateWeeklyValue', CriticalMetric::class),
             'rawDataJson' => $this->buildRawDataJson($rows),
             'metrics' => $metrics,
             'years' => range(2023, 2032),

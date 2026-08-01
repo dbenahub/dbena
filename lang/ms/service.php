@@ -35,6 +35,7 @@ return [
     'col_owner' => 'Pemilik',
     'col_action_plan' => 'Pelan Tindakan',
     'action_plan_placeholder' => 'Isi pelan tindakan…',
+    'weekly_admin_only' => 'Nilai mingguan datang dari Google Sheet. Hanya Admin boleh mengubahnya.',
     'target_admin_only' => 'Hanya boleh ditukar di Admin Panel',
     'legend_green' => 'Green — On track',
     'legend_yellow' => 'Yellow — Belum on track, ada action plan',

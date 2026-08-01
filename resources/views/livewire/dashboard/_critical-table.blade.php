@@ -84,14 +84,22 @@
 
                     <div class="sticky-col pr-2 font-semibold">{{ $row['label'] }}</div>
 
-                    {{-- Minggu 1-4 — wire:model.blur elak round-trip setiap ketukan --}}
+                    {{-- Minggu 1-4 — wire:model.blur elak round-trip setiap ketukan.
+                         Paparan sahaja untuk pengguna: nilai datang dari Google Sheet. --}}
                     @for ($w = 1; $w <= 4; $w++)
-                        <input type="text" inputmode="decimal" placeholder="—"
-                               wire:model.blur="weekValues.{{ $row['id'] }}.{{ $w }}"
-                               wire:change="saveWeekValue({{ $row['id'] }}, {{ $w }})"
-                               aria-label="{{ $row['label'] }} — {{ __('service.week_n', ['n' => $w]) }}"
-                               class="w-full rounded-[7px] bg-transparent px-2 py-1.5 text-center text-[12px] text-t85 focus:outline-none"
-                               style="border: 1px solid var(--border2)">
+                        @if ($canEditWeekly)
+                            <input type="text" inputmode="decimal" placeholder="—"
+                                   wire:model.blur="weekValues.{{ $row['id'] }}.{{ $w }}"
+                                   wire:change="saveWeekValue({{ $row['id'] }}, {{ $w }})"
+                                   aria-label="{{ $row['label'] }} — {{ __('service.week_n', ['n' => $w]) }}"
+                                   class="w-full rounded-[7px] bg-transparent px-2 py-1.5 text-center text-[12px] text-t85 focus:outline-none"
+                                   style="border: 1px solid var(--border2)">
+                        @else
+                            <div class="w-full px-2 py-1.5 text-center text-[12px] text-t85"
+                                 title="{{ __('service.weekly_admin_only') }}">
+                                {{ filled($weekValues[$row['id']][$w] ?? null) ? $weekValues[$row['id']][$w] : '—' }}
+                            </div>
+                        @endif
                     @endfor
 
                     <div class="text-t65">{{ $row['type']->label() }}</div>
@@ -177,11 +185,17 @@
                         @for ($w = 1; $w <= 4; $w++)
                             <div>
                                 <label class="mb-1 block text-[10.5px] leading-tight whitespace-pre-line text-t55">{{ $weekHeaders[$w - 1] }}</label>
-                                <input type="text" inputmode="decimal" placeholder="—"
-                                       wire:model.blur="weekValues.{{ $row['id'] }}.{{ $w }}"
-                                       wire:change="saveWeekValue({{ $row['id'] }}, {{ $w }})"
-                                       class="touch-target w-full rounded-lg bg-transparent px-2 py-2 text-center text-[12.5px] text-t85 focus:outline-none"
-                                       style="border: 1px solid var(--border2)">
+                                @if ($canEditWeekly)
+                                    <input type="text" inputmode="decimal" placeholder="—"
+                                           wire:model.blur="weekValues.{{ $row['id'] }}.{{ $w }}"
+                                           wire:change="saveWeekValue({{ $row['id'] }}, {{ $w }})"
+                                           class="touch-target w-full rounded-lg bg-transparent px-2 py-2 text-center text-[12.5px] text-t85 focus:outline-none"
+                                           style="border: 1px solid var(--border2)">
+                                @else
+                                    <div class="w-full px-2 py-2 text-center text-[12.5px] font-semibold text-t85">
+                                        {{ filled($weekValues[$row['id']][$w] ?? null) ? $weekValues[$row['id']][$w] : '—' }}
+                                    </div>
+                                @endif
                             </div>
                         @endfor
                     </div>

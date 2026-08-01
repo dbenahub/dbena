@@ -82,12 +82,12 @@ it('lets an admin change a target and records it in the audit log', function ():
     ]);
 });
 
-it('lets both roles record weekly values', function (): void {
+it('lets an admin record weekly values', function (): void {
     $metric = CriticalMetric::whereHas('service', fn ($q) => $q->where('key', 'kabinet'))
         ->where('metric_key', 'no_of_lead')
         ->firstOrFail();
 
-    Livewire::actingAs($this->user)
+    Livewire::actingAs($this->admin)
         ->test(ServiceDetail::class, ['key' => 'kabinet'])
         ->set("weekValues.{$metric->id}.1", '120')
         ->call('saveWeekValue', $metric->id, 1);
@@ -96,15 +96,43 @@ it('lets both roles record weekly values', function (): void {
         'critical_metric_id' => $metric->id,
         'week_number' => 1,
         'value' => 120.00,
-        'updated_by' => $this->user->id,
+        'updated_by' => $this->admin->id,
     ]);
+});
+
+it('does not let a plain user record weekly values', function (): void {
+    // Nilai mingguan datang dari Google Sheet dan ditulis semula pada
+    // setiap sync. Suntingan oleh pengguna akan hilang tanpa amaran.
+    $metric = CriticalMetric::whereHas('service', fn ($q) => $q->where('key', 'kabinet'))
+        ->where('metric_key', 'no_of_lead')
+        ->firstOrFail();
+
+    Livewire::actingAs($this->user)
+        ->test(ServiceDetail::class, ['key' => 'kabinet'])
+        ->set("weekValues.{$metric->id}.1", '999')
+        ->call('saveWeekValue', $metric->id, 1);
+
+    $this->assertDatabaseMissing('critical_weekly_entries', [
+        'critical_metric_id' => $metric->id,
+        'week_number' => 1,
+        'value' => 999.00,
+    ]);
+})->throws(AuthorizationException::class);
+
+it('hides the weekly inputs from a plain user but still shows the numbers', function (): void {
+    Livewire::actingAs($this->user)
+        ->test(ServiceDetail::class, ['key' => 'kabinet'])
+        ->assertDontSee('wire:model.blur="weekValues', escape: false)
+        ->assertOk();
 });
 
 it('refuses to write a metric belonging to a different service', function (): void {
     $foreign = CriticalMetric::whereHas('service', fn ($q) => $q->where('key', 'mihrab'))
         ->firstOrFail();
 
-    Livewire::actingAs($this->user)
+    // Admin, supaya semakan yang diuji ialah pengasingan servis dan bukan
+    // peranan. Pengguna biasa akan ditolak lebih awal atas sebab lain.
+    Livewire::actingAs($this->admin)
         ->test(ServiceDetail::class, ['key' => 'renovation'])
         ->call('saveWeekValue', $foreign->id, 1)
         ->assertForbidden();
