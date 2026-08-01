@@ -7,6 +7,7 @@ namespace App\Livewire\Admin;
 use App\Enums\OwnerStatus;
 use App\Enums\UserRole;
 use App\Models\AuditLog;
+use App\Models\CriticalWeeklyEntry;
 use App\Models\IndexTier;
 use App\Models\Owner;
 use App\Models\Service;
@@ -58,6 +59,13 @@ class ConfigPanel extends Component
     public string $newYear = '';
 
     // Modal cipta pengguna
+    // Modal tambah servis
+    public bool $showServiceModal = false;
+    public string $newServiceNameMs = '';
+    public string $newServiceNameEn = '';
+    public string $newServiceTarget = '';
+    public ?int $copyFromServiceId = null;
+
     public bool $showUserModal = false;
     public string $userName = '';
     public string $userUsername = '';
@@ -104,6 +112,26 @@ class ConfigPanel extends Component
         }
     }
 
+    /**
+     * Muat semula senarai servis sahaja.
+     *
+     * loadState() memuat SEMUA tetapan. Memanggilnya selepas menambah
+     * servis akan membuang suntingan tier dan pertumbuhan yang belum
+     * disimpan — kerja yang hilang tanpa amaran.
+     */
+    private function loadServices(): void
+    {
+        $this->services = [];
+
+        foreach (Service::orderBy('sort_order')->get() as $service) {
+            $this->services[$service->id] = [
+                'name_ms' => $service->name_ms,
+                'name_en' => $service->name_en,
+                'monthly_target' => (string) (float) $service->monthly_target,
+            ];
+        }
+    }
+
     private function loadMonthlyTargets(): void
     {
         $this->monthlyTargets = [];
@@ -118,13 +146,7 @@ class ConfigPanel extends Component
 
     private function loadState(): void
     {
-        foreach (Service::orderBy('sort_order')->get() as $service) {
-            $this->services[$service->id] = [
-                'name_ms' => $service->name_ms,
-                'name_en' => $service->name_en,
-                'monthly_target' => (string) (float) $service->monthly_target,
-            ];
-        }
+        $this->loadServices();
 
         foreach (IndexTier::orderBy('sort_order')->get() as $tier) {
             $this->tiers[$tier->id] = [
@@ -348,6 +370,133 @@ class ConfigPanel extends Component
 
     // ── Faktor pertumbuhan ────────────────────────────────────────────────
 
+    // ── Tambah / buang servis ─────────────────────────────────────────
+
+    public function openServiceModal(): void
+    {
+        $this->authorize('access-admin-panel');
+
+        $this->newServiceNameMs = '';
+        $this->newServiceNameEn = '';
+        $this->newServiceTarget = '';
+        $this->copyFromServiceId = Service::orderBy('sort_order')->value('id');
+        $this->showServiceModal = true;
+    }
+
+    /**
+     * Cipta servis baharu, lengkap dengan metrik Data Kritikalnya.
+     *
+     * Servis tanpa metrik ialah halaman kosong — tiada corong, tiada
+     * diagnosis, tiada baris dalam laporan. Ia kelihatan seperti sistem
+     * rosak dan bukan servis yang baru dicipta, jadi penciptaan dan
+     * penyalinan metrik berlaku dalam SATU transaksi. Separuh siap lebih
+     * mengelirukan daripada gagal terus.
+     */
+    public function createService(AuditLogger $audit): void
+    {
+        $this->authorize('access-admin-panel');
+
+        $namaMs = trim($this->newServiceNameMs);
+        $namaEn = trim($this->newServiceNameEn) ?: $namaMs;
+
+        if ($namaMs === '') {
+            $this->dispatch('dbena-toast', message: __('admin.service_name_required'), variant: 'error');
+
+            return;
+        }
+
+        $kunci = Str::slug($namaMs);
+
+        if ($kunci === '' || Service::where('key', $kunci)->exists()) {
+            $this->dispatch('dbena-toast', message: __('admin.service_exists'), variant: 'error');
+
+            return;
+        }
+
+        $sumber = $this->copyFromServiceId
+            ? Service::with('criticalMetrics.targets')->find($this->copyFromServiceId)
+            : null;
+
+        if (! $sumber) {
+            $this->dispatch('dbena-toast', message: __('admin.service_template_required'), variant: 'error');
+
+            return;
+        }
+
+        $sasaran = (float) preg_replace('/[^0-9.]/', '', $this->newServiceTarget);
+
+        $service = DB::transaction(function () use ($namaMs, $namaEn, $kunci, $sasaran, $sumber) {
+            $service = Service::create([
+                'key' => $kunci,
+                'name_ms' => $namaMs,
+                'name_en' => $namaEn,
+                'icon_class' => 'ph-squares-four',
+                'monthly_target' => $sasaran,
+                'chart_color' => Service::nextChartColor(),
+                'sort_order' => (int) Service::max('sort_order') + 1,
+            ]);
+
+            $service->copyMetricsFrom($sumber);
+
+            return $service;
+        });
+
+        $audit->log('service.created', $service, $namaMs, [
+            'copied_from' => $sumber->key,
+            'metrics' => $service->criticalMetrics()->count(),
+        ]);
+
+        $this->showServiceModal = false;
+        $this->loadMonthlyTargets();
+        $this->loadServices();
+
+        $this->dispatch('dbena-toast', message: __('admin.service_added', [
+            'name' => $namaMs,
+            'count' => $service->criticalMetrics()->count(),
+        ]));
+    }
+
+    /**
+     * Buang servis dan segala yang bergantung padanya.
+     *
+     * Servis yang membawa data mingguan TIDAK boleh dibuang. Memadamnya
+     * memusnahkan sejarah yang laporan bulan lalu bergantung padanya, dan
+     * tiada cara untuk memulihkannya dari dalam sistem.
+     */
+    public function removeService(int $serviceId, AuditLogger $audit): void
+    {
+        $this->authorize('access-admin-panel');
+
+        $service = Service::withCount('criticalMetrics')->findOrFail($serviceId);
+
+        $adaData = CriticalWeeklyEntry::whereIn(
+            'critical_metric_id',
+            $service->criticalMetrics()->select('id')
+        )->exists();
+
+        if ($adaData) {
+            $this->dispatch('dbena-toast', message: __('admin.service_has_data'), variant: 'error');
+
+            return;
+        }
+
+        if (Service::count() <= 1) {
+            $this->dispatch('dbena-toast', message: __('admin.service_last_one'), variant: 'error');
+
+            return;
+        }
+
+        $nama = $service->name;
+        $audit->log('service.removed', null, $nama, ['key' => $service->key]);
+
+        $service->delete();
+
+        $this->loadMonthlyTargets();
+        $this->loadServices();
+
+        $this->dispatch('dbena-toast', message: __('admin.service_removed', ['name' => $nama]));
+    }
+
     public function addYear(): void
     {
         $year = (int) $this->newYear;
@@ -477,7 +626,7 @@ class ConfigPanel extends Component
     public function render(): View
     {
         return view('livewire.admin.config-panel', [
-            'serviceModels' => Service::with('monthlyTargets')->orderBy('sort_order')->get(),
+            'serviceModels' => Service::with(['monthlyTargets', 'criticalMetrics'])->orderBy('sort_order')->get(),
             'monthLabels' => __('calendar.months_short'),
             'targetYears' => range(2023, 2032),
             'tierModels' => IndexTier::orderBy('sort_order')->get(),

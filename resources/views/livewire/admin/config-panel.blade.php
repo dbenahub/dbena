@@ -25,6 +25,12 @@
                     style="background: var(--input-bg); border: 1px solid var(--border2)">
                 @foreach ($targetYears as $y)<option value="{{ $y }}">{{ $y }}</option>@endforeach
             </select>
+
+            <button type="button" wire:click="openServiceModal"
+                    class="dbena-btn-gold ml-auto flex items-center gap-1.5 px-3.5 py-2 text-[12.5px]">
+                <i class="ph-duotone ph-plus-circle text-base" aria-hidden="true"></i>
+                {{ __('admin.add_service') }}
+            </button>
         </div>
 
         <div class="hidden gap-3.5 border-b pb-2.5 text-[11px] font-bold uppercase text-t60 md:grid"
@@ -42,7 +48,7 @@
             @endphp
 
             <div class="border-b py-3" style="border-color: var(--border3)" wire:key="svc-{{ $service->id }}">
-                <div class="grid gap-3 md:grid-cols-[1.4fr_1.4fr_1fr] md:items-center md:gap-3.5">
+                <div class="grid gap-3 md:grid-cols-[1.4fr_1.4fr_1fr_auto] md:items-center md:gap-3.5">
                     <div class="flex items-center gap-2">
                         <i class="ph-duotone {{ $service->icon_class }}" style="color: oklch(0.78 0.12 85)" aria-hidden="true"></i>
                         <input type="text" wire:model="services.{{ $service->id }}.name_ms"
@@ -58,6 +64,20 @@
                            aria-label="{{ __('admin.col_monthly_target') }}"
                            class="w-full rounded-lg px-2.5 py-2 text-[12.5px] font-semibold focus:outline-none"
                            style="background: var(--input-bg); border: 1px solid var(--border2); color: oklch(0.72 0.15 145)">
+
+                    {{-- Buang. Dilindungi di pelayan: servis yang membawa data
+                         mingguan tidak boleh dipadam, kerana memadamnya
+                         memusnahkan sejarah yang laporan lalu bergantung
+                         padanya. --}}
+                    <button type="button"
+                            wire:click="removeService({{ $service->id }})"
+                            wire:confirm="{{ __('admin.service_remove_confirm', ['name' => $service->name]) }}"
+                            aria-label="{{ __('admin.remove_service') }} {{ $service->name }}"
+                            title="{{ __('admin.remove_service') }}"
+                            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
+                            style="border: 1px solid var(--border2); color: oklch(0.66 0.18 25)">
+                        <i class="ph-duotone ph-trash text-base" aria-hidden="true"></i>
+                    </button>
                 </div>
 
                 {{-- Sasaran per bulan --}}
@@ -442,4 +462,63 @@
                     class="dbena-btn-gold px-4 py-2.5 text-[12.5px]">{{ __('admin.add_user') }}</button>
         </x-slot:footer>
     </x-modal>
+
+    {{-- ══ MODAL: Tambah Servis ══ --}}
+    <div x-data="{ showSvc: @entangle('showServiceModal') }" class="contents">
+        <x-modal show="showSvc" :title="__('admin.new_service_title')" icon="ph-plus-circle" max-width="520px">
+            <form wire:submit="createService" class="flex flex-col gap-4">
+                <div>
+                    <label for="svc-ms" class="mb-1.5 block text-[11.5px] text-t55">
+                        {{ __('admin.col_service_ms') }}
+                    </label>
+                    <input id="svc-ms" type="text" wire:model="newServiceNameMs"
+                           placeholder="{{ __('admin.service_name_placeholder') }}"
+                           class="dbena-input" autofocus>
+                </div>
+
+                <div>
+                    <label for="svc-en" class="mb-1.5 block text-[11.5px] text-t55">
+                        {{ __('admin.col_service_en') }}
+                    </label>
+                    <input id="svc-en" type="text" wire:model="newServiceNameEn"
+                           placeholder="{{ __('admin.service_name_en_placeholder') }}"
+                           class="dbena-input">
+                </div>
+
+                <div>
+                    <label for="svc-target" class="mb-1.5 block text-[11.5px] text-t55">
+                        {{ __('admin.col_base_target') }}
+                    </label>
+                    <input id="svc-target" type="text" inputmode="decimal" wire:model="newServiceTarget"
+                           placeholder="0" class="dbena-input">
+                </div>
+
+                {{-- Templat metrik. Servis tanpa metrik ialah halaman kosong:
+                     tiada corong, tiada diagnosis, tiada baris dalam laporan. --}}
+                <div>
+                    <label for="svc-copy" class="mb-1.5 block text-[11.5px] text-t55">
+                        {{ __('admin.copy_metrics_from') }}
+                    </label>
+                    <select id="svc-copy" wire:model="copyFromServiceId" class="dbena-input">
+                        @foreach ($serviceModels as $service)
+                            <option value="{{ $service->id }}">
+                                {{ $service->name }} ({{ $service->criticalMetrics->count() }} {{ __('admin.metrics_word') }})
+                            </option>
+                        @endforeach
+                    </select>
+                    <p class="mt-1.5 text-[11px] leading-relaxed text-t50">
+                        {{ __('admin.copy_metrics_hint') }}
+                    </p>
+                </div>
+            </form>
+
+            <x-slot:footer>
+                <button type="button" x-on:click="showSvc = false"
+                        class="rounded-[9px] px-4 py-2.5 text-[12.5px] font-semibold text-t70"
+                        style="border: 1px solid var(--border2)">{{ __('app.cancel') }}</button>
+                <button type="button" wire:click="createService"
+                        class="dbena-btn-gold px-4 py-2.5 text-[12.5px]">{{ __('admin.add_service') }}</button>
+            </x-slot:footer>
+        </x-modal>
+    </div>
 </div>

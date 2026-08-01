@@ -27,6 +27,78 @@ class Service extends Model
         ];
     }
 
+    /**
+     * Warna carta yang belum digunakan oleh mana-mana servis.
+     *
+     * Dua servis berkongsi warna bermakna carta trend menjadi mustahil
+     * dibaca, dan tiada apa dalam UI yang menghalangnya berlaku. Roda ini
+     * memilih rona yang paling jauh daripada yang sedia ada.
+     */
+    public static function nextChartColor(): string
+    {
+        $roda = [
+            'oklch(0.6 0.2 350)', 'oklch(0.75 0.15 85)', 'oklch(0.6 0.16 250)',
+            'oklch(0.65 0.15 145)', 'oklch(0.7 0.16 40)', 'oklch(0.62 0.19 300)',
+            'oklch(0.68 0.15 190)', 'oklch(0.7 0.17 20)', 'oklch(0.64 0.14 120)',
+            'oklch(0.66 0.18 270)',
+        ];
+
+        $guna = static::pluck('chart_color')->all();
+
+        foreach ($roda as $warna) {
+            if (! in_array($warna, $guna, true)) {
+                return $warna;
+            }
+        }
+
+        // Lebih daripada sepuluh servis — kitar semula, masih tersusun.
+        return $roda[static::count() % count($roda)];
+    }
+
+    /**
+     * Salin metrik Data Kritikal daripada servis lain.
+     *
+     * Servis tanpa metrik ialah halaman kosong: tiada corong, tiada
+     * diagnosis, tiada baris dalam laporan. Ia kelihatan seperti sistem
+     * rosak dan bukan servis yang baru dicipta, jadi metrik disalin pada
+     * saat penciptaan dan bukan diserahkan sebagai langkah kedua yang
+     * mungkin terlupa.
+     *
+     * Nilai mingguan TIDAK disalin — hanya struktur dan sasaran.
+     */
+    public function copyMetricsFrom(self $sumber): int
+    {
+        $disalin = 0;
+
+        foreach ($sumber->criticalMetrics()->orderBy('sort_order')->get() as $metrik) {
+            $baharu = $this->criticalMetrics()->firstOrCreate(
+                ['metric_key' => $metrik->metric_key],
+                [
+                    'label_ms' => $metrik->label_ms,
+                    'label_en' => $metrik->label_en,
+                    'type' => $metrik->type,
+                    'value_type' => $metrik->value_type,
+                    'default_owner_id' => $metrik->default_owner_id,
+                    'sort_order' => $metrik->sort_order,
+                ]
+            );
+
+            if ($baharu->wasRecentlyCreated) {
+                $disalin++;
+
+                foreach ($metrik->targets as $sasaran) {
+                    $baharu->targets()->create([
+                        'year' => $sasaran->year,
+                        'monthly_target' => $sasaran->monthly_target,
+                        'target_text' => $sasaran->target_text,
+                    ]);
+                }
+            }
+        }
+
+        return $disalin;
+    }
+
     public function criticalMetrics(): HasMany
     {
         return $this->hasMany(CriticalMetric::class)->orderBy('sort_order');
