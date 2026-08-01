@@ -41,6 +41,27 @@ class ProjectList extends Component
 
     public string $sortDirection = 'desc';
 
+    /**
+     * Paparan penomboran bertema DBENA.
+     *
+     * Paginator::defaultView() dalam AppServiceProvider TIDAK mencukupi.
+     * Livewire mendaftarkan paparan penomborannya sendiri semasa boot
+     * komponen, iaitu selepas penyedia perkhidmatan berjalan, jadi
+     * tetapan kami ditulis ganti secara senyap dan nombor halaman kembali
+     * kepada tema terang Livewire — kotak bg-white pada dashboard gelap.
+     *
+     * Komponen mesti menyatakannya sendiri.
+     */
+    public function paginationView(): string
+    {
+        return 'vendor.pagination.dbena';
+    }
+
+    public function paginationSimpleView(): string
+    {
+        return 'vendor.pagination.dbena';
+    }
+
     /** Menukar penapis mesti kembali ke halaman 1. */
     public function updatedSearch(): void
     {

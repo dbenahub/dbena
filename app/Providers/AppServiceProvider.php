@@ -46,6 +46,10 @@ class AppServiceProvider extends ServiceProvider
          * supaya senarai bernombor yang ditambah kemudian tidak mewarisi
          * pepijat yang sama.
          */
+        // Ini melindungi senarai bernombor BUKAN Livewire. Komponen Livewire
+        // mesti menyatakan paginationView() sendiri: Livewire mendaftarkan
+        // paparannya semasa boot komponen, selepas baris ini berjalan, dan
+        // menulis ganti tetapan di sini secara senyap.
         Paginator::defaultView('vendor.pagination.dbena');
         Paginator::defaultSimpleView('vendor.pagination.dbena');
 

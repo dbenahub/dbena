@@ -494,3 +494,40 @@ it('tiles and table agree on the number', function (): void {
             ->toBe($component->viewData('projects')->total());
     }
 });
+
+/*
+|--------------------------------------------------------------------------
+| Penomboran mesti mengikut tema gelap
+|--------------------------------------------------------------------------
+*/
+
+it('renders pagination with the dark theme, not Livewire light default', function (): void {
+    // Livewire mendaftarkan paparan penomborannya sendiri semasa boot
+    // komponen, SELEPAS AppServiceProvider berjalan. Tanpa
+    // paginationView() pada komponen, tetapan kami ditulis ganti secara
+    // senyap dan nombor halaman menjadi kotak putih pada dashboard gelap.
+    for ($i = 1; $i <= 30; $i++) {
+        Project::create([
+            'code' => 'PRJ-P'.$i,
+            'service_id' => $this->renovation->id,
+            'client_name' => 'Klien '.$i,
+            'contract_amount' => 1000,
+            'status' => ProjectStatus::Quotation,
+        ]);
+    }
+
+    $html = Livewire::actingAs($this->user)
+        ->test(ProjectList::class)
+        ->set('perPage', 10)
+        ->html();
+
+    expect($html)->not->toContain('bg-white')
+        ->and($html)->toContain('var(--border2)');
+});
+
+it('names the dbena pagination view on the component itself', function (): void {
+    // Paginator::defaultView() dalam penyedia perkhidmatan tidak mencukupi
+    // untuk komponen Livewire.
+    expect((new ProjectList)->paginationView())->toBe('vendor.pagination.dbena')
+        ->and((new ProjectList)->paginationSimpleView())->toBe('vendor.pagination.dbena');
+});
