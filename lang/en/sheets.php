@@ -76,6 +76,9 @@ return [
 
     'mapping' => 'Column Mapping',
     'mapping_hint' => 'Match your sheet columns to system fields. :rows rows read. Fields marked * are required.',
+    'map_first_title' => 'Map the required columns first.',
+    'map_first_body' => 'Not yet mapped: :fields. Service bands are detected by looking for rows whose Week columns are empty â without a mapping that check is meaningless. Use âAuto-match columnsâ or pick each column above, then Read & Preview again.',
+
     'field' => [
         'metric' => 'Metric Name',
         'week1' => 'Week 1',

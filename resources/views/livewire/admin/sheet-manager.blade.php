@@ -349,7 +349,23 @@
             @if ($layoutMode === 'multi')
                 <div class="mt-5">
                     <span class="mb-2 block text-[11.5px] text-t55">{{ __('sheets.detected_services') }}</span>
-                    @if (! empty($preview['detectedServices']))
+                    {{-- Jalur servis dikesan dengan memeriksa lajur MINGGU yang
+                         kosong. Tanpa pemetaan lajur, semakan itu tidak
+                         bermakna dan mesej "tiada jalur servis" menuding ke
+                         arah yang salah — pengguna menyemak ejaan nama servis
+                         sedangkan masalahnya lajur belum dipetakan. --}}
+                    @php $belumPeta = collect(['metric', 'week1', 'week2', 'week3', 'week4'])
+                        ->filter(fn ($f) => blank($columnMap[$f] ?? null))->values(); @endphp
+
+                    @if ($belumPeta->isNotEmpty())
+                        <p class="rounded-lg px-3.5 py-3 text-[12px] leading-relaxed"
+                           style="background: oklch(0.63 0.22 25/0.1); border: 1px solid oklch(0.63 0.22 25/0.35); color: oklch(0.7 0.2 25)">
+                            <b>{{ __('sheets.map_first_title') }}</b><br>
+                            {{ __('sheets.map_first_body', [
+                                'fields' => $belumPeta->map(fn ($f) => __('sheets.field.'.$f))->implode(', '),
+                            ]) }}
+                        </p>
+                    @elseif (! empty($preview['detectedServices']))
                         <div class="flex flex-wrap gap-2">
                             @foreach ($preview['detectedServices'] as $name)
                                 <span class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold"

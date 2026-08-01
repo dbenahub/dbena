@@ -76,6 +76,9 @@ return [
 
     'mapping' => 'Pemetaan Lajur',
     'mapping_hint' => 'Padankan lajur sheet anda dengan medan sistem. :rows baris dibaca. Medan bertanda * adalah wajib.',
+    'map_first_title' => 'Petakan lajur wajib dahulu.',
+    'map_first_body' => 'Belum dipetakan: :fields. Sistem mengesan jalur servis dengan memeriksa baris yang lajur Minggu-nya kosong â tanpa pemetaan, semakan itu tidak bermakna. Tekan âAuto-padan lajurâ atau pilih setiap lajur di atas, kemudian Baca & Pratonton semula.',
+
     'field' => [
         'metric' => 'Nama Metrik',
         'week1' => 'Minggu 1',
