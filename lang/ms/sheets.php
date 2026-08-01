@@ -54,6 +54,8 @@ return [
     'connection' => 'Sambungan',
     'connection_hint' => 'Tampal pautan Google Sheet anda. Pastikan sheet dikongsi — buka Share → General access → "Anyone with the link" → Viewer. Sistem akan mengekstrak ID sheet secara automatik.',
     'url' => 'Pautan Google Sheet',
+    'pick_tab' => '— Pilih tab —',
+    'tab_hint_manual' => 'Salin nama tab tepat seperti tertulis di bahagian bawah Google Sheet, termasuk garis bawah.',
     'tab_name' => 'Nama Tab',
     'tab_placeholder' => 'cth. Renovation',
     'tab_auto' => 'Auto (dari gid dalam pautan)',

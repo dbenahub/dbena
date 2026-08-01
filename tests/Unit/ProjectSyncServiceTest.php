@@ -317,3 +317,33 @@ it('reads amounts already formatted as RM by the sheet', function (): void {
     expect((float) $project->contract_amount)->toBe(10566.0)
         ->and((float) $project->variation_order)->toBe(1200.0);
 });
+
+it('names the tab in the failure message when the sheet cannot be read', function (): void {
+    // Tab dalam sheet DBENA dinamakan Master_All_Project. Menaipnya
+    // sebagai "Master Project" menghasilkan kegagalan bacaan, dan mesej
+    // mesti menyebut tab itu — kalau tidak, satu garis bawah yang tersalah
+    // kelihatan seperti sheet yang rosak.
+    $integration = SheetIntegration::create([
+        'kind' => 'project',
+        'tab_name' => 'Master Project',
+        'connected' => true,
+    ]);
+
+    $pembacaGagal = new class implements App\Contracts\SheetReader
+    {
+        public function read(SheetIntegration $integration): array
+        {
+            throw new RuntimeException('Tab "'.$integration->tab_name.'" tidak dijumpai');
+        }
+
+        public function label(): string
+        {
+            return 'Fake';
+        }
+    };
+
+    $result = (new ProjectSyncService($pembacaGagal))->sync($integration);
+
+    expect($result['status'])->toBe('failed')
+        ->and($result['message'])->toContain('Master Project');
+});

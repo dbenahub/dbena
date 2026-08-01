@@ -723,8 +723,25 @@
             </div>
             <div>
                 <label for="prj-tab" class="mb-1.5 block text-[11.5px] text-t55">{{ __('sheets.tab_name') }}</label>
-                <input id="prj-tab" type="text" wire:model="projectTab"
-                       placeholder="Master Project" class="dbena-input">
+
+                {{-- Senarai turun apabila tab boleh dibaca. Menaip nama
+                     dengan tangan bermakna satu garis bawah yang tersalah
+                     menghasilkan "sheet tidak dapat dibaca" tanpa petunjuk
+                     bahawa nama itu puncanya. --}}
+                @php $tabProjek = $this->availableProjectTabs(); @endphp
+
+                @if ($tabProjek)
+                    <select id="prj-tab" wire:model="projectTab" class="dbena-input">
+                        <option value="">{{ __('sheets.pick_tab') }}</option>
+                        @foreach ($tabProjek as $tab)
+                            <option value="{{ $tab['title'] }}">{{ $tab['title'] }}</option>
+                        @endforeach
+                    </select>
+                @else
+                    <input id="prj-tab" type="text" wire:model="projectTab"
+                           placeholder="Master_All_Project" class="dbena-input">
+                    <p class="mt-1 text-[11px] text-t50">{{ __('sheets.tab_hint_manual') }}</p>
+                @endif
             </div>
             <div>
                 <label for="prj-header" class="mb-1.5 block text-[11.5px] text-t55">

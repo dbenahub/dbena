@@ -54,6 +54,8 @@ return [
     'connection' => 'Connection',
     'connection_hint' => 'Paste your Google Sheet link. Make sure the sheet is shared — open Share → General access → "Anyone with the link" → Viewer. The sheet ID is extracted automatically.',
     'url' => 'Google Sheet Link',
+    'pick_tab' => '— Choose a tab —',
+    'tab_hint_manual' => 'Copy the tab name exactly as it appears at the bottom of the Google Sheet, underscores included.',
     'tab_name' => 'Tab Name',
     'tab_placeholder' => 'e.g. Renovation',
     'tab_auto' => 'Auto (from gid in the link)',

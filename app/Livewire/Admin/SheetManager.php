@@ -367,8 +367,26 @@ class SheetManager extends Component
      */
     public function availableTabs(): array
     {
-        $integration = $this->integration();
+        return $this->tabsFor($this->integration());
+    }
 
+    /**
+     * Tab dalam fail sheet projek.
+     *
+     * Menaip nama tab dengan tangan bermakna satu garis bawah yang
+     * tersalah menghasilkan "sheet tidak dapat dibaca" tanpa petunjuk
+     * bahawa nama itu puncanya. Senarai turun menghapuskan tekaan.
+     *
+     * @return array<int, array{gid: string, title: string, index: int}>
+     */
+    public function availableProjectTabs(): array
+    {
+        return $this->tabsFor($this->projectIntegration());
+    }
+
+    /** @return array<int, array{gid: string, title: string, index: int}> */
+    private function tabsFor(SheetIntegration $integration): array
+    {
         if (blank($integration->spreadsheet_id) || config('dbena.sheets.driver') !== 'service') {
             return [];
         }
