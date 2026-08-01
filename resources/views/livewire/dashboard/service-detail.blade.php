@@ -180,9 +180,6 @@
         </div>
     @endif
 
-    {{-- ══ JADUAL PROJEK (keputusan D2 — dibina semula) ══ --}}
-    @include('livewire.dashboard._projects-table')
-
     {{-- ══ Analisis Penting + Keutamaan ══ --}}
     <div class="flex flex-col items-start gap-5 xl:flex-row xl:gap-6">
         <div class="dbena-card w-full p-5 sm:p-6 xl:flex-[2]">

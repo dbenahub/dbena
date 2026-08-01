@@ -357,8 +357,9 @@ class ServiceDetail extends Component
         // ── Carta mingguan ──
         $weekLabels = collect(range(1, 4))->map(fn (int $n) => 'M'.$n)->all();
 
-        $projects = $service->projects()->orderByDesc('project_date')->get();
-        $projectCount = $projects->count();
+        // Jadual Projek dibuang dari UI atas permintaan DBENA.
+        // Kiraan dikekalkan kerana ia memacu tile "Purata Nilai Projek".
+        $projectCount = $service->projects()->count();
         $gap = max(0, $target - $actual);
 
         return view('livewire.dashboard.service-detail', [
@@ -387,7 +388,6 @@ class ServiceDetail extends Component
             'weekHeaders' => $metrics->getCriticalWeekLabels($this->month, $this->year),
             'monthLabels' => $monthLabels,
             'monthsFull' => __('calendar.months_full'),
-            'projects' => $projects,
             'analysis' => [
                 'gap' => $gap,
                 'gapLabel' => $metrics->formatRm($gap),
