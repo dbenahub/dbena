@@ -114,18 +114,26 @@ class Overview extends Component
 
         // ── Nilai bulan/mod dipilih ──
         //
-        // Mod tahunan membandingkan jualan TERKUMPUL dengan sasaran TERKUMPUL
-        // untuk bulan yang sama. Membandingkan lapan bulan jualan dengan
-        // sasaran setahun penuh akan sentiasa kelihatan seperti kegagalan.
+        // Mod tahunan menggunakan sasaran SETAHUN PENUH — nombor yang sama
+        // seperti yang ditetapkan Admin. Sasaran terkumpul dipapar berasingan
+        // sebagai penanda RENTAK, supaya "berapa sasaran saya" dan "sepatutnya
+        // di mana saya sekarang" tidak dicampur menjadi satu angka.
         $monthActual = $mode->isYearly() ? $cumulativeTotals[$this->month] : $monthlyTotals[$this->month];
-        $monthTarget = $mode->isYearly() ? $cumulativeTargetToMonth : $selectedMonthTarget;
+        $monthTarget = $mode->isYearly() ? $fullYearTarget : $selectedMonthTarget;
 
         // Keputusan D3 — pengganda period benar-benar dipakai.
         $displayActual = $metrics->toPeriodUnit($monthActual, $periodMode);
         $displayTarget = $metrics->toPeriodUnit($monthTarget, $periodMode);
 
         $overallPct = $displayTarget > 0 ? $displayActual / $displayTarget * 100 : 0.0;
-        $changeVsTarget = $metrics->percentChange($displayActual, $displayTarget);
+
+        // Rentak: dibandingkan dengan sasaran sepatutnya setakat bulan ini.
+        $paceTargetOverall = $mode->isYearly()
+            ? $metrics->toPeriodUnit($cumulativeTargetToMonth, $periodMode)
+            : $displayTarget;
+        $pacePctOverall = $paceTargetOverall > 0 ? $displayActual / $paceTargetOverall * 100 : 0.0;
+
+        $changeVsTarget = $metrics->percentChange($displayActual, $paceTargetOverall);
 
         // ── Tier index ──
         $currentTier = $metrics->calculateTierIndex($tiers, $monthActual, $mode);
@@ -153,14 +161,21 @@ class Overview extends Component
             if ($mode->isYearly()) {
                 $actual = collect(range(1, $this->month))
                     ->sum(fn (int $m) => $monthlyByService[$service->id][$m]);
-                $target = $service->cumulativeTargetTo($this->year, $this->month) * $yearFactor;
+                $target = $service->targetForYear($this->year) * $yearFactor;
+                $paceTarget = $service->cumulativeTargetTo($this->year, $this->month) * $yearFactor;
             } else {
                 $actual = $monthlyByService[$service->id][$this->month];
                 $target = $service->targetForMonth($this->year, $this->month) * $yearFactor;
+                $paceTarget = $target;
             }
 
             $pct = $target > 0 ? $actual / $target * 100 : 0.0;
-            $status = $metrics->calculateServiceStatus($pct);
+
+            // Status dinilai terhadap RENTAK, bukan sasaran setahun penuh.
+            // Servis yang mencapai 100% sasaran Januari–Ogos adalah sihat,
+            // walaupun ia baru 67% daripada sasaran setahun.
+            $pacePct = $paceTarget > 0 ? $actual / $paceTarget * 100 : 0.0;
+            $status = $metrics->calculateServiceStatus($pacePct);
 
             return [
                 'service' => $service,
@@ -171,6 +186,9 @@ class Overview extends Component
                 'salesLabel' => $metrics->formatRm($actual),
                 'targetLabel' => $metrics->formatRm($target),
                 'pct' => $pct,
+                'pacePct' => $pacePct,
+                'paceTargetLabel' => $metrics->formatRm($paceTarget),
+                'onPace' => $actual >= $paceTarget,
                 'status' => $status,
                 'statusLabel' => $status->label(),
                 'statusColor' => $status->color(),
@@ -229,6 +247,8 @@ class Overview extends Component
             'estProfit' => $metrics->calculateEstimatedProfit($monthActual),
             'fullYearTarget' => $fullYearTarget,
             'cumulativeTargetToMonth' => $cumulativeTargetToMonth,
+            'paceTargetOverall' => $paceTargetOverall,
+            'pacePctOverall' => $pacePctOverall,
             'dashboardChart' => $dashboardChart,
             'yearlyChart' => $yearlyChart,
             'stackBars' => $stackBars,

@@ -204,3 +204,72 @@ it('renders the dashboard without error in yearly mode', function (): void {
         ->set('viewMode', 'yearly')
         ->assertOk();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Sasaran tahunan mesti sepadan dengan Admin Panel
+|--------------------------------------------------------------------------
+*/
+
+it('shows the same yearly target the admin configured, not a month multiple', function (): void {
+    // Pepijat asal: mod tahunan mendarab dengan bulan semasa, jadi pada
+    // bulan Ogos ia menunjukkan RM4,000,000 sedangkan Admin Panel kata
+    // RM6,000,000. Dua nombor untuk perkara yang sama.
+    $user = User::where('role', UserRole::User)->firstOrFail();
+
+    $component = Livewire::actingAs($user)
+        ->test(App\Livewire\Dashboard\Overview::class)
+        ->set('viewMode', 'yearly')
+        ->set('year', 2026)
+        ->set('month', 8);
+
+    $rows = collect($component->viewData('serviceRows'));
+    $renovation = $rows->firstWhere('key', 'renovation');
+
+    // Sama seperti yang dipapar Admin Panel
+    expect($renovation['targetLabel'])->toBe('RM6,000,000');
+});
+
+it('keeps the yearly target steady no matter which month is selected', function (): void {
+    $user = User::where('role', UserRole::User)->firstOrFail();
+
+    $targetIn = function (int $month) use ($user): string {
+        $component = Livewire::actingAs($user)
+            ->test(App\Livewire\Dashboard\Overview::class)
+            ->set('viewMode', 'yearly')
+            ->set('year', 2026)
+            ->set('month', $month);
+
+        return collect($component->viewData('serviceRows'))->firstWhere('key', 'renovation')['targetLabel'];
+    };
+
+    expect($targetIn(3))->toBe($targetIn(8))
+        ->and($targetIn(8))->toBe($targetIn(12));
+});
+
+it('reports pace separately from the yearly target', function (): void {
+    $user = User::where('role', UserRole::User)->firstOrFail();
+
+    $component = Livewire::actingAs($user)
+        ->test(App\Livewire\Dashboard\Overview::class)
+        ->set('viewMode', 'yearly')
+        ->set('year', 2026)
+        ->set('month', 8);
+
+    $renovation = collect($component->viewData('serviceRows'))->firstWhere('key', 'renovation');
+
+    // Rentak setakat Ogos = 8 x RM500,000
+    expect($renovation['paceTargetLabel'])->toBe('RM4,000,000')
+        // ...dan berbeza daripada sasaran setahun
+        ->and($renovation['targetLabel'])->toBe('RM6,000,000');
+});
+
+it('judges status against pace, not the full-year target', function (): void {
+    // Servis yang mencapai tepat sasaran Jan-Ogos adalah SIHAT, walaupun
+    // ia baru 67% daripada sasaran setahun. Menilainya terhadap setahun
+    // penuh akan menandakan setiap servis gagal sehingga Disember.
+    $metrics = app(App\Services\DashboardMetricsService::class);
+
+    expect($metrics->calculateServiceStatus(100.0))
+        ->toBe(App\Enums\ServiceStatus::Memuaskan);
+});

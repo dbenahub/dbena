@@ -105,8 +105,16 @@
                     </div>
                     <div class="my-1 text-xl font-bold">{{ $metrics->formatRm($displayTarget) }}</div>
                     @if ($mode->isYearly())
-                        <div class="mb-4 text-[11.5px] text-t50">
-                            {{ __('dashboard.full_year_target') }}: {{ $metrics->formatRm($fullYearTarget) }}
+                        <div class="mb-4 flex flex-wrap items-center gap-1.5 text-[11.5px]">
+                            <span class="text-t50">{{ __('dashboard.pace_target', ['month' => $monthName]) }}:</span>
+                            <b class="text-t70">{{ $metrics->formatRm($paceTargetOverall) }}</b>
+                            <span class="rounded px-1.5 py-0.5 text-[10.5px] font-bold"
+                                  @style([
+                                      'background: oklch(0.55 0.15 145/0.16); color: oklch(0.6 0.15 145)' => $pacePctOverall >= 100,
+                                      'background: oklch(0.78 0.15 85/0.16); color: oklch(0.8 0.14 85)' => $pacePctOverall < 100,
+                                  ])>
+                                {{ number_format($pacePctOverall, 1) }}% {{ __('dashboard.of_pace') }}
+                            </span>
                         </div>
                     @else
                         <div class="mb-4"></div>
@@ -192,7 +200,18 @@
                     </div>
                     <div class="text-[13.5px] font-semibold">{{ $row['salesLabel'] }}</div>
                     <div class="text-[13.5px] text-t70">{{ $row['targetLabel'] }}</div>
-                    <div><x-progress-bar :pct="$row['pct']" :color="$row['barColor']" /></div>
+                    <div>
+                        <x-progress-bar :pct="$row['pct']" :color="$row['barColor']" />
+                        @if ($mode->isYearly())
+                            <div class="mt-1 text-[10.5px] text-t50">
+                                {{ __('dashboard.pace_short') }} {{ $row['paceTargetLabel'] }} ·
+                                <span @style([
+                                    'color: oklch(0.6 0.15 145)' => $row['onPace'],
+                                    'color: oklch(0.8 0.14 85)' => ! $row['onPace'],
+                                ])>{{ number_format($row['pacePct'], 1) }}%</span>
+                            </div>
+                        @endif
+                    </div>
                     <div><x-status-dot :color="$row['statusColor']" :label="$row['statusLabel']" /></div>
                     <a href="{{ route('service.detail', $row['key']) }}" wire:navigate
                        class="flex items-center justify-center gap-1.5 rounded-[9px] px-2.5 py-2 text-[12px] font-semibold transition-colors"
@@ -233,6 +252,15 @@
                     </div>
 
                     <x-progress-bar :pct="$row['pct']" :color="$row['barColor']" />
+                    @if ($mode->isYearly())
+                        <div class="mt-1.5 text-[11px] text-t50">
+                            {{ __('dashboard.pace_short') }} {{ $row['paceTargetLabel'] }} ·
+                            <span @style([
+                                'color: oklch(0.6 0.15 145)' => $row['onPace'],
+                                'color: oklch(0.8 0.14 85)' => ! $row['onPace'],
+                            ])>{{ number_format($row['pacePct'], 1) }}%</span>
+                        </div>
+                    @endif
                 </a>
             @endforeach
         </div>
