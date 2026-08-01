@@ -12,6 +12,7 @@ use App\Services\OwnerReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Throwable;
 
 class OwnerReportPdfController extends Controller
 {
@@ -46,13 +47,34 @@ class OwnerReportPdfController extends Controller
             str($report['periodLabel'])->slug()->value()
         );
 
-        return Pdf::loadView('pdf.owner-report', [
-            'report' => $report,
-            'exec' => $executive->build($report),
-            'user' => $request->user(),
-        ])
-            ->setPaper('a4', 'portrait')
-            ->setOption(['isRemoteEnabled' => false, 'defaultFont' => 'DejaVu Sans'])
-            ->download($filename);
+        /*
+         * Kegagalan penjanaan PDF memberi skrin 500 kosong, dan mencari
+         * sebabnya bermakna menggali log pelayan. Di sini ia dilaporkan
+         * terus kepada orang yang menekan butang itu.
+         *
+         * Laluan ini sudah di sebalik auth, jadi butiran hanya dilihat oleh
+         * pengguna yang telah log masuk — bukan orang awam. Jejak penuh
+         * kekal dalam log; yang dipaparkan hanya baris yang menamakan
+         * puncanya.
+         */
+        try {
+            return Pdf::loadView('pdf.owner-report', [
+                'report' => $report,
+                'exec' => $executive->build($report),
+                'user' => $request->user(),
+            ])
+                ->setPaper('a4', 'portrait')
+                ->setOption(['isRemoteEnabled' => false, 'defaultFont' => 'DejaVu Sans'])
+                ->download($filename);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response(
+                __('owner_report.pdf_failed')."\n\n"
+                .$e->getMessage()."\n\n"
+                .basename($e->getFile()).':'.$e->getLine(),
+                500
+            )->header('Content-Type', 'text/plain; charset=UTF-8');
+        }
     }
 }

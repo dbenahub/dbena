@@ -22,6 +22,7 @@ return [
     'export_pdf_owner' => 'Eksport PDF — :owner',
     'export_hint_owner' => 'Laporan untuk seorang pemilik sahaja',
     'report_for_owner' => 'Laporan Peribadi — :owner',
+    'pdf_failed' => 'Laporan PDF tidak dapat dijana. Butiran ralat di bawah — hantar kepada penyelenggara sistem.',
     'export_pdf' => 'Eksport PDF',
     'generated_at' => 'Dijana pada',
     'generated_by' => 'Dijana oleh',

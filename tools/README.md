@@ -48,3 +48,25 @@ python3 tools/check-closures.py
 ```
 
 Kalau PHP tersedia, `php -l fail.php` lebih tepat. Alat ini untuk bila ia tiada.
+
+## check-blade-echo.py
+
+Mengesan `{{ $baris['kunci'] }}` yang sebenarnya memaparkan tatasusunan.
+
+PHP melemparkan `htmlspecialchars(): Argument #1 must be of type string,
+array given` — halaman 500 penuh, bukan amaran. Ia hanya muncul apabila
+templat itu benar-benar dirender, jadi laluan yang jarang digunakan seperti
+eksport PDF boleh rosak berminggu-minggu tanpa disedari.
+
+Ditulis selepas `commentary` — senarai ayat — dipaparkan terus dalam
+templat PDF laporan pengurusan. Ia menghempaskan setiap eksport, dan
+mencari puncanya mengambil lima pusingan kerana skrin 500 kosong tidak
+memberitahu apa-apa.
+
+Kunci hanya dilaporkan apabila SETIAP tempat yang menghasilkannya
+menghasilkan bukan skalar. Nama seperti `owner` dan `target` digunakan
+semula merentas perkhidmatan yang tidak berkaitan; menandakan setiap
+penggunaan menghasilkan bunyi bising, dan pemeriksa yang bising akan
+diabaikan.
+
+    python3 tools/check-blade-echo.py

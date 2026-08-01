@@ -1,6 +1,13 @@
 @php
-    use App\Enums\MetricStatus;
-
+    /*
+     * Sengaja TIADA pernyataan "use" di sini. Blok PHP dikompil ke dalam
+     * fail paparan yang dijana, dan pernyataan use di dalamnya berkelakuan
+     * berbeza mengikut versi Blade — kegagalannya senyap dan sukar dikesan.
+     * Nama kelas penuh lebih panjang tetapi tidak pernah mengejutkan.
+     *
+     * Status dibandingkan mengikut NILAI dan bukan contoh enum, supaya
+     * baris yang membawa rentetan biasa tidak menghempaskan laporan.
+     */
     $owners = $report['owners'];
     $summary = $report['summary'];
     $x = $exec;
@@ -13,10 +20,12 @@
         default => '#1e8449',
     };
 
-    $statusColor = fn (MetricStatus $s) => match ($s) {
-        MetricStatus::Green => '#1e8449',
-        MetricStatus::Yellow => '#c98a12',
-        MetricStatus::Red => '#c0392b',
+    $nilaiStatus = fn ($s) => $s instanceof \App\Enums\MetricStatus ? $s->value : (string) $s;
+
+    $statusColor = fn ($s) => match ($nilaiStatus($s)) {
+        'green' => '#1e8449',
+        'yellow' => '#c98a12',
+        'red' => '#c0392b',
         default => '#8a8f9c',
     };
 @endphp
@@ -275,7 +284,10 @@
             <td class="c"><b>{{ $o['grade'] }}</b></td>
             <td class="c">{{ $o['green'] }} / {{ $o['total'] }}</td>
             <td class="c">{{ $o['pending'] }}</td>
-            <td>{{ $o['commentary'] }}</td>
+            {{-- commentary() memulangkan SENARAI ayat, bukan satu rentetan.
+                 Paparan dashboard membacanya sebagai senarai; di sini ia
+                 dicantumkan menjadi satu perenggan supaya muat dalam sel. --}}
+            <td>{{ collect($o['commentary'])->implode(' ') }}</td>
         </tr>
     @endforeach
 </table>
@@ -383,7 +395,11 @@
 @foreach ($owners as $i => $o)
     <h2>5.{{ $i + 1 }} {{ $o['name'] }} — {{ $o['scorePct'] }}% ({{ $o['grade'] }})</h2>
 
-    @php $kritikal = collect($o['metrics'])->where('status', MetricStatus::Red)->take(6); @endphp
+    @php
+        $kritikal = collect($o['metrics'])
+            ->filter(fn (array $m) => $nilaiStatus($m['status']) === 'red')
+            ->take(6);
+    @endphp
 
     @if ($kritikal->isNotEmpty())
         <table class="data avoid">
