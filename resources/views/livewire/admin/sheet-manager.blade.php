@@ -219,6 +219,23 @@
                             {{ __('sheets.no_services_detected') }}
                         </p>
                     @endif
+
+                    @if (! empty($preview['skippedSections']))
+                        <div class="mt-3">
+                            <span class="mb-2 block text-[11.5px] text-t55">{{ __('sheets.skipped_sections') }}</span>
+                            <div class="flex flex-wrap gap-2">
+                                @foreach ($preview['skippedSections'] as $name)
+                                    <span class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px]"
+                                          style="background: var(--hover-bg3); color: var(--t60)">
+                                        <i class="ph-duotone ph-eye-slash" aria-hidden="true"></i>{{ $name }}
+                                    </span>
+                                @endforeach
+                            </div>
+                            <p class="mt-1.5 text-[11.5px] leading-relaxed text-t50">
+                                {{ __('sheets.skipped_sections_hint') }}
+                            </p>
+                        </div>
+                    @endif
                 </div>
             @endif
 
@@ -241,7 +258,23 @@
                     </div>
 
                     @foreach ($preview['rows'] as $row)
-                        @if ($row['type'] === 'band')
+                        @if ($row['type'] === 'skipped')
+                            {{-- Bahagian ringkasan (cth. COMPANY PERFORMANCE) - sengaja dilangkau --}}
+                            <div class="flex items-center gap-2 border-b px-1 py-2.5 text-[12.5px]"
+                                 style="border-color: var(--border3); background: var(--hover-bg3); color: var(--t55)">
+                                <i class="ph-duotone ph-eye-slash" aria-hidden="true"></i>
+                                <span class="font-semibold">{{ $row['label'] }}</span>
+                                <span>· {{ __('sheets.section_skipped') }}</span>
+                            </div>
+                        @elseif ($row['type'] === 'ignored')
+                            <div class="grid items-center gap-3 border-b py-2 text-[12px] opacity-40"
+                                 style="{{ $grid }} border-color: var(--border3)">
+                                <div><i class="ph-duotone ph-minus text-t50" aria-hidden="true"></i></div>
+                                <div class="truncate text-t50">{{ $row['label'] }}</div>
+                                <div class="text-t50">{{ __('sheets.row_ignored') }}</div>
+                                <div></div><div></div><div></div><div></div><div></div><div></div>
+                            </div>
+                        @elseif ($row['type'] === 'band')
                             {{-- Baris jalur servis --}}
                             <div class="flex items-center gap-2 border-b px-1 py-2.5 text-[12.5px] font-bold"
                                  style="border-color: var(--border3); background: var(--hover-bg2); color: oklch(0.78 0.12 85)">
@@ -279,7 +312,17 @@
             @php
                 $unmatchedCount = collect($preview['rows'])
                     ->where('type', 'metric')->where('matched', false)->count();
+                $matchedCount = collect($preview['rows'])
+                    ->where('type', 'metric')->where('matched', true)->count();
             @endphp
+            @if ($matchedCount > 0)
+                <p class="mt-3 rounded-lg px-3.5 py-2.5 text-[12px] leading-relaxed"
+                   style="background: oklch(0.55 0.15 145/0.1); border: 1px solid oklch(0.55 0.15 145/0.3); color: oklch(0.6 0.15 145)">
+                    <i class="ph-duotone ph-check-circle" aria-hidden="true"></i>
+                    {{ __('sheets.matched_hint', ['count' => $matchedCount]) }}
+                </p>
+            @endif
+
             @if ($unmatchedCount > 0)
                 <p class="mt-3 rounded-lg px-3.5 py-2.5 text-[12px] leading-relaxed"
                    style="background: oklch(0.78 0.15 85/0.1); border: 1px solid oklch(0.78 0.15 85/0.3); color: oklch(0.8 0.14 85)">

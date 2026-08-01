@@ -68,6 +68,12 @@ return [
     'unmatched' => 'Tidak dipadankan',
     'unmatched_hint' => ':count baris tidak dapat dipadankan dengan mana-mana metrik. Baris ini akan dilangkau semasa sync — semak ejaan nama metrik dalam sheet.',
 
+    'section_skipped' => 'bahagian ringkasan — dilangkau',
+    'row_ignored' => 'dalam bahagian dilangkau',
+    'skipped_sections' => 'Bahagian dilangkau',
+    'skipped_sections_hint' => 'Bahagian ini mengandungi jumlah yang dikira oleh sheet. Dashboard mengira jumlahnya sendiri daripada data servis, jadi mengimportnya akan menyebabkan kiraan berganda.',
+    'matched_hint' => ':count baris metrik berjaya dipadankan dan akan disegerak.',
+
     'run_sync' => 'Jalankan Sync',
     'run_sync_hint' => 'Sync automatik berjalan setiap :minutes minit. Gunakan butang di bawah untuk tarik segera.',
     'month' => 'Bulan',

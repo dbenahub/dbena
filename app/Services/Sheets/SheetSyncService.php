@@ -134,11 +134,13 @@ class SheetSyncService
         $targetsUpdated = 0;
         $unmatched = [];
         $touchedServices = [];
+        $skippedSections = [];
 
         DB::transaction(function () use (
             $dataRows, $map, $multi, $serviceIndex, $services, $owners, $integration,
             $year, $month, &$currentService, &$lookups,
-            &$rowsRead, &$rowsMatched, &$valuesUpdated, &$targetsUpdated, &$unmatched, &$touchedServices
+            &$rowsRead, &$rowsMatched, &$valuesUpdated, &$targetsUpdated,
+            &$unmatched, &$touchedServices, &$skippedSections
         ): void {
             foreach ($dataRows as $row) {
                 if ($this->isBlankRow($row)) {
@@ -151,22 +153,28 @@ class SheetSyncService
                     continue;
                 }
 
-                // ── Baris jalur servis? ──
+                // ── Pemisah bahagian? ──
                 if ($multi) {
-                    $band = $this->matchServiceBand($label, $row, $map, $serviceIndex);
+                    $band = $this->matchBand($label, $row, $map, $serviceIndex);
 
-                    if ($band !== null) {
-                        $currentService = $band;
-                        $touchedServices[$band->id] = $band->name;
+                    if ($band['isBand']) {
+                        $currentService = $band['service'];
+
+                        if ($band['service']) {
+                            $touchedServices[$band['service']->id] = $band['service']->name;
+                        } else {
+                            // Bahagian ringkasan seperti COMPANY PERFORMANCE —
+                            // langkau sehingga jalur servis berikutnya.
+                            $skippedSections[] = $label;
+                        }
 
                         continue;
                     }
                 }
 
                 if (! $currentService) {
-                    // Baris metrik sebelum sebarang jalur — tiada konteks servis.
-                    $unmatched[] = $label;
-
+                    // Dalam bahagian yang dilangkau, atau sebelum sebarang jalur.
+                    // Bukan ralat — jangan laporkan sebagai tidak dipadankan.
                     continue;
                 }
 
@@ -177,7 +185,7 @@ class SheetSyncService
                     $integration->match_mode ?? 'label'
                 );
 
-                $metric = $lookups[$currentService->id][$this->normalise($label)] ?? null;
+                $metric = $this->findMetric($lookups[$currentService->id], $label);
 
                 if (! $metric) {
                     $unmatched[] = $currentService->name.' › '.$label;
@@ -252,6 +260,7 @@ class SheetSyncService
             'targetsUpdated' => $targetsUpdated,
             'unmatched' => array_values(array_unique($unmatched)),
             'services' => array_values($touchedServices),
+            'skippedSections' => array_values(array_unique($skippedSections)),
         ];
     }
 
@@ -292,27 +301,41 @@ class SheetSyncService
     // ══ Pengesanan jalur servis ═══════════════════════════════════════════
 
     /**
-     * Baris ialah jalur servis apabila teks lajur metrik memadani nama servis
-     * DAN baris itu tiada nilai mingguan (jalur bersifat tajuk sahaja).
+     * Kenal pasti baris pemisah bahagian.
+     *
+     * Baris ialah pemisah apabila lajur metrik ada teks TETAPI kesemua lajur
+     * minggu kosong — corak tajuk, bukan data.
+     *
+     * Sheet DBENA mempunyai dua jenis:
+     *   • Jalur SERVIS       — "Renovation", "Bina Rumah" → tukar konteks
+     *   • Bahagian RINGKASAN — "COMPANY PERFORMANCE" → langkau sehingga jalur
+     *                          servis berikutnya, kerana barisnya ("Total
+     *                          Revenue / Sales" dsb.) ialah jumlah yang dikira
+     *                          sheet. Dashboard mengira jumlahnya sendiri;
+     *                          mengimportnya akan menyebabkan kiraan berganda.
      *
      * @param  array<string, Service>  $serviceIndex
+     * @return array{isBand: bool, service: ?Service}
      */
-    private function matchServiceBand(string $label, array $row, array $map, array $serviceIndex): ?Service
+    private function matchBand(string $label, array $row, array $map, array $serviceIndex): array
     {
-        $service = $serviceIndex[$this->normalise($label)] ?? null;
-
-        if (! $service) {
-            return null;
-        }
-
-        // Jika baris ini turut membawa data mingguan, ia metrik — bukan jalur.
+        // Jika baris membawa data mingguan, ia metrik — bukan pemisah.
         for ($week = 1; $week <= 4; $week++) {
             if (filled($this->cell($row, $map["week{$week}"] ?? null))) {
-                return null;
+                return ['isBand' => false, 'service' => null];
             }
         }
 
-        return $service;
+        // Sasaran atau nilai actual juga menandakan baris data.
+        foreach (['target'] as $field) {
+            if (filled($this->cell($row, $map[$field] ?? null))) {
+                return ['isBand' => false, 'service' => null];
+            }
+        }
+
+        $service = $serviceIndex[$this->normalise($label)] ?? null;
+
+        return ['isBand' => true, 'service' => $service];
     }
 
     /**
@@ -411,6 +434,7 @@ class SheetSyncService
         $currentService = $multi ? null : $integration->service;
         $rows = [];
         $detected = [];
+        $skipped = [];
 
         foreach (array_slice($grid, $headerRow) as $raw) {
             if (count($rows) >= $limit) {
@@ -428,12 +452,18 @@ class SheetSyncService
             }
 
             if ($multi) {
-                $band = $this->matchServiceBand($label, $raw, $map, $serviceIndex);
+                $band = $this->matchBand($label, $raw, $map, $serviceIndex);
 
-                if ($band !== null) {
-                    $currentService = $band;
-                    $detected[$band->id] = $band->name;
-                    $rows[] = ['type' => 'band', 'label' => $label, 'service' => $band->name];
+                if ($band['isBand']) {
+                    $currentService = $band['service'];
+
+                    if ($band['service']) {
+                        $detected[$band['service']->id] = $band['service']->name;
+                        $rows[] = ['type' => 'band', 'label' => $label, 'service' => $band['service']->name];
+                    } else {
+                        $skipped[] = $label;
+                        $rows[] = ['type' => 'skipped', 'label' => $label, 'service' => null];
+                    }
 
                     continue;
                 }
@@ -446,11 +476,11 @@ class SheetSyncService
                     $currentService->criticalMetrics()->get(),
                     $integration->match_mode ?? 'label'
                 );
-                $metric = $lookups[$currentService->id][$this->normalise($label)] ?? null;
+                $metric = $this->findMetric($lookups[$currentService->id], $label);
             }
 
             $rows[] = [
-                'type' => 'metric',
+                'type' => $currentService === null ? 'ignored' : 'metric',
                 'label' => $label,
                 'service' => $currentService?->name,
                 'matched' => $metric !== null,
@@ -470,6 +500,7 @@ class SheetSyncService
             'rows' => $rows,
             'totalRows' => count($grid),
             'detectedServices' => array_values($detected),
+            'skippedSections' => array_values(array_unique($skipped)),
             'suggestions' => $this->suggestMapping($headers),
         ];
     }
@@ -534,6 +565,54 @@ class SheetSyncService
         }
 
         return $lookup;
+    }
+
+    /**
+     * Cari metrik mengikut label, dengan sandaran kabur untuk typo.
+     *
+     * Sheet sebenar mengandungi kesilapan menaip — sheet DBENA menulis
+     * "Cost Per Appoitment (CPA)" (kurang satu huruf). Padanan tepat akan
+     * terlepas baris itu senyap-senyap, jadi kami cuba jarak Levenshtein
+     * yang KETAT sebagai sandaran: maksimum 2 aksara berbeza, dan tidak
+     * melebihi 15% panjang label. Cukup longgar untuk menangkap typo,
+     * cukup ketat untuk tidak tersalah padan metrik yang berlainan.
+     *
+     * @param  array<string, CriticalMetric>  $lookup
+     */
+    private function findMetric(array $lookup, string $label): ?CriticalMetric
+    {
+        $needle = $this->normalise($label);
+
+        if (isset($lookup[$needle])) {
+            return $lookup[$needle];
+        }
+
+        if (mb_strlen($needle) < 8) {
+            return null;
+        }
+
+        $best = null;
+        $bestDistance = PHP_INT_MAX;
+
+        foreach ($lookup as $candidate => $metric) {
+            // Levenshtein hanya bermakna apabila panjang hampir sama.
+            if (abs(strlen($candidate) - strlen($needle)) > 2) {
+                continue;
+            }
+
+            $distance = levenshtein($needle, $candidate);
+
+            if ($distance < $bestDistance) {
+                $bestDistance = $distance;
+                $best = $metric;
+            }
+        }
+
+        $tolerance = min(2, (int) floor(mb_strlen($needle) * 0.15));
+
+        return ($best !== null && $bestDistance > 0 && $bestDistance <= max(1, $tolerance))
+            ? $best
+            : null;
     }
 
     /**

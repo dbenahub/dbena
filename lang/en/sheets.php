@@ -68,6 +68,12 @@ return [
     'unmatched' => 'Unmatched',
     'unmatched_hint' => ':count rows could not be matched to any metric. These will be skipped during sync — check the metric name spelling in your sheet.',
 
+    'section_skipped' => 'summary section — skipped',
+    'row_ignored' => 'inside skipped section',
+    'skipped_sections' => 'Skipped sections',
+    'skipped_sections_hint' => 'These sections hold totals calculated by the sheet. The dashboard computes its own totals from the service data, so importing them would double-count.',
+    'matched_hint' => ':count metric rows matched and will be synced.',
+
     'run_sync' => 'Run Sync',
     'run_sync_hint' => 'Automatic sync runs every :minutes minutes. Use the button below to pull immediately.',
     'month' => 'Month',
