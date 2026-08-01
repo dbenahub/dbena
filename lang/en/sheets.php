@@ -67,6 +67,7 @@ return [
     'enable_sync_hint' => 'Pull on a schedule and accept Apps Script updates',
     'load_preview' => 'Read Sheet & Preview',
     'reading' => 'Reading…',
+    'save_config' => 'Save Settings',
     'saved' => 'Sheet settings saved',
     'auto_mapped' => ':count columns matched automatically',
 

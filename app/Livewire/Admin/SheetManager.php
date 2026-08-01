@@ -165,7 +165,7 @@ class SheetManager extends Component
         $p = $this->saveProjectSheet($audit);
 
         if (blank($p->url)) {
-            $this->dispatch('dbena-toast', message: __('sheets.not_ready.no_url'), variant: 'error');
+            $this->dispatch('dbena-toast', message: __('sheets.not_ready.no_link'), variant: 'error');
 
             return;
         }

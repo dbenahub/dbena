@@ -67,6 +67,7 @@ return [
     'enable_sync_hint' => 'Tarik data mengikut jadual dan terima kemas kini Apps Script',
     'load_preview' => 'Baca Sheet & Pratonton',
     'reading' => 'Membaca…',
+    'save_config' => 'Simpan Tetapan',
     'saved' => 'Tetapan sheet disimpan',
     'auto_mapped' => ':count lajur dipadankan secara automatik',
 
