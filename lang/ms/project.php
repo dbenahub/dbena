@@ -16,6 +16,7 @@ return [
     'tile' => [
         'total' => 'Jumlah Projek',
         'total_note' => 'Semua kategori',
+        'turned_down' => 'Turned Down',
         'closed' => 'Projek Ditutup',
         'of_total' => ':pct% daripada jumlah',
     ],

@@ -30,6 +30,24 @@ return [
         'offset' => 20,
     ],
 
+    /*
+     * Istilah dalam lajur "Type Of Project" yang bukan nama servis.
+     *
+     * Sheet DBENA menulis MASJID untuk servis yang dinamakan Mihrab.
+     * Tambah pasangan di sini apabila sheet menggunakan perkataan yang
+     * berbeza; tiada perubahan kod diperlukan.
+     */
+    'project_type_aliases' => [
+        'masjid' => 'mihrab',
+        'surau' => 'mihrab',
+        'cabinet' => 'kabinet',
+        'kabinet dapur' => 'kabinet',
+        'renovasi' => 'renovation',
+        'ubah suai' => 'renovation',
+        'rumah' => 'bina-rumah',
+        'partition' => 'divider',
+    ],
+
     'otp' => [
         /*
          * Hidupkan atau matikan langkah kod 6 angka.

@@ -97,7 +97,7 @@ class ProjectSyncService
                 }
 
                 $namaServis = trim((string) $this->cell($row, $map['service'] ?? null));
-                $serviceId = $services[$this->normalise($namaServis)] ?? $lalai;
+                $serviceId = $this->matchService($namaServis, $services) ?? $lalai;
 
                 if ($serviceId === null) {
                     // Tanpa servis, projek tidak boleh muncul di bawah
@@ -189,6 +189,25 @@ class ProjectSyncService
             return Carbon::create(1899, 12, 30)->addDays((int) $value);
         }
 
+        /*
+         * Format HARI-DAHULU dicuba SEBELUM Carbon::parse.
+         *
+         * Sheet DBENA menulis 05/01/26 untuk 5 Januari. Carbon::parse
+         * mengikut strtotime, yang menganggap garis miring sebagai format
+         * Amerika bulan-dahulu — jadi 05/01/26 menjadi 1 Mei dan 21/11/25
+         * gagal sepenuhnya kerana tiada bulan ke-21.
+         *
+         * Tarikh yang salah empat bulan lebih teruk daripada tarikh yang
+         * hilang: ia kelihatan munasabah dan tiada siapa menyemaknya.
+         */
+        foreach (['d/m/y', 'd/m/Y', 'd-m-y', 'd-m-Y', 'd.m.Y'] as $format) {
+            $tarikh = Carbon::createFromFormat($format, $value);
+
+            if ($tarikh !== false && $tarikh->format($format) === $value) {
+                return $tarikh->startOfDay();
+            }
+        }
+
         try {
             return Carbon::parse($value);
         } catch (Throwable) {
@@ -213,7 +232,57 @@ class ProjectSyncService
             }
         }
 
+        /*
+         * Alias untuk istilah yang digunakan dalam sheet tetapi bukan nama
+         * servis. Sheet DBENA menulis CABINET (servis dinamakan Kabinet /
+         * Cabinetry) dan MASJID (servis dinamakan Mihrab).
+         *
+         * Boleh dilanjutkan dalam config/dbena.php tanpa menyentuh kod —
+         * perniagaan menamakan perkara mengikut cara mereka bercakap, dan
+         * memaksa sheet sepadan dengan pangkalan data ialah kerja yang
+         * salah arah.
+         */
+        foreach ((array) config('dbena.project_type_aliases', []) as $alias => $key) {
+            $alias = $this->normalise((string) $alias);
+            $target = $index[$this->normalise((string) $key)] ?? null;
+
+            if ($target !== null && ! isset($index[$alias])) {
+                $index[$alias] = $target;
+            }
+        }
+
         return $index;
+    }
+
+    /**
+     * Cari servis untuk satu nilai "Type Of Project".
+     *
+     * Padanan tepat dahulu, kemudian awalan dua hala — "cabinet" ialah
+     * awalan "cabinetry", dan sebaliknya "cabinetry" bermula dengan
+     * "cabinet". Menuntut padanan tepat bermakna satu huruf berbeza
+     * menyebabkan seluruh kategori hilang daripada dashboard.
+     *
+     * @param  array<string, int>  $index
+     */
+    private function matchService(string $raw, array $index): ?int
+    {
+        $needle = $this->normalise($raw);
+
+        if ($needle === '') {
+            return null;
+        }
+
+        if (isset($index[$needle])) {
+            return $index[$needle];
+        }
+
+        foreach ($index as $name => $id) {
+            if (mb_strlen($name) >= 4 && (str_starts_with($name, $needle) || str_starts_with($needle, $name))) {
+                return $id;
+            }
+        }
+
+        return null;
     }
 
     private function normalise(string $value): string

@@ -17,6 +17,7 @@ enum ProjectStatus: string
     case Pending = 'pending';
     case InProgress = 'in_progress';
     case Completed = 'completed';
+    case TurnedDown = 'turned_down';
     case Closed = 'closed';
 
     /**
@@ -37,6 +38,12 @@ enum ProjectStatus: string
             str_contains($key, 'quot') => self::Quotation,
             str_contains($key, 'progress'), str_contains($key, 'ongoing') => self::InProgress,
             str_contains($key, 'complete'), str_contains($key, 'siap') => self::Completed,
+            // "Turned Down" muncul dalam sheet DBENA sebenar. Menjatuhkannya
+            // ke Pending menjadikan projek yang ditolak kelihatan seperti
+            // projek yang masih menunggu — dan corong nampak lebih sihat
+            // daripada keadaan sebenar.
+            str_contains($key, 'turn'), str_contains($key, 'reject'),
+            str_contains($key, 'tolak'), str_contains($key, 'batal') => self::TurnedDown,
             str_contains($key, 'close'), str_contains($key, 'tutup') => self::Closed,
             default => self::Pending,
         };
@@ -55,6 +62,7 @@ enum ProjectStatus: string
             self::Pending => 'oklch(0.62 0.02 260)',
             self::InProgress => 'oklch(0.62 0.19 255)',
             self::Completed => 'oklch(0.62 0.16 150)',
+            self::TurnedDown => 'oklch(0.6 0.18 25)',
             self::Closed => 'oklch(0.5 0.02 260)',
         };
     }
@@ -62,7 +70,7 @@ enum ProjectStatus: string
     /** Projek yang sudah tidak aktif — tidak dikira dalam corong semasa. */
     public function isFinished(): bool
     {
-        return $this === self::Completed || $this === self::Closed;
+        return in_array($this, [self::Completed, self::Closed, self::TurnedDown], true);
     }
 
     /** @return array<int, self> */

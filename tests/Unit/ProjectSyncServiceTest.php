@@ -227,3 +227,93 @@ it('counts variation orders in the project value', function (): void {
 
     expect($project->totalValue())->toBe(90000.0);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Sheet DBENA sebenar — MASTER LIST PROJECT DBENA
+|--------------------------------------------------------------------------
+*/
+
+it('reads day-first dates the way the DBENA sheet writes them', function (): void {
+    // Sheet menulis 05/01/26 untuk 5 Januari. Carbon::parse mengikut
+    // strtotime, yang menganggap garis miring sebagai format Amerika —
+    // jadi 05/01/26 menjadi 1 Mei dan 21/11/25 gagal sepenuhnya.
+    //
+    // Tarikh yang salah empat bulan lebih teruk daripada tarikh yang
+    // hilang: ia kelihatan munasabah dan tiada siapa menyemaknya.
+    syncProjects(projectGrid([
+        ['001/DB/2026/', '05/01/26', 'Fazli Aziz', 'Hazira', 'CABINET', '', '', '', '10566', '', 'Closed'],
+        ['002/DB/2026/', '21/11/25', 'Fazilah', 'Farez', 'CABINET', '', '', '', '18000', '', 'Closed'],
+        ['013/DB/2026/', '18/02/26', 'Adlin', 'Hazira', 'CABINET', '', '', '', '13759', '', 'Closed'],
+    ]));
+
+    expect(Project::where('code', '001/DB/2026/')->firstOrFail()->project_date->format('Y-m-d'))
+        ->toBe('2026-01-05')
+        ->and(Project::where('code', '002/DB/2026/')->firstOrFail()->project_date->format('Y-m-d'))
+        ->toBe('2025-11-21')
+        ->and(Project::where('code', '013/DB/2026/')->firstOrFail()->project_date->format('Y-m-d'))
+        ->toBe('2026-02-18');
+});
+
+it('matches CABINET to the Kabinet service', function (): void {
+    // Sheet menulis CABINET; servis dinamakan Kabinet / Cabinetry.
+    // Menuntut padanan tepat bermakna seluruh kategori hilang daripada
+    // dashboard.
+    syncProjects(projectGrid([
+        ['001/DB/2026/', '05/01/26', 'Fazli Aziz', '', 'CABINET', '', '', '', '10566', '', 'Closed'],
+    ]));
+
+    expect(Project::where('code', '001/DB/2026/')->firstOrFail()->service->key)->toBe('kabinet');
+});
+
+it('matches MASJID to the Mihrab service through the alias list', function (): void {
+    syncProjects(projectGrid([
+        ['050/DB/2026/', '05/01/26', 'Surau Al-Ikhlas', '', 'MASJID', '', '', '', '320000', '', 'Quotation'],
+    ]));
+
+    expect(Project::where('code', '050/DB/2026/')->firstOrFail()->service->key)->toBe('mihrab');
+});
+
+it('imports every project type the DBENA dropdown offers', function (): void {
+    $result = syncProjects(projectGrid([
+        ['A/1', '05/01/26', 'A', '', 'CABINET', '', '', '', '1', '', 'Quotation'],
+        ['A/2', '05/01/26', 'B', '', 'RENOVATION', '', '', '', '1', '', 'Quotation'],
+        ['A/3', '05/01/26', 'C', '', 'BINA RUMAH', '', '', '', '1', '', 'Quotation'],
+        ['A/4', '05/01/26', 'D', '', 'MASJID', '', '', '', '1', '', 'Quotation'],
+    ]));
+
+    expect($result['unknownServices'])->toBeEmpty()
+        ->and(Project::count())->toBe(4);
+});
+
+it('records Turned Down as its own status, not Pending', function (): void {
+    // Menjatuhkannya ke Pending menjadikan projek yang ditolak kelihatan
+    // seperti projek yang masih menunggu, dan corong nampak lebih sihat
+    // daripada keadaan sebenar.
+    syncProjects(projectGrid([
+        ['A/1', '05/01/26', 'A', '', 'CABINET', '', '', '', '1', '', 'Turned Down'],
+    ]));
+
+    expect(Project::where('code', 'A/1')->firstOrFail()->status)
+        ->toBe(ProjectStatus::TurnedDown)
+        ->and(ProjectStatus::TurnedDown->isFinished())->toBeTrue();
+});
+
+it('keeps project codes that contain slashes', function (): void {
+    syncProjects(projectGrid([
+        ['001/DB/2026/', '05/01/26', 'Fazli Aziz', '', 'CABINET', '', '', '', '10566', '', 'Closed'],
+    ]));
+
+    expect(Project::where('code', '001/DB/2026/')->exists())->toBeTrue();
+});
+
+it('reads amounts already formatted as RM by the sheet', function (): void {
+    syncProjects(projectGrid([
+        ['A/1', '05/01/26', 'A', '', 'CABINET', '', '', '', 'RM10,566.00', 'RM1,200.00', 'Closed'],
+    ]));
+
+    $project = Project::where('code', 'A/1')->firstOrFail();
+
+    expect((float) $project->contract_amount)->toBe(10566.0)
+        ->and((float) $project->variation_order)->toBe(1200.0);
+});
