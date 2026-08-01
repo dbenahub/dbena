@@ -15,6 +15,8 @@ return [
     'search' => 'Cari',
     'loading' => 'Memuatkan…',
     'no_data' => 'Tiada data',
+    'density_compact' => 'Paparan padat',
+    'density_comfortable' => 'Paparan lapang',
     'language' => 'Bahasa',
     'dark_mode' => 'Mod Gelap',
     'light_mode' => 'Mod Terang',

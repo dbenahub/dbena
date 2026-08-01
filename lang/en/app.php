@@ -15,6 +15,8 @@ return [
     'search' => 'Search',
     'loading' => 'Loading…',
     'no_data' => 'No data',
+    'density_compact' => 'Compact view',
+    'density_comfortable' => 'Comfortable view',
     'language' => 'Language',
     'dark_mode' => 'Dark Mode',
     'light_mode' => 'Light Mode',

@@ -107,7 +107,7 @@
     @if (count($weeklyBars['quotation']) > 0 || count($weeklyBars['amount']) > 0)
         <div class="dbena-card p-5 sm:p-6">
             <h2 class="mb-0.5 text-base font-bold">{{ __('service.weekly_trend_title') }}</h2>
-            <p class="mb-5 text-[12px] text-t55">
+            <p class="padat-sorok mb-5 text-[12px] text-t55">
                 {{ __('service.weekly_trend_caption', ['month' => $monthName, 'year' => $year]) }}
             </p>
 
@@ -143,7 +143,7 @@
     @if ($ownerPerformance->isNotEmpty())
         <div class="dbena-card p-5 sm:p-6">
             <h2 class="mb-1 text-base font-bold">{{ __('service.owner_performance') }}</h2>
-            <p class="mb-5 text-[12px] text-t55">{{ __('service.owner_performance_hint') }}</p>
+            <p class="padat-sorok mb-5 text-[12px] text-t55">{{ __('service.owner_performance_hint') }}</p>
 
             <div class="grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr))">
                 @foreach ($ownerPerformance as $op)
@@ -236,7 +236,7 @@
     <div class="flex flex-col items-start gap-5 xl:flex-row xl:gap-6">
         <div class="dbena-card w-full p-5 sm:p-6 xl:flex-[2]">
             <h2 class="mb-1 text-base font-bold">{{ __('service.key_analysis') }}</h2>
-            <p class="mb-5 text-[12px] text-t55">{{ __('service.key_analysis_hint') }}</p>
+            <p class="padat-sorok mb-5 text-[12px] text-t55">{{ __('service.key_analysis_hint') }}</p>
 
             <div class="mb-4 rounded-xl px-4 py-4"
                  style="background: var(--hover-bg3); border: 1px solid var(--border3)">

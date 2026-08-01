@@ -16,6 +16,16 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name') }}</title>
     <link rel="icon" href="{{ asset('images/logo-dbena.png') }}">
+
+    {{-- Kepadatan dipakai SEBELUM stylesheet dimuatkan. Menetapkannya
+         selepas paint bermakna halaman berkelip dari lapang ke padat
+         setiap kali dimuatkan. --}}
+    <script>
+        try {
+            var d = localStorage.getItem('dbena_density');
+            if (d) document.documentElement.dataset.density = d;
+        } catch (e) { /* noop */ }
+    </script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     @livewireStyles
 </head>
@@ -145,6 +155,7 @@
 
             <div class="flex shrink-0 items-center gap-2 sm:gap-3.5">
                 <livewire:language-switcher />
+                <x-density-toggle />
                 <livewire:notification-bell />
 
                 {{-- Dropdown profil --}}

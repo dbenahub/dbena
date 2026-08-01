@@ -167,7 +167,7 @@
         <div class="mb-4 flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h2 class="text-base font-bold">{{ __('dashboard.performance_by_service') }}</h2>
-                <p class="mt-0.5 text-[11.5px] text-t55">
+                <p class="padat-sorok mt-0.5 text-[11.5px] text-t55">
                     {{ $mode->isYearly()
                         ? __('dashboard.service_view_caption_yearly', ['month' => $monthName, 'year' => $year])
                         : __('dashboard.service_view_caption_monthly', ['month' => $monthName, 'year' => $year]) }}
@@ -332,7 +332,7 @@
     <div class="flex flex-col items-start gap-5 xl:flex-row xl:gap-6">
         <div class="dbena-card w-full p-5 sm:p-6 xl:flex-[2]">
             <h2 class="mb-0.5 text-base font-bold">{{ __('dashboard.sales_target_trend') }}</h2>
-            <p class="mb-4 text-[12px] text-t55">{{ __('dashboard.monthly_year', ['year' => $year]) }}</p>
+            <p class="padat-sorok mb-4 text-[12px] text-t55">{{ __('dashboard.monthly_year', ['year' => $year]) }}</p>
 
             <x-trend-chart :chart="$dashboardChart" height="320px" />
 
@@ -380,7 +380,7 @@
     {{-- ══ BLOK 5: Trend Jualan Tahunan ══ --}}
     <div class="dbena-card p-5 sm:p-6">
         <h2 class="mb-0.5 text-base font-bold">{{ __('dashboard.annual_sales_trend') }}</h2>
-        <p class="mb-4 text-[12px] text-t55">{{ __('dashboard.annual_projection', ['range' => '2023-2032']) }}</p>
+        <p class="padat-sorok mb-4 text-[12px] text-t55">{{ __('dashboard.annual_projection', ['range' => '2023-2032']) }}</p>
         <x-trend-chart :chart="$yearlyChart" height="320px" />
     </div>
 </div>

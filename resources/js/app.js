@@ -43,3 +43,15 @@ document.addEventListener('livewire:init', () => {
         el.querySelectorAll?.('textarea[data-autogrow]').forEach(window.dbenaAutoGrow);
     });
 });
+
+/**
+ * Kepadatan paparan — 'selesa' atau 'padat'.
+ *
+ * Disimpan dalam localStorage dan bukan pada pengguna, kerana ia pilihan
+ * PERANTI: orang yang sama mahu lapang di desktop dan padat di telefon.
+ * Menyimpannya di pelayan akan memaksa satu pilihan pada kedua-duanya.
+ */
+window.dbenaSetDensity = (density) => {
+    document.documentElement.dataset.density = density;
+    try { localStorage.setItem('dbena_density', density); } catch (e) { /* noop */ }
+};

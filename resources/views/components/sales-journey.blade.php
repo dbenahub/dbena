@@ -132,8 +132,94 @@
         </div>
     @endif
 
-    {{-- ══ Jalan raya ══ --}}
-    <div class="-mx-1 overflow-x-auto px-1">
+    {{-- ══ Senarai menegak — telefon ══
+         Jalan raya 1240px pada skrin 390px ialah tatal mendatar melalui
+         kanvas yang enam kali lebih lebar daripada tetingkap. Bentuk liku
+         itu maksud peta pada desktop; pada telefon ia hanya menyembunyikan
+         nombor. Di sini urutan ditunjukkan menegak sebagai ganti. --}}
+    <div class="flex flex-col gap-0 md:hidden">
+        @foreach ($stages as $i => $s)
+            @php $c = $ring($s['status']); @endphp
+
+            @if ($i > 0)
+                <div class="ml-[17px] h-4 w-0.5"
+                     style="background: repeating-linear-gradient(180deg, var(--border2) 0 4px, transparent 4px 8px)"></div>
+            @endif
+
+            <div class="flex gap-2.5">
+                <div class="flex flex-col items-center">
+                    <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[13px] font-extrabold text-white"
+                          style="background: {{ $s['accent'] }}; box-shadow: 0 3px 8px -3px {{ $s['accent'] }}">
+                        {{ $s['no'] }}
+                    </span>
+                </div>
+
+                <div class="min-w-0 flex-1 overflow-hidden rounded-xl"
+                     style="background: var(--hover-bg3);
+                            border: 1px solid color-mix(in oklch, {{ $c }} 45%, transparent)">
+                    <div class="flex items-center gap-2 px-3 py-2"
+                         style="background: color-mix(in oklch, {{ $s['accent'] }} 16%, transparent)">
+                        <span class="truncate text-[11.5px] font-extrabold tracking-wide"
+                              style="color: {{ $s['accent'] }}">{{ $s['title'] }}</span>
+                        @if ($s['pct'] !== null)
+                            <span class="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[10.5px] font-extrabold"
+                                  style="background: color-mix(in oklch, {{ $c }} 22%, transparent); color: {{ $c }}">
+                                {{ $s['pctLabel'] }}
+                            </span>
+                        @endif
+                    </div>
+
+                    <div class="px-3 py-2.5">
+                        <div class="flex items-baseline gap-1.5">
+                            <span class="text-[18px] font-extrabold leading-none" style="color: {{ $c }}">
+                                {{ $s['actualLabel'] }}
+                            </span>
+                            <span class="text-[11px] text-t55">/ {{ $s['targetLabel'] }}</span>
+                        </div>
+
+                        <div class="mt-2 h-1.5 w-full overflow-hidden rounded-full" style="background: var(--border3)">
+                            <div class="h-full rounded-full"
+                                 style="width: {{ min(100, max(0, (float) ($s['pct'] ?? 0))) }}%; background: {{ $c }}"></div>
+                        </div>
+
+                        <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-t55">
+                            @if ($s['perWeekLabel'])
+                                <span>{{ __('journey.target') }}: <b class="text-t75">{{ $s['perWeekLabel'] }}</b></span>
+                            @endif
+                            @if ($s['gapLabel'])
+                                <span style="color: {{ $c }}"><b>{{ __('journey.gap') }} {{ $s['gapLabel'] }}</b></span>
+                            @endif
+                            @if (filled($s['owner']) && $s['owner'] !== '—')
+                                <span class="ml-auto rounded px-1.5 py-0.5 text-[10px] font-bold text-t65"
+                                      style="background: var(--card-bg); border: 1px solid var(--border3)">
+                                    {{ $s['owner'] }}
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if ($s['broken'] && ! $s['blocked'])
+                        <div class="px-3 py-2"
+                             style="background: oklch(0.63 0.22 25/0.14); border-top: 1px solid oklch(0.63 0.22 25/0.35)">
+                            <div class="text-[10.5px] font-extrabold" style="color: oklch(0.72 0.2 25)">
+                                {{ $s['causeTitle'] }}
+                            </div>
+                            <p class="mt-0.5 text-[10px] leading-snug text-t65">{{ $s['cause'] }}</p>
+                        </div>
+                    @elseif ($s['blocked'])
+                        <div class="px-3 py-2" style="background: var(--card-bg); border-top: 1px dashed var(--border2)">
+                            <span class="text-[10.5px] font-bold text-t60">
+                                {{ __('journey.blocked_by', ['stage' => $s['blockedBy']]) }}
+                            </span>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        @endforeach
+    </div>
+
+    {{-- ══ Jalan raya — tablet ke atas ══ --}}
+    <div class="-mx-1 hidden overflow-x-auto px-1 md:block">
         <div class="relative" style="width: {{ $W }}px; height: {{ $H }}px">
 
             {{-- ── Lapisan jalan ── --}}
