@@ -81,6 +81,28 @@ class SheetIntegration extends Model
         return static::firstOrCreate(['kind' => 'critical', 'service_id' => null]);
     }
 
+    /**
+     * Pautan boleh diklik ke sheet, dibina daripada ID jika perlu.
+     *
+     * Sesetengah integrasi disimpan dengan spreadsheet_id sahaja — contohnya
+     * apabila ID mentah ditampal dan bukan URL penuh. Bergantung pada
+     * medan `url` sahaja bermakna butang "Lihat Google Sheet" hilang senyap
+     * walaupun sheet itu bersambung dan sedang menyegerak.
+     */
+    public function viewUrl(): ?string
+    {
+        if (filled($this->url)) {
+            return $this->url;
+        }
+
+        if (blank($this->spreadsheet_id)) {
+            return null;
+        }
+
+        return 'https://docs.google.com/spreadsheets/d/'.$this->spreadsheet_id.'/edit'
+            .(filled($this->gid) ? '#gid='.$this->gid : '');
+    }
+
     public function effectiveUrl(): ?string
     {
         return $this->url ?: static::global()->url;

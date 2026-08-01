@@ -371,3 +371,25 @@ it('shows a new status as soon as the sheet introduces it', function (): void {
 
     expect($statuses)->toContain(ProjectStatus::TurnedDown);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Pautan sheet mesti bertahan
+|--------------------------------------------------------------------------
+*/
+
+it('still links to the sheet when only the spreadsheet id was saved', function (): void {
+    // ID mentah yang ditampal tidak menghasilkan medan url. Bergantung pada
+    // url sahaja menghilangkan butang secara senyap walaupun sheet itu
+    // bersambung dan sedang menyegerak.
+    App\Models\SheetIntegration::create([
+        'kind' => 'project',
+        'spreadsheet_id' => 'abc123def456ghi789jkl',
+        'connected' => true,
+    ]);
+
+    Livewire::actingAs($this->user)
+        ->test(ProjectList::class)
+        ->assertSee(__('project.view_sheet'))
+        ->assertSee('abc123def456ghi789jkl', false);
+});

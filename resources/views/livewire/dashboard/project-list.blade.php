@@ -42,8 +42,8 @@
 
         {{-- Lihat Google Sheet: pengguna DAN admin. Data diisi di sana,
              jadi pautan itu ialah cara pengguna menyemak sumbernya. --}}
-        @if ($sheet?->url)
-            <a href="{{ $sheet->url }}" target="_blank" rel="noopener"
+        @if ($sheet?->viewUrl())
+            <a href="{{ $sheet->viewUrl() }}" target="_blank" rel="noopener noreferrer"
                class="flex items-center gap-2 rounded-[9px] px-4 py-2.5 text-[13px] font-semibold text-t80"
                style="border: 1px solid var(--border2)">
                 <i class="ph-duotone ph-google-logo text-base" aria-hidden="true"></i>

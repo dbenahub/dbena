@@ -346,3 +346,50 @@ it('lets an admin connect a Google Sheet', function (): void {
 
     $this->assertDatabaseHas('sheet_integrations', ['connected' => true]);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Butang Lihat Google Sheet pada Dashboard Pengguna
+|--------------------------------------------------------------------------
+*/
+
+it('gives a plain user a direct link to the sheet, not a settings modal', function (): void {
+    // Sebelum ini satu-satunya jalan ialah modal tetapan: medan URL yang
+    // dilumpuhkan, status sync, dan pautan sebenar tersembunyi di kaki
+    // modal. Tiga klik melalui skrin tetapan untuk melihat sheet sendiri.
+    App\Models\SheetIntegration::global()->update([
+        'url' => 'https://docs.google.com/spreadsheets/d/kritikal123456789012/edit',
+    ]);
+
+    Livewire::actingAs($this->user)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertSee(__('project.view_sheet'))
+        ->assertSee('kritikal123456789012', false);
+});
+
+it('keeps the sheet settings modal for admins only', function (): void {
+    // Sambung, sync dan putus sambungan hidup dalam modal itu. Menunjukkan
+    // pintu masuknya kepada pengguna yang tidak boleh melakukan apa-apa di
+    // dalamnya hanyalah jalan mati.
+    App\Models\SheetIntegration::global()->update([
+        'url' => 'https://docs.google.com/spreadsheets/d/kritikal123456789012/edit',
+    ]);
+
+    Livewire::actingAs($this->user)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertDontSee(__('service.google_sheet'));
+
+    Livewire::actingAs($this->admin)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertSee(__('project.view_sheet'));
+});
+
+it('shows no sheet button at all when no sheet is connected', function (): void {
+    // Butang mati yang membuka panel kosong kelihatan seperti ciri yang
+    // rosak, bukan seperti sheet yang belum disambung.
+    App\Models\SheetIntegration::global()->update(['url' => null]);
+
+    Livewire::actingAs($this->user)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertDontSee(__('project.view_sheet'));
+});

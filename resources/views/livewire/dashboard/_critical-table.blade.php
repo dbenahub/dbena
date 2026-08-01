@@ -50,11 +50,29 @@
                     <i class="ph-duotone ph-code text-base" aria-hidden="true"></i> {{ __('service.view_raw_data') }}
                 </button>
             @endcan
-            <button type="button" x-on:click="showSheet = true"
-                    class="dbena-btn-gold flex items-center gap-1.5 px-3.5 py-2.5 text-[12.5px]">
-                <i class="ph-duotone ph-google-logo text-base" aria-hidden="true"></i>
-                {{ $sheet?->connected ? __('service.google_sheet_connected') : __('service.google_sheet') }}
-            </button>
+            {{-- Pautan TERUS ke sheet, sama seperti di halaman Projek.
+                 Sebelum ini pengguna biasa terpaksa membuka modal tetapan —
+                 medan URL yang dilumpuhkan, status sync, dan pautan sebenar
+                 tersembunyi di kaki modal. Itu tiga klik melalui skrin
+                 tetapan untuk melihat sheet mereka sendiri. --}}
+            @if (filled($sheetUrl))
+                <a href="{{ $sheetUrl }}" target="_blank" rel="noopener noreferrer"
+                   class="flex items-center gap-1.5 rounded-[9px] px-3.5 py-2.5 text-[12.5px] font-semibold text-t80"
+                   style="border: 1px solid var(--border2)">
+                    <i class="ph-duotone ph-google-logo text-base" aria-hidden="true"></i>
+                    {{ __('project.view_sheet') }}
+                </a>
+            @endif
+
+            {{-- Modal tetapan: hanya sesiapa yang boleh mengubah sambungan.
+                 Untuk pengguna biasa ia panel baca-sahaja tanpa tindakan. --}}
+            @can('manage-sheet-integration')
+                <button type="button" x-on:click="showSheet = true"
+                        class="dbena-btn-gold flex items-center gap-1.5 px-3.5 py-2.5 text-[12.5px]">
+                    <i class="ph-duotone ph-gear text-base" aria-hidden="true"></i>
+                    {{ $sheet?->connected ? __('service.google_sheet_connected') : __('service.google_sheet') }}
+                </button>
+            @endcan
         </div>
     </div>
 
