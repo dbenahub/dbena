@@ -20,11 +20,26 @@
      *
      * Puncak dan lurah berselang-seli supaya jalan berliku, dan kad
      * berselang atas/bawah mengikutnya.
+     *
+     * Ketinggian bekas mesti memuatkan kad PENUH di kedua-dua belah jalan,
+     * bukan hanya jalan itu sendiri. Versi pertama memberi 112px di atas
+     * jalan untuk kad setinggi ~210px, jadi peringkat di atas kehilangan
+     * kepala berwarnanya — bahagian yang menamakannya.
+     *
+     * Belanjawan menegak:
+     *   340  ruang di atas jalan   (kad ~210 + pin 54 + selang)
+     *   100  amplitud liku
+     *   320  ruang di bawah jalan  (kad ~210 + selang)
+     *   ---
+     *   760
      */
     $W = 1240;
-    $H = 560;
-    $atas = 208;    // paras y untuk puncak liku
-    $bawah = 330;   // paras y untuk lurah liku
+    $H = 760;
+    $atas = 340;    // paras y untuk puncak liku
+    $bawah = 440;   // paras y untuk lurah liku
+
+    /** Jarak menegak dari titik jalan ke tepi kad. */
+    $selang = 66;
 
     $n = max(1, count($stages));
     $mula = 150;
@@ -185,7 +200,7 @@
 
                     {{-- Tiang penyambung ke kad --}}
                     <line x1="{{ $t['x'] }}" y1="{{ $t['y'] + ($t['y'] === $bawah ? 26 : -56) }}"
-                          x2="{{ $t['x'] }}" y2="{{ $t['y'] === $bawah ? $bawah + 66 : $atas - 96 }}"
+                          x2="{{ $t['x'] }}" y2="{{ $t['y'] === $bawah ? $bawah + $selang : $atas - ($selang + 30) }}"
                           stroke="{{ $c }}" stroke-width="2" stroke-dasharray="4 4" opacity="0.6"/>
                 @endforeach
             </svg>
@@ -224,8 +239,8 @@
                 <div class="absolute"
                      style="left: {{ $t['x'] }}px; width: 232px; margin-left: -116px;
                             {{ $bawahJalan
-                                ? 'top: '.($bawah + 66).'px'
-                                : 'bottom: '.($H - $atas + 96).'px' }}">
+                                ? 'top: '.($bawah + $selang).'px'
+                                : 'bottom: '.($H - $atas + $selang + 30).'px' }}">
 
                     <div class="overflow-hidden rounded-xl"
                          style="background: linear-gradient(180deg, var(--card-bg), color-mix(in oklch, var(--card-bg) 88%, black));
