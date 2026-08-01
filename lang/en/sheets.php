@@ -155,7 +155,7 @@ return [
         'no_rows_matched' => 'No rows could be matched to system metrics. Check the column mapping and metric name spelling.',
         'bad_base64' => 'GOOGLE_SERVICE_ACCOUNT_BASE64 is not valid base64.',
         'bad_json' => 'The credentials in :source are not valid JSON.',
-        'missing_key_field' => 'The credentials in :source are missing the ':field' field.',
+        'missing_key_field' => 'The credentials in :source are missing the :field field.',
         'unexpected' => 'Unexpected error while reading the sheet: :message',
         'share_tip' => 'Open the sheet → Share → General access → "Anyone with the link" → Viewer. If the sheet must stay private, set DBENA_SHEETS_DRIVER=service and use a service account.',
     ],
