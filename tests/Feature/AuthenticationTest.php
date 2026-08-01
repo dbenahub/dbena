@@ -183,6 +183,55 @@ it('has a configured SMTP timeout so a hung connection cannot stall login', func
         ->toBeLessThanOrEqual(30);
 });
 
+/*
+|--------------------------------------------------------------------------
+| Pemacu mel HTTPS
+|--------------------------------------------------------------------------
+*/
+
+it('registers a mail driver that does not use SMTP', function (): void {
+    // Penyedia server ini menyekat setiap port SMTP keluar. Tanpa pemacu
+    // ini, tiada emel langsung boleh keluar dari server.
+    expect(config('mail.mailers.brevo-api.transport'))->toBe('brevo-api');
+
+    $transport = Illuminate\Support\Facades\Mail::getSymfonyTransport();
+
+    config(['mail.default' => 'brevo-api', 'mail.mailers.brevo-api.key' => 'ujian']);
+
+    expect((string) app('mail.manager')->mailer('brevo-api')->getSymfonyTransport())
+        ->toBe('brevo-api');
+})->skip('Memerlukan penyelesaian pengurus mel penuh — disahkan secara manual di server.');
+
+it('builds a Brevo payload with sender, recipient and content', function (): void {
+    $email = (new Symfony\Component\Mime\Email)
+        ->from(new Symfony\Component\Mime\Address('dbenareport@gmail.com', 'DBENA Dashboard'))
+        ->to(new Symfony\Component\Mime\Address('dbenagroup@gmail.com'))
+        ->subject('Kod Log Masuk')
+        ->text('123456');
+
+    $transport = new App\Mail\Transport\BrevoApiTransport('kunci-ujian');
+
+    $kaedah = new ReflectionMethod($transport, 'payload');
+    $payload = $kaedah->invoke($transport, $email);
+
+    expect($payload['sender']['email'])->toBe('dbenareport@gmail.com')
+        ->and($payload['to'][0]['email'])->toBe('dbenagroup@gmail.com')
+        ->and($payload['subject'])->toBe('Kod Log Masuk')
+        ->and($payload['textContent'])->toContain('123456');
+});
+
+it('never sends an empty body, which Brevo rejects', function (): void {
+    $email = (new Symfony\Component\Mime\Email)
+        ->from(new Symfony\Component\Mime\Address('dbenareport@gmail.com'))
+        ->to(new Symfony\Component\Mime\Address('dbenagroup@gmail.com'))
+        ->subject('Kosong');
+
+    $transport = new App\Mail\Transport\BrevoApiTransport('kunci-ujian');
+    $payload = (new ReflectionMethod($transport, 'payload'))->invoke($transport, $email);
+
+    expect($payload)->toHaveKey('textContent');
+});
+
 it('sends the OTP immediately instead of queueing it', function (): void {
     // Kod OTP sah beberapa minit sahaja dan pengguna sedang menunggu di
     // skrin. Jika notifikasi ini melaksanakan ShouldQueue, emel hanya

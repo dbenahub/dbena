@@ -30,10 +30,17 @@ class TestMailCommand extends Command
         $this->line('  Tetapan semasa');
         $this->line('  ─────────────────────────────────────────────');
         $this->line('  MAIL_MAILER    : '.$mailer);
-        $this->line('  MAIL_HOST      : '.(string) config('mail.mailers.smtp.host'));
-        $this->line('  MAIL_PORT      : '.(string) config('mail.mailers.smtp.port'));
-        $this->line('  MAIL_USERNAME  : '.($this->penyamar((string) config('mail.mailers.smtp.username'))));
-        $this->line('  MAIL_PASSWORD  : '.($this->rahsia((string) config('mail.mailers.smtp.password'))));
+
+        if ($mailer === 'brevo-api') {
+            $this->line('  Kaedah         : HTTPS (port 443) — SMTP tidak digunakan');
+            $this->line('  BREVO_API_KEY  : '.$this->rahsia((string) config('mail.mailers.brevo-api.key')));
+        } else {
+            $this->line('  MAIL_HOST      : '.(string) config('mail.mailers.smtp.host'));
+            $this->line('  MAIL_PORT      : '.(string) config('mail.mailers.smtp.port'));
+            $this->line('  MAIL_USERNAME  : '.$this->penyamar((string) config('mail.mailers.smtp.username')));
+            $this->line('  MAIL_PASSWORD  : '.$this->rahsia((string) config('mail.mailers.smtp.password')));
+        }
+
         $this->line('  MAIL_FROM      : '.(string) config('mail.from.address'));
         $this->newLine();
 
@@ -63,12 +70,24 @@ class TestMailCommand extends Command
             $this->error('  GAGAL: '.$e->getMessage());
             $this->newLine();
             $this->line('  Punca lazim:');
-            $this->line('  • "Username and Password not accepted" — Gmail menolak');
-            $this->line('    kata laluan biasa. Anda perlu App Password 16 aksara.');
-            $this->line('  • "Connection could not be established" — port disekat.');
-            $this->line('    Cuba MAIL_PORT=465 dengan MAIL_ENCRYPTION=ssl.');
-            $this->line('  • "MAIL_FROM_ADDRESS" berbeza daripada MAIL_USERNAME —');
-            $this->line('    Gmail hanya benarkan menghantar sebagai diri sendiri.');
+
+            if ($mailer === 'brevo-api') {
+                $this->line('  • "Key not found" — BREVO_API_KEY salah. Jana semula');
+                $this->line('    di Brevo → SMTP & API → API Keys.');
+                $this->line('  • "sender ... not valid" — alamat MAIL_FROM_ADDRESS');
+                $this->line('    belum disahkan di Brevo → Senders.');
+                $this->line('  • Connection timeout ke api.brevo.com — port 443');
+                $this->line('    disekat, yang amat luar biasa. Beritahu saya.');
+            } else {
+                $this->line('  • "Username and Password not accepted" — Gmail menolak');
+                $this->line('    kata laluan biasa. Anda perlu App Password 16 aksara.');
+                $this->line('  • "Connection could not be established" atau "timed out"');
+                $this->line('    — port SMTP disekat oleh penyedia server. Tiada');
+                $this->line('    tetapan SMTP boleh mengatasinya; guna MAIL_MAILER=brevo-api.');
+                $this->line('  • "MAIL_FROM_ADDRESS" berbeza daripada MAIL_USERNAME —');
+                $this->line('    Gmail hanya benarkan menghantar sebagai diri sendiri.');
+            }
+
             $this->newLine();
 
             return self::FAILURE;

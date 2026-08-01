@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'brevo' => ['key' => env('BREVO_API_KEY')],
     'postmark' => ['token' => env('POSTMARK_TOKEN')],
     'ses' => [
         'key' => env('AWS_ACCESS_KEY_ID'),

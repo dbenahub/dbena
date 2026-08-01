@@ -25,6 +25,16 @@ return [
             'timeout' => (int) env('MAIL_TIMEOUT', 10),
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
         ],
+        /*
+         * Menghantar melalui HTTPS (port 443) dan bukan SMTP. Gunakan ini
+         * apabila penyedia server menyekat port SMTP keluar.
+         */
+        'brevo-api' => [
+            'transport' => 'brevo-api',
+            'key' => env('BREVO_API_KEY'),
+            'timeout' => (int) env('MAIL_TIMEOUT', 15),
+        ],
+
         'log' => [
             'transport' => 'log',
             'channel' => env('MAIL_LOG_CHANNEL'),
