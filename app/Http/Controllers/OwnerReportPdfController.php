@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Enums\ReportPeriod;
 use App\Models\Owner;
 use App\Models\Service;
+use App\Services\ExecutiveReportService;
 use App\Services\OwnerReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -14,8 +15,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 class OwnerReportPdfController extends Controller
 {
-    public function __invoke(Request $request, OwnerReportService $reports): Response
-    {
+    public function __invoke(
+        Request $request,
+        OwnerReportService $reports,
+        ExecutiveReportService $executive,
+    ): Response {
         $period = ReportPeriod::tryFrom((string) $request->query('tempoh')) ?? ReportPeriod::Monthly;
         $year = max(2000, min(2100, (int) $request->integer('tahun', (int) now()->year)));
         $month = max(1, min(12, (int) $request->integer('bulan', (int) now()->month)));
@@ -44,6 +48,7 @@ class OwnerReportPdfController extends Controller
 
         return Pdf::loadView('pdf.owner-report', [
             'report' => $report,
+            'exec' => $executive->build($report),
             'user' => $request->user(),
         ])
             ->setPaper('a4', 'portrait')

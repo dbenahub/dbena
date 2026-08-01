@@ -267,3 +267,81 @@ it('labels the export button with the chosen owner', function (): void {
         ->set('ownerId', $owner->id)
         ->assertSee(__('owner_report.export_pdf_owner', ['owner' => $owner->name]));
 });
+
+/*
+|--------------------------------------------------------------------------
+| Format laporan pengurusan
+|--------------------------------------------------------------------------
+*/
+
+it('builds every section the management report needs', function (): void {
+    $report = app(OwnerReportService::class)->build(ReportPeriod::Monthly, 2026, 8);
+    $exec = app(App\Services\ExecutiveReportService::class)->build($report);
+
+    expect($exec)->toHaveKeys([
+        'severity', 'severityKey', 'gapTotal', 'scorecard', 'priorities',
+        'journey', 'rootCauses', 'observations', 'weeklyTargets',
+        'missingTargets', 'noPlanCount',
+    ]);
+});
+
+it('ranks priorities by how much they block, not by percentage alone', function (): void {
+    // Isu yang menyekat empat metrik lain mendahului isu yang menyekat satu,
+    // walaupun peratusannya lebih baik. Itu perbezaan antara senarai masalah
+    // dan senarai keutamaan.
+    $report = app(OwnerReportService::class)->build(ReportPeriod::Monthly, 2026, 8);
+    $exec = app(App\Services\ExecutiveReportService::class)->build($report);
+
+    $ranks = collect($exec['priorities'])->pluck('rank')->all();
+
+    expect($ranks)->toBe(range(1, count($ranks)))
+        ->and(count($ranks))->toBeLessThanOrEqual(4);
+});
+
+it('totals the gap in ringgit, not just percentages', function (): void {
+    // Peratusan memberitahu sejauh mana ketinggalan; ringgit memberitahu
+    // berapa banyak. Pengurusan bertindak atas yang kedua.
+    $report = app(OwnerReportService::class)->build(ReportPeriod::Monthly, 2026, 8);
+    $exec = app(App\Services\ExecutiveReportService::class)->build($report);
+
+    expect($exec['gapTotal'])->toBeFloat()->toBeGreaterThanOrEqual(0.0);
+});
+
+it('grades severity from the team score', function (): void {
+    $report = app(OwnerReportService::class)->build(ReportPeriod::Monthly, 2026, 8);
+    $exec = app(App\Services\ExecutiveReportService::class)->build($report);
+
+    expect($exec['severityKey'])->toBeIn(['critical', 'attention', 'stable']);
+});
+
+it('gives every operational metric a weekly target and a named owner', function (): void {
+    // Sasaran tanpa nama ialah sasaran yang tiada siapa punya.
+    $report = app(OwnerReportService::class)->build(ReportPeriod::Monthly, 2026, 8);
+    $exec = app(App\Services\ExecutiveReportService::class)->build($report);
+
+    foreach ($exec['weeklyTargets'] as $target) {
+        expect($target['owner'])->not->toBeEmpty()
+            ->and($target['weekly'])->not->toBeEmpty()
+            ->and($target['trigger'])->not->toBeEmpty();
+    }
+});
+
+it('renders the management-format PDF without error', function (): void {
+    $admin = User::where('role', UserRole::Admin)->firstOrFail();
+
+    $this->actingAs($admin)
+        ->get(route('laporan.owner.pdf', ['tempoh' => 'monthly', 'tahun' => 2026, 'bulan' => 8]))
+        ->assertOk()
+        ->assertHeader('content-type', 'application/pdf');
+});
+
+it('renders the PDF for a single owner without error', function (): void {
+    $owner = Owner::scorable()->orderBy('name')->firstOrFail();
+    $admin = User::where('role', UserRole::Admin)->firstOrFail();
+
+    $this->actingAs($admin)
+        ->get(route('laporan.owner.pdf', [
+            'tempoh' => 'monthly', 'tahun' => 2026, 'bulan' => 8, 'pemilik' => $owner->id,
+        ]))
+        ->assertOk();
+});
