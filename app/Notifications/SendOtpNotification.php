@@ -5,19 +5,22 @@ declare(strict_types=1);
 namespace App\Notifications;
 
 use App\Enums\OtpType;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
 /**
  * PEMBETULAN isu #1 — satu-satunya saluran kod OTP sampai kepada pengguna.
  * Kod TIDAK PERNAH dikembalikan ke UI.
+ *
+ * SENGAJA TIDAK BERBARIS (tiada ShouldQueue). Kod ini sah selama beberapa
+ * minit sahaja dan pengguna sedang menunggu di skrin. Jika ia dibaris,
+ * emel hanya keluar apabila pekerja barisan berjalan — dan jika pekerja
+ * itu tidak dipasang di server, kod tersangkut dalam jadual `jobs`
+ * selama-lamanya tanpa sebarang ralat. Menghantar terus bermakna kegagalan
+ * SMTP muncul serta-merta sebagai ralat yang boleh dilihat.
  */
-class SendOtpNotification extends Notification implements ShouldQueue
+class SendOtpNotification extends Notification
 {
-    use Queueable;
-
     public function __construct(
         private readonly string $code,
         private readonly OtpType $type,

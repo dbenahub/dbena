@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enums\OtpType;
 use App\Enums\UserRole;
 use App\Livewire\Auth\AdminLoginFlow;
 use App\Livewire\Auth\UserLoginFlow;
@@ -76,6 +77,15 @@ it('emails the OTP to the registered user', function (): void {
         ->call('submitLogin');
 
     Notification::assertSentTo($this->user, SendOtpNotification::class);
+});
+
+it('sends the OTP immediately instead of queueing it', function (): void {
+    // Kod OTP sah beberapa minit sahaja dan pengguna sedang menunggu di
+    // skrin. Jika notifikasi ini melaksanakan ShouldQueue, emel hanya
+    // keluar apabila pekerja barisan berjalan — dan jika pekerja itu tidak
+    // dipasang, kod tersangkut dalam jadual `jobs` tanpa sebarang ralat.
+    expect(new SendOtpNotification('123456', OtpType::Login))
+        ->not->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class);
 });
 
 it('refuses an OTP that is not six digits', function (): void {
