@@ -94,6 +94,15 @@
         <x-trend-chart :chart="$serviceChart" height="300px" />
     </div>
 
+    {{-- ══ Peta Perjalanan Sales ══
+         Diletak SEBELUM carta trend dengan sengaja. Carta menunjukkan
+         pergerakan setiap metrik; peta menunjukkan metrik mana yang
+         penting minggu ini. Susunan itu memberitahu pemilik ke mana perlu
+         melihat dahulu. --}}
+    @if (! empty($journey['stages']))
+        <x-sales-journey :journey="$journey" />
+    @endif
+
     {{-- ══ Trend Mingguan — 3 mini carta ══ --}}
     @if (count($weeklyBars['quotation']) > 0 || count($weeklyBars['amount']) > 0)
         <div class="dbena-card p-5 sm:p-6">

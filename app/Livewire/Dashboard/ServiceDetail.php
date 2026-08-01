@@ -14,6 +14,7 @@ use App\Models\SheetIntegration;
 use App\Services\AuditLogger;
 use App\Services\CriticalDataService;
 use App\Services\DashboardMetricsService;
+use App\Services\SalesJourneyService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -377,6 +378,7 @@ class ServiceDetail extends Component
                 'quotation' => $this->weeklyTargetLabel($quotationRow, $metrics),
                 'siteVisit' => $this->weeklyTargetLabel($siteVisitRow, $metrics),
             ],
+            'journey' => app(SalesJourneyService::class)->build($rows),
             'serviceChart' => $metrics->buildChart($monthLabels, $chartActuals, $chartTargets),
             'weekHeaders' => $metrics->getCriticalWeekLabels($this->month, $this->year),
             'monthLabels' => $monthLabels,
