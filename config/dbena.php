@@ -34,6 +34,21 @@ return [
         'ttl_minutes' => (int) env('DBENA_OTP_TTL_MINUTES', 5),
         'max_attempts' => (int) env('DBENA_OTP_MAX_ATTEMPTS', 3),
         'resend_cooldown' => (int) env('DBENA_OTP_RESEND_COOLDOWN', 60),
+
+        /*
+         * Peti masuk berpusat untuk kod OTP.
+         *
+         * Kod tidak dihantar ke emel peribadi pengguna; ia dihantar ke
+         * salah satu daripada dua peti masuk ini mengikut peranan. Emel
+         * peribadi kekal digunakan untuk laporan mingguan.
+         *
+         * Kosongkan mana-mana nilai untuk mengembalikan peranan itu kepada
+         * emel peribadi pengguna.
+         */
+        'inbox' => [
+            'admin' => env('DBENA_OTP_INBOX_ADMIN', 'dbenareport@gmail.com'),
+            'user' => env('DBENA_OTP_INBOX_USER', 'dbenagroup@gmail.com'),
+        ],
     ],
 
     'login' => [

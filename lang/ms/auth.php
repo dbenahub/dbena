@@ -81,6 +81,7 @@ return [
     'mail' => [
         'subject_login' => 'Kod Log Masuk DBENA Dashboard',
         'subject_reset' => 'Kod Set Semula Kata Laluan DBENA',
+        'for_account' => 'Kod ini untuk akaun **:username** (:role).',
         'greeting' => 'Salam :name,',
         'line_login' => 'Berikut adalah kod pengesahan log masuk anda:',
         'line_reset' => 'Berikut adalah kod set semula kata laluan anda:',

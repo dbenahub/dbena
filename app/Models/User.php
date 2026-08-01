@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\UserRole;
+use App\Notifications\SendOtpNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
 
 class User extends Authenticatable
@@ -55,6 +57,30 @@ class User extends Authenticatable
     public function isUser(): bool
     {
         return $this->role === UserRole::User;
+    }
+
+    /**
+     * Ke mana notifikasi emel dihantar.
+     *
+     * Kod OTP pergi ke peti masuk berpusat mengikut peranan — Admin ke satu
+     * peti masuk, pengguna ke satu lagi. Semua notifikasi lain (laporan
+     * mingguan) kekal ke emel peribadi pengguna.
+     *
+     * Jika peti masuk berpusat tidak ditetapkan, ia jatuh semula kepada emel
+     * peribadi. Salah tetapan tidak boleh menyebabkan tiada siapa dapat log
+     * masuk.
+     */
+    public function routeNotificationForMail(Notification $notification): string
+    {
+        if (! $notification instanceof SendOtpNotification) {
+            return $this->email;
+        }
+
+        $inbox = $this->isAdmin()
+            ? config('dbena.otp.inbox.admin')
+            : config('dbena.otp.inbox.user');
+
+        return filled($inbox) ? (string) $inbox : $this->email;
     }
 
     /**

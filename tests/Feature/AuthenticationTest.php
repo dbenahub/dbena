@@ -79,6 +79,85 @@ it('emails the OTP to the registered user', function (): void {
     Notification::assertSentTo($this->user, SendOtpNotification::class);
 });
 
+/*
+|--------------------------------------------------------------------------
+| Peti masuk OTP berpusat
+|--------------------------------------------------------------------------
+*/
+
+it('sends a user OTP to the central user inbox, not their personal email', function (): void {
+    config(['dbena.otp.inbox.user' => 'dbenagroup@gmail.com']);
+
+    $user = User::factory()->create([
+        'role' => UserRole::User,
+        'email' => 'peribadi@contoh.com',
+    ]);
+
+    expect($user->routeNotificationForMail(new SendOtpNotification('123456', OtpType::Login)))
+        ->toBe('dbenagroup@gmail.com');
+});
+
+it('sends an admin OTP to the central admin inbox', function (): void {
+    config(['dbena.otp.inbox.admin' => 'dbenareport@gmail.com']);
+
+    $admin = User::factory()->create([
+        'role' => UserRole::Admin,
+        'email' => 'peribadi@contoh.com',
+    ]);
+
+    expect($admin->routeNotificationForMail(new SendOtpNotification('123456', OtpType::Login)))
+        ->toBe('dbenareport@gmail.com');
+});
+
+it('keeps the two inboxes apart', function (): void {
+    config([
+        'dbena.otp.inbox.admin' => 'dbenareport@gmail.com',
+        'dbena.otp.inbox.user' => 'dbenagroup@gmail.com',
+    ]);
+
+    $notification = new SendOtpNotification('123456', OtpType::Login);
+    $admin = User::factory()->create(['role' => UserRole::Admin]);
+    $user = User::factory()->create(['role' => UserRole::User]);
+
+    expect($admin->routeNotificationForMail($notification))
+        ->not->toBe($user->routeNotificationForMail($notification));
+});
+
+it('falls back to the personal email when a central inbox is unset', function (): void {
+    // Salah tetapan tidak boleh menyebabkan tiada siapa dapat log masuk.
+    config(['dbena.otp.inbox.user' => null]);
+
+    $user = User::factory()->create([
+        'role' => UserRole::User,
+        'email' => 'peribadi@contoh.com',
+    ]);
+
+    expect($user->routeNotificationForMail(new SendOtpNotification('123456', OtpType::Login)))
+        ->toBe('peribadi@contoh.com');
+});
+
+it('still sends non-OTP mail to the personal email', function (): void {
+    // Hanya OTP yang dialihkan. Laporan mingguan kekal peribadi.
+    config(['dbena.otp.inbox.user' => 'dbenagroup@gmail.com']);
+
+    $user = User::factory()->create([
+        'role' => UserRole::User,
+        'email' => 'peribadi@contoh.com',
+    ]);
+
+    $lain = new class extends Illuminate\Notifications\Notification {};
+
+    expect($user->routeNotificationForMail($lain))->toBe('peribadi@contoh.com');
+});
+
+it('names the account in the subject so a shared inbox stays readable', function (): void {
+    $user = User::factory()->create(['name' => 'ZIKRI', 'role' => UserRole::User]);
+
+    $mel = (new SendOtpNotification('123456', OtpType::Login))->toMail($user);
+
+    expect($mel->subject)->toContain('ZIKRI');
+});
+
 it('sends the OTP immediately instead of queueing it', function (): void {
     // Kod OTP sah beberapa minit sahaja dan pengguna sedang menunggu di
     // skrin. Jika notifikasi ini melaksanakan ShouldQueue, emel hanya

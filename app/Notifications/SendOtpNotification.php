@@ -35,10 +35,21 @@ class SendOtpNotification extends Notification
     {
         $isLogin = $this->type === OtpType::Login;
 
+        // Peti masuk ini dikongsi — satu alamat menerima kod untuk ramai
+        // orang. Tanpa nama dalam subjek, penerima terpaksa membuka setiap
+        // emel untuk mencari kod yang betul, dan dua permintaan serentak
+        // menjadi mustahil dibezakan.
+        $subject = __($isLogin ? 'auth.mail.subject_login' : 'auth.mail.subject_reset')
+            .' — '.$notifiable->name;
+
         return (new MailMessage)
-            ->subject(__($isLogin ? 'auth.mail.subject_login' : 'auth.mail.subject_reset'))
+            ->subject($subject)
             ->greeting(__('auth.mail.greeting', ['name' => $notifiable->name]))
             ->line(__($isLogin ? 'auth.mail.line_login' : 'auth.mail.line_reset'))
+            ->line(__('auth.mail.for_account', [
+                'username' => $notifiable->username,
+                'role' => $notifiable->role->label(),
+            ]))
             ->line('# '.$this->code)
             ->line(__('auth.mail.expiry', ['minutes' => config('dbena.otp.ttl_minutes')]))
             ->line(__('auth.mail.ignore'))

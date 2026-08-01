@@ -72,6 +72,7 @@ return [
     'mail' => [
         'subject_login' => 'Your DBENA Dashboard Sign-In Code',
         'subject_reset' => 'Your DBENA Password Reset Code',
+        'for_account' => 'This code is for the account **:username** (:role).',
         'greeting' => 'Hello :name,',
         'line_login' => 'Here is your sign-in verification code:',
         'line_reset' => 'Here is your password reset code:',
