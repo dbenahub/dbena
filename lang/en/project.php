@@ -7,6 +7,7 @@ return [
     'all' => 'All Projects',
 
     'search' => 'Search projects…',
+    'all_status' => 'All Statuses (:count)',
     'filter' => 'Filter',
     'export' => 'Export',
     'view_sheet' => 'View Google Sheet',

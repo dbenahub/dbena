@@ -7,6 +7,7 @@ return [
     'all' => 'Semua Projek',
 
     'search' => 'Cari projek…',
+    'all_status' => 'Semua Status (:count)',
     'filter' => 'Tapis',
     'export' => 'Eksport',
     'view_sheet' => 'Lihat Google Sheet',

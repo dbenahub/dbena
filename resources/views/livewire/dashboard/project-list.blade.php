@@ -15,10 +15,16 @@
                    class="dbena-input pl-9">
         </div>
 
-        <select wire:model.live="status" class="dbena-input w-40" aria-label="{{ __('project.col.status') }}">
-            <option value="">{{ __('project.filter') }}</option>
+        {{-- Senarai dibina daripada status yang benar-benar wujud dalam
+             data. Menyenaraikan setiap kes enum memberi pengguna pilihan
+             yang sentiasa memulangkan senarai kosong, dan senarai kosong
+             kelihatan seperti penapis yang rosak. --}}
+        <select wire:model.live="status" class="dbena-input w-48" aria-label="{{ __('project.col.status') }}">
+            <option value="">{{ __('project.all_status', ['count' => number_format($totalProjects)]) }}</option>
             @foreach ($statuses as $s)
-                <option value="{{ $s->value }}">{{ $s->label() }}</option>
+                <option value="{{ $s['status']->value }}">
+                    {{ $s['status']->label() }} ({{ number_format($s['count']) }})
+                </option>
             @endforeach
         </select>
 

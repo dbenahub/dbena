@@ -295,3 +295,79 @@ it('keeps pagination links usable without Livewire', function (): void {
     expect($view)->toContain('href=')
         ->and($view)->toContain('wire:click.prevent');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Penapis status mengikut data, bukan enum
+|--------------------------------------------------------------------------
+*/
+
+it('lists only the statuses that exist in the data', function (): void {
+    // Enum mengetahui enam status kerana ia mesti menerima apa sahaja yang
+    // mungkin ditaip dalam sheet. Sheet DBENA menggunakan tiga.
+    // Menyenaraikan kesemua enam memberi pengguna pilihan yang sentiasa
+    // memulangkan senarai kosong — dan senarai kosong kelihatan seperti
+    // penapis yang rosak, bukan seperti data yang tiada.
+    $statuses = collect(
+        Livewire::actingAs($this->user)->test(ProjectList::class)->viewData('statuses')
+    )->pluck('status');
+
+    expect($statuses)->toContain(ProjectStatus::InProgress)
+        ->and($statuses)->toContain(ProjectStatus::Quotation)
+        ->and($statuses)->toContain(ProjectStatus::Closed)
+        ->and($statuses)->not->toContain(ProjectStatus::TurnedDown)
+        ->and($statuses)->not->toContain(ProjectStatus::Completed);
+});
+
+it('counts each status so the number is visible before filtering', function (): void {
+    $statuses = collect(
+        Livewire::actingAs($this->user)->test(ProjectList::class)->viewData('statuses')
+    )->keyBy(fn (array $s) => $s['status']->value);
+
+    expect($statuses[ProjectStatus::InProgress->value]['count'])->toBe(1)
+        ->and($statuses[ProjectStatus::Closed->value]['count'])->toBe(1);
+});
+
+it('keeps the funnel order rather than database order', function (): void {
+    // Corong jualan mempunyai susunan semula jadi dan senarai turun
+    // sepatutnya mengikutnya.
+    $urutan = collect(
+        Livewire::actingAs($this->user)->test(ProjectList::class)->viewData('statuses')
+    )->pluck('status.value')->all();
+
+    expect(array_search('quotation', $urutan, true))
+        ->toBeLessThan(array_search('in_progress', $urutan, true))
+        ->and(array_search('in_progress', $urutan, true))
+        ->toBeLessThan(array_search('closed', $urutan, true));
+});
+
+it('keeps a chosen status in the list even after its last project goes', function (): void {
+    // Kalau tidak, penapis aktif hilang daripada senarai turun dan
+    // pengguna tidak boleh melihat apa yang sedang ditapis.
+    Project::where('status', ProjectStatus::Quotation)->delete();
+
+    $statuses = collect(
+        Livewire::actingAs($this->user)
+            ->test(ProjectList::class)
+            ->set('status', ProjectStatus::Quotation->value)
+            ->viewData('statuses')
+    )->pluck('status');
+
+    expect($statuses)->toContain(ProjectStatus::Quotation);
+});
+
+it('shows a new status as soon as the sheet introduces it', function (): void {
+    Project::create([
+        'code' => 'PRJ-TD-1',
+        'service_id' => $this->renovation->id,
+        'client_name' => 'Klien Ditolak',
+        'contract_amount' => 5000,
+        'status' => ProjectStatus::TurnedDown,
+    ]);
+
+    $statuses = collect(
+        Livewire::actingAs($this->user)->test(ProjectList::class)->viewData('statuses')
+    )->pluck('status');
+
+    expect($statuses)->toContain(ProjectStatus::TurnedDown);
+});

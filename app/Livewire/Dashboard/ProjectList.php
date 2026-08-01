@@ -80,6 +80,42 @@ class ProjectList extends Component
         $this->resetPage();
     }
 
+    /**
+     * Status yang benar-benar wujud dalam data, bukan setiap kes enum.
+     *
+     * Enum mengetahui enam status kerana ia mesti menerima apa sahaja yang
+     * mungkin ditaip dalam sheet. Sheet DBENA sebenarnya menggunakan tiga.
+     * Menyenaraikan kesemua enam memberi pengguna tiga pilihan yang
+     * sentiasa memulangkan senarai kosong — dan senarai kosong kelihatan
+     * seperti penapis yang rosak, bukan seperti data yang tiada.
+     *
+     * Kiraan disertakan supaya pengguna tahu berapa banyak sebelum menapis.
+     *
+     * @return array<int, array{status: ProjectStatus, count: int}>
+     */
+    private function statusesInUse(): array
+    {
+        $counts = Project::query()
+            ->selectRaw('status, count(*) as jumlah')
+            ->groupBy('status')
+            ->pluck('jumlah', 'status');
+
+        $used = [];
+
+        // Diulang mengikut urutan enum, bukan urutan pangkalan data —
+        // corong jualan mempunyai susunan semula jadi dan senarai turun
+        // sepatutnya mengikutnya.
+        foreach (ProjectStatus::cases() as $case) {
+            $jumlah = (int) ($counts[$case->value] ?? 0);
+
+            if ($jumlah > 0 || $this->status === $case->value) {
+                $used[] = ['status' => $case, 'count' => $jumlah];
+            }
+        }
+
+        return $used;
+    }
+
     public function render(): View
     {
         $services = Service::orderBy('sort_order')->get();
@@ -125,7 +161,7 @@ class ProjectList extends Component
             'countByService' => $countByService,
             'totalProjects' => $total,
             'closedProjects' => $closed,
-            'statuses' => ProjectStatus::cases(),
+            'statuses' => $this->statusesInUse(),
             'sheet' => SheetIntegration::projects()->first(),
         ])->layoutData([
             'pageTitle' => __('project.page_title'),
