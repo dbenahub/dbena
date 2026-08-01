@@ -64,14 +64,37 @@
             </select>
         </div>
 
-        <a href="{{ route('laporan.owner.pdf', [
-                'tempoh' => $period, 'tahun' => $year, 'bulan' => $month,
-                'minggu' => $week, 'servis' => $serviceKey,
-           ]) }}"
-           target="_blank"
-           class="dbena-btn-gold ml-auto flex items-center gap-2 px-4 py-2.5 text-[13px]">
-            <i class="ph-duotone ph-file-pdf" aria-hidden="true"></i> {{ __('owner_report.export_pdf') }}
-        </a>
+        {{-- Pemilik --}}
+        <div>
+            <label for="or-owner" class="mb-1.5 block text-[11.5px] text-t55">{{ __('owner_report.filter_owner') }}</label>
+            <select id="or-owner" wire:model.live="ownerId" class="dbena-input w-44 py-2.5">
+                <option value="">{{ __('owner_report.all_owners') }}</option>
+                @foreach ($ownerOptions as $o)
+                    <option value="{{ $o->id }}">{{ $o->name }}</option>
+                @endforeach
+            </select>
+        </div>
+
+        {{-- Eksport. Butang mengikut penapis pemilik yang aktif supaya tiada
+             dua kawalan berasingan yang boleh bercanggah — apa yang dilihat
+             di skrin adalah apa yang keluar dalam PDF. --}}
+        <div class="ml-auto flex flex-col items-end gap-1">
+            <a href="{{ route('laporan.owner.pdf', [
+                    'tempoh' => $period, 'tahun' => $year, 'bulan' => $month,
+                    'minggu' => $week, 'servis' => $serviceKey, 'pemilik' => $ownerId,
+               ]) }}"
+               target="_blank"
+               class="dbena-btn-gold flex items-center gap-2 px-4 py-2.5 text-[13px]">
+                <i class="ph-duotone ph-file-pdf" aria-hidden="true"></i>
+                @php $terpilih = $ownerId ? $ownerOptions->firstWhere('id', (int) $ownerId) : null; @endphp
+                {{ $terpilih
+                    ? __('owner_report.export_pdf_owner', ['owner' => $terpilih->name])
+                    : __('owner_report.export_pdf') }}
+            </a>
+            @if ($terpilih)
+                <span class="text-[10.5px] text-t50">{{ __('owner_report.export_hint_owner') }}</span>
+            @endif
+        </div>
     </div>
 
     @if ($owners->isEmpty())

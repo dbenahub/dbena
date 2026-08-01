@@ -10,6 +10,7 @@ use App\Models\Owner;
 use App\Models\Service;
 use App\Models\User;
 use App\Services\OwnerReportService;
+use Livewire\Livewire;
 
 beforeEach(function (): void {
     $this->seed();
@@ -174,3 +175,95 @@ it('clamps an out-of-range period in the PDF request', function (): void {
         ->get(route('laporan.owner.pdf', ['tempoh' => 'bogus', 'bulan' => 99, 'minggu' => 9]))
         ->assertOk();
 })->skip(fn () => ! class_exists(\Barryvdh\DomPDF\Facade\Pdf::class), 'dompdf belum dipasang');
+
+/*
+|--------------------------------------------------------------------------
+| Laporan untuk seorang pemilik
+|--------------------------------------------------------------------------
+*/
+
+it('narrows the report to one owner when asked', function (): void {
+    $owner = Owner::scorable()->orderBy('name')->firstOrFail();
+
+    $report = app(OwnerReportService::class)
+        ->build(ReportPeriod::Monthly, 2026, 8, null, null, $owner->id);
+
+    expect($report['owner']->id)->toBe($owner->id)
+        ->and($report['owners']->pluck('owner.id')->unique()->all())
+        ->toBe([$owner->id]);
+});
+
+it('still sees other owners metrics when diagnosing one owner', function (): void {
+    // Laporan ZIKRI mesti tetap boleh mengatakan "quotation tersekat kerana
+    // lead HAFIZAN rendah". Menapis pemilik terlalu awal akan memutuskan
+    // rantaian corong dan setiap laporan individu akan kelihatan seperti
+    // masalah bersendirian.
+    $owner = Owner::scorable()->orderBy('name')->firstOrFail();
+
+    $seorang = app(OwnerReportService::class)
+        ->build(ReportPeriod::Monthly, 2026, 8, null, null, $owner->id);
+
+    $semua = app(OwnerReportService::class)
+        ->build(ReportPeriod::Monthly, 2026, 8, null, null, null);
+
+    $blokSeorang = $seorang['owners']->firstWhere('owner.id', $owner->id);
+    $blokSemua = $semua['owners']->firstWhere('owner.id', $owner->id);
+
+    if ($blokSeorang && $blokSemua) {
+        expect($blokSeorang['scorePct'])->toBe($blokSemua['scorePct']);
+    }
+});
+
+it('keeps every owner when no owner is selected', function (): void {
+    $report = app(OwnerReportService::class)
+        ->build(ReportPeriod::Monthly, 2026, 8, null, null, null);
+
+    expect($report['owner'])->toBeNull()
+        ->and($report['owners']->count())->toBeGreaterThan(1);
+});
+
+it('puts the owner name in the PDF filename', function (): void {
+    // Lima fail bernama "laporan-pemilik-monthly-ogos-2026.pdf" dalam satu
+    // folder muat turun tidak dapat dibezakan langsung.
+    $owner = Owner::scorable()->orderBy('name')->firstOrFail();
+    $admin = User::where('role', UserRole::Admin)->firstOrFail();
+
+    $response = $this->actingAs($admin)->get(route('laporan.owner.pdf', [
+        'tempoh' => 'monthly', 'tahun' => 2026, 'bulan' => 8, 'pemilik' => $owner->id,
+    ]));
+
+    $response->assertOk();
+
+    expect($response->headers->get('content-disposition'))
+        ->toContain(str($owner->name)->slug()->value());
+});
+
+it('names the file for all owners when none is selected', function (): void {
+    $admin = User::where('role', UserRole::Admin)->firstOrFail();
+
+    $response = $this->actingAs($admin)->get(route('laporan.owner.pdf', [
+        'tempoh' => 'monthly', 'tahun' => 2026, 'bulan' => 8,
+    ]));
+
+    expect($response->headers->get('content-disposition'))
+        ->toContain('semua-pemilik');
+});
+
+it('shows an owner picker on the report screen', function (): void {
+    $user = User::where('role', UserRole::User)->firstOrFail();
+
+    Livewire::actingAs($user)
+        ->test(App\Livewire\Dashboard\OwnerReport::class)
+        ->assertSee(__('owner_report.filter_owner'))
+        ->assertSee(__('owner_report.all_owners'));
+});
+
+it('labels the export button with the chosen owner', function (): void {
+    $owner = Owner::scorable()->orderBy('name')->firstOrFail();
+    $user = User::where('role', UserRole::User)->firstOrFail();
+
+    Livewire::actingAs($user)
+        ->test(App\Livewire\Dashboard\OwnerReport::class)
+        ->set('ownerId', $owner->id)
+        ->assertSee(__('owner_report.export_pdf_owner', ['owner' => $owner->name]));
+});

@@ -40,8 +40,20 @@ class OwnerReportService
         int $month,
         ?int $week = null,
         ?int $serviceId = null,
+        ?int $ownerId = null,
     ): array {
-        $owners = Owner::scorable()->orderBy('name')->get();
+        $owners = Owner::scorable()
+            /*
+             * Menapis pemilik SELEPAS metrik konteks dikumpul, bukan sebelum.
+             * Analisis corong perlu melihat pemacu hulu walaupun ia dimiliki
+             * PIC lain — laporan ZIKRI mesti tetap boleh mengatakan
+             * "quotation tersekat kerana lead HAFIZAN rendah". Menapis lebih
+             * awal akan memutuskan rantaian itu dan setiap laporan individu
+             * akan kelihatan seperti masalah bersendirian.
+             */
+            ->when($ownerId !== null, fn ($q) => $q->whereKey($ownerId))
+            ->orderBy('name')
+            ->get();
         $months = $this->monthsFor($period, $month);
 
         // Semua baris metrik dalam skop — diperlukan supaya analisis corong
@@ -62,6 +74,8 @@ class OwnerReportService
             'months' => $months,
             'serviceId' => $serviceId,
             'service' => $serviceId ? Service::find($serviceId) : null,
+            'ownerId' => $ownerId,
+            'owner' => $ownerId ? Owner::find($ownerId) : null,
             'periodLabel' => $this->periodLabel($period, $year, $month, $week),
             'owners' => $rows,
             'summary' => $this->buildSummary($rows, $period),

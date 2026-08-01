@@ -2,7 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
-    <title>{{ __('owner_report.page_title') }} — {{ $report['periodLabel'] }}</title>
+    <title>{{ $report['owner'] ? __('owner_report.report_for_owner', ['owner' => $report['owner']->name]) : __('owner_report.page_title') }} — {{ $report['periodLabel'] }}</title>
     <style>
         /* PDF tidak menyokong oklch() — nilai hex di bawah dipadankan secara visual
            dengan token jenama supaya laporan bercetak kekal berjenama DBENA. */
@@ -143,10 +143,21 @@
 
 <div class="header">
     <div class="brand">DBENA SDN BHD</div>
-    <div class="subtitle">{{ __('owner_report.page_title') }} — {{ $report['periodLabel'] }}</div>
+    {{-- Laporan seorang pemilik dinamakan pada tajuknya. Fail ini diserahkan
+         kepada orang perseorangan, dan mesti jelas milik siapa tanpa perlu
+         membaca kandungannya. --}}
+    <div class="subtitle">
+        @if ($report['owner'])
+            {{ __('owner_report.report_for_owner', ['owner' => $report['owner']->name]) }}
+        @else
+            {{ __('owner_report.page_title') }}
+        @endif
+        — {{ $report['periodLabel'] }}
+    </div>
     <div class="meta">
         {{ __('owner_report.filter_period') }}: {{ $report['period']->label() }}
         @if ($report['service']) · {{ __('owner_report.filter_service') }}: {{ $report['service']->name }} @endif
+        @if ($report['owner']) · {{ __('owner_report.filter_owner') }}: {{ $report['owner']->name }} @endif
         · {{ __('owner_report.generated_at') }}: {{ $report['generatedAt']->translatedFormat('d M Y, H:i') }}
         @if ($user) · {{ __('owner_report.generated_by') }}: {{ $user->name }} @endif
     </div>

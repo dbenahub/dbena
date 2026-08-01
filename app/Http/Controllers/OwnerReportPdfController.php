@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\ReportPeriod;
+use App\Models\Owner;
 use App\Models\Service;
 use App\Services\OwnerReportService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -23,10 +24,20 @@ class OwnerReportPdfController extends Controller
         $serviceKey = $request->string('servis')->value() ?: null;
         $service = $serviceKey ? Service::where('key', $serviceKey)->first() : null;
 
-        $report = $reports->build($period, $year, $month, $week, $service?->id);
+        $ownerId = $request->integer('pemilik') ?: null;
+        $owner = $ownerId ? Owner::find($ownerId) : null;
 
+        $report = $reports->build($period, $year, $month, $week, $service?->id, $owner?->id);
+
+        /*
+         * Nama pemilik masuk ke dalam nama fail. Laporan ini diserahkan
+         * kepada orang perseorangan, dan lima fail bernama
+         * "laporan-pemilik-monthly-ogos-2026.pdf" dalam satu folder muat
+         * turun tidak dapat dibezakan langsung.
+         */
         $filename = sprintf(
-            'laporan-pemilik-%s-%s.pdf',
+            'laporan-%s-%s-%s.pdf',
+            $owner ? str($owner->name)->slug()->value() : 'semua-pemilik',
             $period->value,
             str($report['periodLabel'])->slug()->value()
         );

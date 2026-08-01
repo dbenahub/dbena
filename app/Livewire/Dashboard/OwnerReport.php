@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Dashboard;
 
 use App\Enums\ReportPeriod;
+use App\Models\Owner;
 use App\Models\Service;
 use App\Services\OwnerReportService;
 use Illuminate\View\View;
@@ -31,6 +32,9 @@ class OwnerReport extends Component
     public ?string $serviceKey = null;
 
     /** ID PIC yang kadnya sedang dikembangkan. */
+    #[Url(as: 'pemilik', except: '')]
+    public ?int $ownerId = null;
+
     public ?int $expandedOwner = null;
 
     public function mount(): void
@@ -61,6 +65,7 @@ class OwnerReport extends Component
             $this->month,
             $period->isWeekly() ? ($this->week ?? 1) : null,
             $service?->id,
+            $this->ownerId,
         );
 
         return view('livewire.dashboard.owner-report', [
@@ -68,6 +73,7 @@ class OwnerReport extends Component
             'periodEnum' => $period,
             'services' => Service::orderBy('sort_order')->get(),
             'selectedService' => $service,
+            'ownerOptions' => Owner::scorable()->orderBy('name')->get(),
             'months' => __('calendar.months_full'),
             'years' => range(2023, 2032),
         ])->layoutData([
