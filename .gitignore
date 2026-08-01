@@ -37,3 +37,4 @@ yarn-error.log
 /storage/app/google/
 *.json.key
 service-account*.json
+google-key-base64.txt
