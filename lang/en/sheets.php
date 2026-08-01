@@ -79,6 +79,8 @@ return [
     'map_first_title' => 'Map the required columns first.',
     'map_first_body' => 'Not yet mapped: :fields. Service bands are detected by looking for rows whose Week columns are empty â without a mapping that check is meaningless. Use âAuto-match columnsâ or pick each column above, then Read & Preview again.',
 
+    'header_too_few' => 'Header row :row yields only :count columns — too few to map. DBENA sheets usually start with a banner row, so the real header sits on row 2. Set this field to 2, or 0 to auto-detect.',
+
     'field' => [
         'metric' => 'Metric Name',
         'week1' => 'Week 1',

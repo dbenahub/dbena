@@ -29,7 +29,17 @@ class SheetManager extends Component
 
     public string $url = '';
     public string $tabName = '';
-    public int $headerRow = 1;
+    /*
+     * 0 bermaksud auto-kesan. Nilai lalai dahulunya 1, yang bermakna
+     * "baris 1 ialah tajuk" — jadi auto-kesan tidak pernah berjalan
+     * walaupun label medan berbunyi "auto = 0".
+     *
+     * Sheet DBENA bermula dengan baris sepanduk ("MASUKKAN DATA & REPORT
+     * DALAM KOTAK BERWARNA MERAH") dan tajuk sebenar berada di baris 2.
+     * Dengan lalai 1, setiap dropdown lajur hanya menyenaraikan dua sel
+     * sepanduk itu, dan tiada apa boleh dipetakan.
+     */
+    public int $headerRow = 0;
     public string $matchMode = 'label';
     public string $layoutMode = 'multi';
     public bool $importTargets = false;
@@ -81,7 +91,9 @@ class SheetManager extends Component
 
         $this->url = (string) $integration->url;
         $this->tabName = (string) $integration->tab_name;
-        $this->headerRow = (int) ($integration->header_row ?: 1);
+        // ?: 1 menukar 0 yang disimpan (auto) menjadi 1 setiap kali dimuat,
+        // jadi pilihan auto tidak pernah bertahan melepasi muat semula.
+        $this->headerRow = (int) ($integration->header_row ?? 0);
         $this->matchMode = $integration->match_mode ?? 'label';
         $this->layoutMode = $integration->layout_mode ?? 'multi';
         $this->importTargets = (bool) $integration->import_targets;

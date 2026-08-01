@@ -234,3 +234,51 @@ it('will not sync while sync is switched off', function (): void {
 
     expect($integration->isReadyToSync())->toBeFalse();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Auto-kesan baris tajuk pada sheet DBENA sebenar
+|--------------------------------------------------------------------------
+*/
+
+it('skips the banner row and finds the real header', function (): void {
+    // Sheet DBENA bermula dengan sepanduk arahan. Baris tajuk sebenar
+    // berada di baris 2. Memilih baris 1 menghasilkan dua lajur tanpa nama
+    // yang bermakna, dan setiap dropdown pemetaan menjadi kosong.
+    $grid = [
+        ['', 'MASUKKAN DATA & REPORT DALAM KOTAK BERWARNA MERAH'],
+        ['DATA CRITICAL', 'Week 1 [01/05-07/05]', 'Week 2 [08/05-14/05]',
+            'Week 3 [15/05-21/05]', 'Week 4 [22/05-31/05]', 'Data Type',
+            'Monthly Actual', 'Monthly Target', 'Data Status', 'Data Owner', 'Action Plan'],
+        ['COMPANY PERFORMANCE'],
+        ['Total Sales Collection', '52782', '6576.02', '74473.1', '0'],
+    ];
+
+    expect((new SheetSyncService(fakeReader($grid)))->detectHeaderRow($grid))->toBe(2);
+});
+
+it('still finds a header that sits on the very first row', function (): void {
+    $grid = [
+        ['DATA CRITICAL', 'Week 1', 'Week 2', 'Week 3', 'Week 4', 'Data Owner'],
+        ['RENOVATION'],
+    ];
+
+    expect((new SheetSyncService(fakeReader($grid)))->detectHeaderRow($grid))->toBe(1);
+});
+
+it('falls back to row 1 when nothing looks like a header', function (): void {
+    $grid = [['a', 'b'], ['c', 'd'], ['e', 'f']];
+
+    expect((new SheetSyncService(fakeReader($grid)))->detectHeaderRow($grid))->toBe(1);
+});
+
+it('finds a header buried under several banner rows', function (): void {
+    $grid = [
+        ['LAPORAN BULANAN'],
+        [''],
+        ['Sila isi kotak merah sahaja'],
+        ['DATA CRITICAL', 'Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4', 'Pemilik Data'],
+    ];
+
+    expect((new SheetSyncService(fakeReader($grid)))->detectHeaderRow($grid))->toBe(4);
+});

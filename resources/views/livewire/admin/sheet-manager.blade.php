@@ -197,8 +197,22 @@
                     <label for="header-row" class="mb-1.5 block text-[11.5px] text-t55">
                         {{ __('sheets.header_row') }} <span class="text-t40">· {{ __('sheets.header_auto') }} = 0</span>
                     </label>
-                    <input id="header-row" type="number" min="0" wire:model="headerRow" class="dbena-input">
+                    <input id="header-row" type="number" min="0" wire:model="headerRow"
+                           placeholder="0" class="dbena-input">
                     <p class="mt-1 text-[11px] text-t50">{{ __('sheets.header_auto_hint') }}</p>
+
+                    {{-- Amaran apabila baris tajuk menghasilkan terlalu sedikit
+                         lajur. Dropdown yang kosong kelihatan seperti sheet
+                         yang rosak; sebenarnya baris tajuknya yang salah. --}}
+                    @if ($preview && count($preview['headers'] ?? []) < 4)
+                        <p class="mt-2 rounded-lg px-3 py-2 text-[11px] leading-relaxed"
+                           style="background: oklch(0.63 0.22 25/0.1); border: 1px solid oklch(0.63 0.22 25/0.35); color: oklch(0.7 0.2 25)">
+                            {{ __('sheets.header_too_few', [
+                                'row' => $preview['headerRow'] ?? '?',
+                                'count' => count($preview['headers'] ?? []),
+                            ]) }}
+                        </p>
+                    @endif
                 </div>
                 <div>
                     <label for="match-mode" class="mb-1.5 block text-[11.5px] text-t55">{{ __('sheets.match_mode') }}</label>

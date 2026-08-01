@@ -79,6 +79,8 @@ return [
     'map_first_title' => 'Petakan lajur wajib dahulu.',
     'map_first_body' => 'Belum dipetakan: :fields. Sistem mengesan jalur servis dengan memeriksa baris yang lajur Minggu-nya kosong â tanpa pemetaan, semakan itu tidak bermakna. Tekan âAuto-padan lajurâ atau pilih setiap lajur di atas, kemudian Baca & Pratonton semula.',
 
+    'header_too_few' => 'Baris tajuk :row hanya menghasilkan :count lajur — terlalu sedikit untuk dipetakan. Sheet DBENA biasanya mempunyai baris sepanduk di atas, jadi tajuk sebenar berada di baris 2. Tetapkan medan ini kepada 2, atau 0 untuk auto-kesan.',
+
     'field' => [
         'metric' => 'Nama Metrik',
         'week1' => 'Minggu 1',
