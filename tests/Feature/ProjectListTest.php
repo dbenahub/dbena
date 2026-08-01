@@ -235,3 +235,63 @@ it('allows one global row per kind', function (): void {
 
     expect(App\Models\SheetIntegration::whereNull('service_id')->count())->toBe(2);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Penomboran mesti kelihatan
+|--------------------------------------------------------------------------
+*/
+
+it('renders pagination with theme colours, not Laravel light-theme defaults', function (): void {
+    // Paparan lalai Laravel menggunakan bg-white dan text-gray-500. Pada
+    // dashboard gelap ini nombor halaman menjadi putih di atas putih:
+    // pautan ada, boleh diklik, dan langsung tidak kelihatan.
+    for ($i = 4; $i <= 40; $i++) {
+        Project::create([
+            'code' => "PRJ-2405{$i}",
+            'service_id' => $this->renovation->id,
+            'client_name' => "Klien {$i}",
+            'contract_amount' => 1000,
+            'status' => ProjectStatus::Pending,
+        ]);
+    }
+
+    $html = Livewire::actingAs($this->user)
+        ->test(ProjectList::class)
+        ->set('perPage', 10)
+        ->html();
+
+    expect($html)->toContain('aria-label="'.__('pagination.nav').'"')
+        ->and($html)->toContain('var(--t75)')
+        ->and($html)->not->toContain('bg-white');
+});
+
+it('marks the current page for screen readers and by colour', function (): void {
+    for ($i = 4; $i <= 40; $i++) {
+        Project::create([
+            'code' => "PRJ-2405{$i}",
+            'service_id' => $this->renovation->id,
+            'client_name' => "Klien {$i}",
+            'contract_amount' => 1000,
+            'status' => ProjectStatus::Pending,
+        ]);
+    }
+
+    $html = Livewire::actingAs($this->user)
+        ->test(ProjectList::class)
+        ->set('perPage', 10)
+        ->html();
+
+    expect($html)->toContain('aria-current="page"');
+});
+
+it('keeps pagination links usable without Livewire', function (): void {
+    // Paparan ini ialah lalai global, jadi ia mesti betul untuk senarai
+    // bernombor yang ditambah kemudian — termasuk yang bukan Livewire.
+    $view = file_get_contents(
+        base_path('resources/views/vendor/pagination/dbena.blade.php')
+    );
+
+    expect($view)->toContain('href=')
+        ->and($view)->toContain('wire:click.prevent');
+});

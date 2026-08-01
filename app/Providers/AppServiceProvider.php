@@ -13,6 +13,7 @@ use App\Contracts\SheetReader;
 use App\Services\DashboardMetricsService;
 use App\Services\Sheets\LinkSheetReader;
 use App\Services\Sheets\ServiceAccountSheetReader;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Vite;
@@ -34,6 +35,19 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        /*
+         * Paparan penomboran lalai Laravel menggunakan kelas Tailwind
+         * tema TERANG — bg-white, text-gray-500. Pada dashboard gelap ini
+         * nombor halaman menjadi putih di atas putih: pautan ada, boleh
+         * diklik, dan langsung tidak kelihatan.
+         *
+         * Ditetapkan di sini dan bukan pada setiap panggilan ->links(),
+         * supaya senarai bernombor yang ditambah kemudian tidak mewarisi
+         * pepijat yang sama.
+         */
+        Paginator::defaultView('vendor.pagination.dbena');
+        Paginator::defaultSimpleView('vendor.pagination.dbena');
 
         Gate::policy(CriticalMetric::class, CriticalMetricPolicy::class);
         Gate::policy(Owner::class, OwnerPolicy::class);
