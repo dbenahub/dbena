@@ -177,17 +177,29 @@ it('deletes a PIC that has no data attached', function (): void {
 |--------------------------------------------------------------------------
 */
 
-it('parks a PIC proposed by a plain user as pending approval', function (): void {
+it('does not let a plain user add a PIC from the dashboard', function (): void {
+    // "Tambah PIC" dialih keluar daripada Dashboard Pengguna. Butang yang
+    // disorok tidak memadai — panggilan terus mesti ditolak juga.
     Livewire::actingAs($this->user)
         ->test(ServiceDetail::class, ['key' => 'renovation'])
         ->set('newOwnerName', 'farid')
         ->call('addOwner');
 
-    $this->assertDatabaseHas('owners', [
-        'name' => 'FARID',
-        'status' => OwnerStatus::PendingApproval->value,
-        'created_by' => $this->user->id,
-    ]);
+    $this->assertDatabaseMissing('owners', ['name' => 'FARID']);
+})->throws(AuthorizationException::class);
+
+it('hides the Tambah PIC and Raw Data buttons from a plain user', function (): void {
+    Livewire::actingAs($this->user)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertDontSee(__('service.add_owner'))
+        ->assertDontSee(__('service.view_raw_data'));
+});
+
+it('still shows both buttons to an admin', function (): void {
+    Livewire::actingAs($this->admin)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertSee(__('service.add_owner'))
+        ->assertSee(__('service.view_raw_data'));
 });
 
 it('activates a PIC added by an admin straight away', function (): void {

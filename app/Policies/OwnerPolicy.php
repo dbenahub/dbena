@@ -14,10 +14,14 @@ class OwnerPolicy
         return $user->is_active;
     }
 
-    /** Kedua-dua role boleh mencadang; hanya Admin dapat status aktif serta-merta. */
+    /**
+     * Admin sahaja. Butang "Tambah PIC" dialih keluar daripada Dashboard
+     * Pengguna, jadi polisi ini dikemas kini supaya sekatan itu benar-benar
+     * dikuatkuasakan di pelayan — bukan sekadar butang yang disorok.
+     */
     public function create(User $user): bool
     {
-        return $user->is_active;
+        return $user->isAdmin() && $user->is_active;
     }
 
     public function approve(User $user): bool

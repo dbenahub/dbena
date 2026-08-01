@@ -36,16 +36,20 @@
         </div>
 
         <div class="flex flex-wrap gap-2">
-            <button type="button" x-on:click="showAddOwner = true"
-                    class="flex items-center gap-1.5 rounded-[9px] px-3.5 py-2.5 text-[12.5px] font-semibold text-t80"
-                    style="border: 1px solid var(--border2)">
-                <i class="ph-duotone ph-user-plus text-base" aria-hidden="true"></i> {{ __('service.add_owner') }}
-            </button>
-            <button type="button" x-on:click="showRaw = true"
-                    class="flex items-center gap-1.5 rounded-[9px] px-3.5 py-2.5 text-[12.5px] font-semibold text-t80"
-                    style="border: 1px solid var(--border2)">
-                <i class="ph-duotone ph-code text-base" aria-hidden="true"></i> {{ __('service.view_raw_data') }}
-            </button>
+            {{-- Tambah PIC & Raw Data dialih keluar daripada Dashboard Pengguna.
+                 PIC diuruskan di Admin Panel; Raw Data ialah paparan diagnostik. --}}
+            @can('access-admin-panel')
+                <button type="button" x-on:click="showAddOwner = true"
+                        class="flex items-center gap-1.5 rounded-[9px] px-3.5 py-2.5 text-[12.5px] font-semibold text-t80"
+                        style="border: 1px solid var(--border2)">
+                    <i class="ph-duotone ph-user-plus text-base" aria-hidden="true"></i> {{ __('service.add_owner') }}
+                </button>
+                <button type="button" x-on:click="showRaw = true"
+                        class="flex items-center gap-1.5 rounded-[9px] px-3.5 py-2.5 text-[12.5px] font-semibold text-t80"
+                        style="border: 1px solid var(--border2)">
+                    <i class="ph-duotone ph-code text-base" aria-hidden="true"></i> {{ __('service.view_raw_data') }}
+                </button>
+            @endcan
             <button type="button" x-on:click="showSheet = true"
                     class="dbena-btn-gold flex items-center gap-1.5 px-3.5 py-2.5 text-[12.5px]">
                 <i class="ph-duotone ph-google-logo text-base" aria-hidden="true"></i>

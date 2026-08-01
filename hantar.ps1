@@ -22,6 +22,18 @@ if (-not (Test-Path ".git")) {
     exit 1
 }
 
+# Buang fail kunci tertinggal.
+# Git menulis .git\*.lock semasa bekerja dan memadamnya selepas siap. Jika
+# sesuatu terhenti separuh jalan, fail itu kekal dan setiap arahan git
+# selepas itu gagal dengan "Another git process seems to be running".
+foreach ($kunci in @("HEAD.lock", "index.lock", "config.lock", "objects\maintenance.lock")) {
+    $laluan = Join-Path ".git" $kunci
+    if (Test-Path $laluan) {
+        Remove-Item $laluan -Force -ErrorAction SilentlyContinue
+        Write-Host ("  Fail kunci tertinggal dibuang: " + $kunci) -ForegroundColor DarkGray
+    }
+}
+
 # Apa yang berubah
 Write-Host "Fail yang berubah:" -ForegroundColor Cyan
 git status --short

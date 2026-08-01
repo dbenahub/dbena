@@ -351,7 +351,8 @@
         </x-slot:footer>
     </x-modal>
 
-    {{-- ══ MODAL: Raw Data — property BEBAS (betulkan isu #19) ══ --}}
+    {{-- ══ MODAL: Raw Data — Admin sahaja (BEBAS, betulkan isu #19) ══ --}}
+    @can('access-admin-panel')
     <x-modal show="showRaw" :title="__('service.raw_data')" icon="ph-code">
         <p class="mb-3 text-[11.5px] text-t55">{{ __('service.raw_data_hint') }}</p>
         <pre class="overflow-auto rounded-[10px] p-4 text-[11.5px] leading-relaxed text-t80"
@@ -359,7 +360,7 @@
         >{{ $rawDataJson }}</pre>
     </x-modal>
 
-    {{-- ══ MODAL: Tambah PIC (keputusan D2, betulkan isu #11) ══ --}}
+    {{-- ══ MODAL: Tambah PIC — Admin sahaja ══ --}}
     <x-modal show="showAddOwner" :title="__('service.add_owner_title')" icon="ph-user-plus" max-width="440px">
         <div class="flex flex-col gap-4">
             <div>
@@ -367,12 +368,6 @@
                 <input id="new-owner" type="text" wire:model="newOwnerName" wire:keydown.enter="addOwner"
                        class="dbena-input uppercase" placeholder="{{ __('service.owner_name_placeholder') }}">
             </div>
-            @unless (auth()->user()->isAdmin())
-                <p class="rounded-lg px-3 py-2.5 text-[12px] leading-relaxed"
-                   style="background: oklch(0.78 0.12 85/0.1); border: 1px solid oklch(0.78 0.12 85/0.3); color: oklch(0.78 0.12 85)">
-                    {{ __('service.owner_pending_hint') }}
-                </p>
-            @endunless
         </div>
         <x-slot:footer>
             <button type="button" x-on:click="showAddOwner = false"
@@ -382,4 +377,5 @@
                     class="dbena-btn-gold px-4 py-2.5 text-[12.5px]">{{ __('app.add') }}</button>
         </x-slot:footer>
     </x-modal>
+    @endcan
 </div>

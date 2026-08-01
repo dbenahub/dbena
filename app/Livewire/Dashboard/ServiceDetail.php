@@ -235,18 +235,16 @@ class ServiceDetail extends Component
             return;
         }
 
-        $isAdmin = auth()->user()->isAdmin();
-
+        // Hanya Admin sampai ke sini — OwnerPolicy::create() menolak yang lain.
         $owner = Owner::create([
             'name' => $name,
             'color_token' => Owner::nextColor(),
             'is_core' => false,
             'is_system' => false,
-            // User biasa hanya boleh MENCADANG; Admin meluluskan.
-            'status' => $isAdmin ? OwnerStatus::Active : OwnerStatus::PendingApproval,
+            'status' => OwnerStatus::Active,
             'created_by' => auth()->id(),
-            'approved_by' => $isAdmin ? auth()->id() : null,
-            'approved_at' => $isAdmin ? now() : null,
+            'approved_by' => auth()->id(),
+            'approved_at' => now(),
         ]);
 
         $audit->log('owner.created', $owner, $name, ['status' => $owner->status->value]);
@@ -254,9 +252,7 @@ class ServiceDetail extends Component
         $this->newOwnerName = '';
         $this->showAddOwnerModal = false;
 
-        $this->dispatch('dbena-toast', message: $isAdmin
-            ? __('service.owner_added', ['name' => $name])
-            : __('service.owner_pending', ['name' => $name]));
+        $this->dispatch('dbena-toast', message: __('service.owner_added', ['name' => $name]));
     }
 
     // ── Modal Google Sheet (keputusan D2) ─────────────────────────────────
