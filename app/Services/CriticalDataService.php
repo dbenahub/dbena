@@ -103,12 +103,10 @@ class CriticalDataService
      */
     public function ownerPerformance(Collection $rows): Collection
     {
-        $allRows = $rows;
-
         return $rows
             ->filter(fn (array $r) => $r['owner'] !== null && ! $r['owner']->is_system)
             ->groupBy(fn (array $r) => $r['owner']->id)
-            ->map(function (Collection $ownerRows) use ($allRows) {
+            ->map(function (Collection $ownerRows) use ($rows) {
                 $owner = $ownerRows->first()['owner'];
 
                 $score = $this->metrics->calculateOwnerScore(

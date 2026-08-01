@@ -7,6 +7,7 @@ Berguna semasa pembangunan di persekitaran tanpa PHP.
 |---|---|
 | `check-syntax.py` | Kurungan seimbang dalam PHP, pasangan arahan Blade, komponen `<x-...>` wujud |
 | `check-php-strings.py` | **String PHP yang lexically sah tetapi syntactically rosak** |
+| `check-closures.py` | **Pembolehubah digunakan dalam closure tetapi tiada dalam `use()`** |
 
 ## Kenapa check-php-strings.py wujud
 
@@ -26,11 +27,24 @@ perkataan bogel.
 
 Ralat ini benar-benar berlaku dalam projek ini dan menyebabkan 500 di produksi.
 
+## Kenapa check-closures.py wujud
+
+```php
+->map(function (Collection $ownerRows) use ($allRows) {
+    return $this->analyse($ownerRows, $rows);   // $rows tidak wujud
+})
+```
+
+Kurungan seimbang, string sah — tetapi `$rows` tidak diimport, jadi PHP
+melemparkan ralat ketika closure dijalankan. Muncul sebagai 500 pada satu
+halaman sahaja. Ini juga benar-benar berlaku dalam projek ini.
+
 ## Jalankan
 
 ```bash
 python3 tools/check-syntax.py
 python3 tools/check-php-strings.py
+python3 tools/check-closures.py
 ```
 
 Kalau PHP tersedia, `php -l fail.php` lebih tepat. Alat ini untuk bila ia tiada.
