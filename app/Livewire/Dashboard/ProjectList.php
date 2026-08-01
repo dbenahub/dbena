@@ -74,6 +74,20 @@ class ProjectList extends Component
         $this->resetPage();
     }
 
+    /**
+     * Kosongkan penapis tetapi KEKALKAN kategori yang dipilih.
+     *
+     * Kategori ialah tempat pengguna berada, bukan penapis yang mereka
+     * kenakan. Menghantar mereka kembali ke "Semua" kerana mereka
+     * mengosongkan carian bermakna kehilangan tempat.
+     */
+    public function clearFilters(): void
+    {
+        $this->status = '';
+        $this->search = '';
+        $this->resetPage();
+    }
+
     public function selectService(?string $key): void
     {
         $this->serviceKey = $key;
@@ -122,21 +136,49 @@ class ProjectList extends Component
         $selected = $this->serviceKey ? $services->firstWhere('key', $this->serviceKey) : null;
 
         /*
-         * Kiraan petak dikira daripada SELURUH jadual, bukan halaman
-         * semasa. Petak yang berubah semasa menatal halaman tidak boleh
-         * dipercayai sebagai jumlah.
+         * Kiraan petak mengikut penapis status dan carian, TETAPI bukan
+         * kategori yang dipilih. Petak itu ialah pecahan mengikut kategori
+         * — menapisnya mengikut kategori akan mengosongkan lima daripada
+         * enam petak dan memusnahkan perbandingan.
+         *
+         * Memilih "Quotation" sepatutnya menjawab soalan sebenar pemilik:
+         * berapa banyak sebut harga tergantung dalam SETIAP kategori.
+         * Petak yang kekal pada 107 semasa jadual menunjukkan 62
+         * bercanggah dengan jadual di bawahnya.
+         *
+         * Dikira daripada seluruh set yang ditapis, bukan halaman semasa.
+         * Petak yang berubah semasa menatal halaman tidak boleh dipercayai
+         * sebagai jumlah.
          */
-        $countByService = Project::query()
+        $tileScope = fn () => Project::query()
+            ->withStatus($this->status ?: null)
+            ->search($this->search);
+
+        $countByService = $tileScope()
             ->selectRaw('service_id, count(*) as jumlah')
             ->groupBy('service_id')
             ->pluck('jumlah', 'service_id');
 
         $total = (int) $countByService->sum();
 
-        $closed = Project::whereIn('status', [
+        $closed = $tileScope()->whereIn('status', [
             ProjectStatus::Completed->value,
             ProjectStatus::Closed->value,
         ])->count();
+
+        // Jumlah keseluruhan yang tidak ditapis kekal kelihatan supaya
+        // "36" mempunyai penyebut. Tanpanya nombor yang mengecil kelihatan
+        // seperti data yang hilang.
+        $grandByService = Project::query()
+            ->selectRaw('service_id, count(*) as jumlah')
+            ->groupBy('service_id')
+            ->pluck('jumlah', 'service_id');
+
+        $grandTotal = (int) $grandByService->sum();
+
+        $activeStatus = $this->status !== ''
+            ? ProjectStatus::tryFrom($this->status)
+            : null;
 
         $allowedSorts = [
             'code', 'project_date', 'client_name', 'pic_sales',
@@ -161,6 +203,10 @@ class ProjectList extends Component
             'countByService' => $countByService,
             'totalProjects' => $total,
             'closedProjects' => $closed,
+            'grandTotal' => $grandTotal,
+            'grandByService' => $grandByService,
+            'activeStatus' => $activeStatus,
+            'isFiltered' => $this->status !== '' || $this->search !== '',
             'statuses' => $this->statusesInUse(),
             'sheet' => SheetIntegration::projects()->first(),
         ])->layoutData([

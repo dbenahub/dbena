@@ -52,6 +52,40 @@
         @endif
     </div>
 
+    {{-- ══ Sepanduk penapis aktif ══ --}}
+    {{-- Petak di bawah menunjukkan kiraan YANG DITAPIS. Perubahan itu
+         mesti dinyatakan, kalau tidak "36" kelihatan seperti jumlah
+         sebenar Renovation dan bukan bilangan Quotation di dalamnya. --}}
+    @if ($isFiltered)
+        <div class="dbena-card flex flex-wrap items-center gap-3 px-4 py-3"
+             style="border-color: oklch(0.78 0.12 85/0.45)">
+            <i class="ph-duotone ph-funnel text-[17px]" style="color: oklch(0.78 0.12 85)" aria-hidden="true"></i>
+
+            <span class="text-[12.5px] font-semibold text-t80">
+                @if ($activeStatus)
+                    {{ __('project.filtered.status', ['status' => $activeStatus->label()]) }}
+                @endif
+                @if ($search !== '')
+                    {{ __('project.filtered.search', ['term' => $search]) }}
+                @endif
+            </span>
+
+            <span class="text-[12px] text-t55">
+                {{ __('project.filtered.count', [
+                    'shown' => number_format($totalProjects),
+                    'total' => number_format($grandTotal),
+                ]) }}
+            </span>
+
+            <button type="button" wire:click="clearFilters"
+                    class="ml-auto inline-flex items-center gap-1.5 rounded-[20px] px-3 py-1.5 text-[11.5px] font-semibold"
+                    style="background: oklch(0.78 0.12 85/0.15); border: 1px solid oklch(0.78 0.12 85/0.5); color: oklch(0.78 0.12 85)">
+                <i class="ph-duotone ph-x text-xs" aria-hidden="true"></i>
+                {{ __('project.filtered.clear') }}
+            </button>
+        </div>
+    @endif
+
     {{-- ══ Petak kiraan ══ --}}
     <div class="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3 xl:grid-cols-6">
         <div class="dbena-card px-4 py-4">
@@ -64,7 +98,16 @@
                 <span class="truncate text-[11.5px] font-semibold text-t60">{{ __('project.tile.total') }}</span>
             </div>
             <div class="mt-2 text-[26px] font-extrabold leading-none text-t94">{{ number_format($totalProjects) }}</div>
-            <div class="mt-1 text-[11px] text-t50">{{ __('project.tile.total_note') }}</div>
+            {{-- Jumlah keseluruhan kekal kelihatan semasa ditapis. Tanpa
+                 penyebut, nombor yang mengecil kelihatan seperti data yang
+                 hilang, bukan seperti penapis yang sedang berjalan. --}}
+            <div class="mt-1 text-[11px] text-t50">
+                @if ($isFiltered)
+                    {{ __('project.tile.of_all', ['total' => number_format($grandTotal)]) }}
+                @else
+                    {{ __('project.tile.total_note') }}
+                @endif
+            </div>
         </div>
 
         @foreach ($services as $service)
@@ -83,7 +126,15 @@
                     <span class="truncate text-[11.5px] font-semibold text-t60">{{ $service->name }}</span>
                 </div>
                 <div class="mt-2 text-[26px] font-extrabold leading-none text-t94">{{ number_format($n) }}</div>
-                <div class="mt-1 text-[11px] text-t50">{{ __('project.tile.of_total', ['pct' => $pct($n)]) }}</div>
+                <div class="mt-1 text-[11px] text-t50">
+                    @if ($isFiltered)
+                        {{ __('project.tile.of_service', [
+                            'total' => number_format((int) ($grandByService[$service->id] ?? 0)),
+                        ]) }}
+                    @else
+                        {{ __('project.tile.of_total', ['pct' => $pct($n)]) }}
+                    @endif
+                </div>
             </button>
         @endforeach
 

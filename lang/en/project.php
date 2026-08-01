@@ -19,7 +19,16 @@ return [
         'total_note' => 'All categories',
         'turned_down' => 'Turned Down',
         'closed' => 'Closed Projects',
+        'of_all' => 'of :total overall',
+        'of_service' => 'of :total in this category',
         'of_total' => ':pct% of total',
+    ],
+
+    'filtered' => [
+        'status' => 'Status: :status',
+        'search' => 'Search: ":term"',
+        'count' => 'Tiles showing :shown of :total projects',
+        'clear' => 'Clear filters',
     ],
 
     'col' => [

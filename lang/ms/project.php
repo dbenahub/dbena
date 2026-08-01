@@ -19,7 +19,16 @@ return [
         'total_note' => 'Semua kategori',
         'turned_down' => 'Turned Down',
         'closed' => 'Projek Ditutup',
+        'of_all' => 'daripada :total keseluruhan',
+        'of_service' => 'daripada :total dalam kategori ini',
         'of_total' => ':pct% daripada jumlah',
+    ],
+
+    'filtered' => [
+        'status' => 'Status: :status',
+        'search' => 'Carian: ":term"',
+        'count' => 'Petak menunjukkan :shown daripada :total projek',
+        'clear' => 'Kosongkan penapis',
     ],
 
     'col' => [

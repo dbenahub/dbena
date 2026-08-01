@@ -393,3 +393,104 @@ it('still links to the sheet when only the spreadsheet id was saved', function (
         ->assertSee(__('project.view_sheet'))
         ->assertSee('abc123def456ghi789jkl', false);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Petak mesti bersetuju dengan jadual
+|--------------------------------------------------------------------------
+*/
+
+it('recounts the tiles when a status is chosen', function (): void {
+    // Petak yang kekal pada jumlah penuh sementara jadual di bawahnya
+    // menunjukkan subset bercanggah dengan jadual itu, dan pengguna
+    // mempercayai nombor besar.
+    $component = Livewire::actingAs($this->user)
+        ->test(ProjectList::class)
+        ->set('status', ProjectStatus::Closed->value);
+
+    expect($component->viewData('totalProjects'))->toBe(1)
+        ->and($component->viewData('grandTotal'))->toBe(3);
+});
+
+it('breaks the filtered count down by category', function (): void {
+    // Soalan sebenar pemilik: berapa banyak sebut harga tergantung dalam
+    // SETIAP kategori.
+    $counts = Livewire::actingAs($this->user)
+        ->test(ProjectList::class)
+        ->set('status', ProjectStatus::Quotation->value)
+        ->viewData('countByService');
+
+    expect((int) ($counts[$this->kabinet->id] ?? 0))->toBe(1)
+        ->and((int) ($counts[$this->renovation->id] ?? 0))->toBe(0);
+});
+
+it('ignores the chosen category when counting the tiles', function (): void {
+    // Petak ITU pecahan mengikut kategori. Menapisnya mengikut kategori
+    // mengosongkan lima daripada enam dan memusnahkan perbandingan.
+    $counts = Livewire::actingAs($this->user)
+        ->test(ProjectList::class)
+        ->call('selectService', 'kabinet')
+        ->viewData('countByService');
+
+    expect((int) ($counts[$this->renovation->id] ?? 0))->toBe(2);
+});
+
+it('recounts the tiles for a search too', function (): void {
+    $component = Livewire::actingAs($this->user)
+        ->test(ProjectList::class)
+        ->set('search', 'Noraini');
+
+    expect($component->viewData('totalProjects'))->toBe(1)
+        ->and($component->viewData('isFiltered'))->toBeTrue();
+});
+
+it('keeps the unfiltered total visible as a denominator', function (): void {
+    // Tanpa penyebut, nombor yang mengecil kelihatan seperti data yang
+    // hilang dan bukan seperti penapis yang sedang berjalan.
+    $component = Livewire::actingAs($this->user)
+        ->test(ProjectList::class)
+        ->set('status', ProjectStatus::Closed->value);
+
+    expect($component->viewData('grandByService')->sum())->toBe(3);
+
+    $component->assertSee(__('project.filtered.count', ['shown' => '1', 'total' => '3']));
+});
+
+it('says which filter is running rather than silently shrinking', function (): void {
+    Livewire::actingAs($this->user)
+        ->test(ProjectList::class)
+        ->assertDontSee(__('project.filtered.clear'))
+        ->set('status', ProjectStatus::Closed->value)
+        ->assertSee(__('project.filtered.clear'))
+        ->assertSee(__('project.filtered.status', ['status' => ProjectStatus::Closed->label()]));
+});
+
+it('clears the filters but stays in the chosen category', function (): void {
+    // Kategori ialah tempat pengguna berada, bukan penapis yang mereka
+    // kenakan.
+    $component = Livewire::actingAs($this->user)
+        ->test(ProjectList::class)
+        ->call('selectService', 'kabinet')
+        ->set('status', ProjectStatus::Quotation->value)
+        ->set('search', 'Noraini')
+        ->call('clearFilters');
+
+    $component->assertSet('status', '')
+        ->assertSet('search', '')
+        ->assertSet('serviceKey', 'kabinet');
+
+    expect($component->viewData('totalProjects'))->toBe(3);
+});
+
+it('tiles and table agree on the number', function (): void {
+    // Ujian yang penting: apa sahaja yang dikatakan petak mesti sama
+    // dengan bilangan baris yang boleh dicapai pengguna.
+    foreach ([ProjectStatus::Quotation, ProjectStatus::Closed, ProjectStatus::InProgress] as $status) {
+        $component = Livewire::actingAs($this->user)
+            ->test(ProjectList::class)
+            ->set('status', $status->value);
+
+        expect($component->viewData('totalProjects'))
+            ->toBe($component->viewData('projects')->total());
+    }
+});
