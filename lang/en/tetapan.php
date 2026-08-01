@@ -24,11 +24,6 @@ return [
     'profile_saved' => 'Profile updated successfully',
     'avatar_saved' => 'Profile photo updated',
     'avatar_removed' => 'Profile photo removed',
-
-    'change_password' => 'Change Password',
-
-    'password_admin_only' => 'Passwords are managed centrally. Contact your system administrator to have your password reset.',
-
     'appearance' => 'Appearance & Language',
     'theme' => 'Theme',
     'theme_dark' => 'Dark',

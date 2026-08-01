@@ -71,11 +71,14 @@ return [
     'never' => 'Belum pernah',
 
     'col_password' => 'Kata Laluan',
-    'reset_password' => 'Tetapkan Semula',
-    'password_reset_confirm' => 'Tetapkan semula kata laluan untuk :name? Kata laluan lama akan berhenti berfungsi serta-merta.',
-    'password_reset_done' => 'Kata laluan :name ditetapkan semula',
-    'password_reset_title' => 'Kata laluan baharu untuk :name',
-    'password_reset_note' => 'Sampaikan kata laluan ini kepada pengguna melalui saluran selamat. Ia tidak akan dipapar semula — sistem menyimpannya dalam bentuk hash sahaja.',
+
+    'change_password' => 'Tukar Kata Laluan',
+    'change_password_for' => 'Tetapkan kata laluan baharu untuk :name. Kata laluan lama akan berhenti berfungsi serta-merta.',
+    'new_password' => 'Kata Laluan Baharu',
+    'confirm_password' => 'Sahkan Kata Laluan',
+    'generate_password' => 'Jana Rawak',
+    'password_rules' => 'Sekurang-kurangnya 8 aksara, mengandungi huruf dan nombor. Kata laluan disimpan dalam bentuk hash — sampaikan kepada pengguna sebelum menutup tetingkap ini.',
+    'password_changed' => 'Kata laluan :name ditukar',
 
     'audit_title' => 'Log Audit',
     'audit_hint' => 'Rekod setiap perubahan konfigurasi — siapa, apa, bila, dan nilai lama berbanding nilai baharu.',

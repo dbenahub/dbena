@@ -215,33 +215,6 @@
             </button>
         </div>
 
-        @if ($resetPasswordValue)
-            <div class="mb-4 rounded-xl px-4 py-3.5"
-                 style="background: oklch(0.78 0.12 85/0.1); border: 1px solid oklch(0.78 0.12 85/0.45)">
-                <div class="mb-2 flex items-center justify-between gap-3">
-                    <span class="text-[12.5px] font-bold" style="color: oklch(0.8 0.12 85)">
-                        {{ __('admin.password_reset_title', ['name' => $resetPasswordFor]) }}
-                    </span>
-                    <button type="button" wire:click="dismissResetPassword"
-                            class="text-[11.5px] font-semibold text-t60 hover:text-t85">
-                        {{ __('app.close') }}
-                    </button>
-                </div>
-                <div x-data="{ copied: false }" class="flex flex-wrap items-center gap-2">
-                    <code class="rounded-md px-3 py-2 font-display text-[15px] font-bold tracking-wide"
-                          style="background: var(--hover-bg3); color: oklch(0.78 0.12 85)">{{ $resetPasswordValue }}</code>
-                    <button type="button"
-                            x-on:click="navigator.clipboard.writeText('{{ $resetPasswordValue }}'); copied = true; setTimeout(() => copied = false, 2000)"
-                            class="rounded-md px-2.5 py-1.5 text-[11.5px] font-semibold"
-                            style="background: var(--hover-bg2); color: var(--t80)">
-                        <span x-show="!copied">{{ __('sheets.copy') }}</span>
-                        <span x-show="copied" x-cloak style="color: oklch(0.72 0.15 145)">{{ __('sheets.copied') }}</span>
-                    </button>
-                </div>
-                <p class="mt-2 text-[11.5px] leading-relaxed text-t65">{{ __('admin.password_reset_note') }}</p>
-            </div>
-        @endif
-
         <div class="overflow-x-auto">
             <div class="min-w-[760px]">
                 <div class="grid gap-3.5 border-b pb-2.5 text-[11px] font-bold uppercase text-t60"
@@ -283,11 +256,11 @@
                             </button>
                         </div>
                         <div>
-                            <button type="button" wire:click="resetUserPassword({{ $u->id }})"
-                                    wire:confirm="{{ __('admin.password_reset_confirm', ['name' => $u->name]) }}"
-                                    class="rounded-md px-2.5 py-1.5 text-[11.5px] font-semibold"
+                            <button type="button" wire:click="openPasswordModal({{ $u->id }})"
+                                    class="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11.5px] font-semibold"
                                     style="border: 1px solid var(--border2); color: var(--t75)">
-                                {{ __('admin.reset_password') }}
+                                <i class="ph-duotone ph-key" aria-hidden="true"></i>
+                                {{ __('admin.change_password') }}
                             </button>
                         </div>
                     </div>
@@ -323,6 +296,52 @@
         @empty
             <p class="py-4 text-center text-[12.5px] text-t55">{{ __('admin.no_audit') }}</p>
         @endforelse
+    </div>
+
+    {{-- ══ MODAL: Tukar Kata Laluan Pengguna ══ --}}
+    <div x-data="{ show: @entangle('showPasswordModal') }" class="contents">
+        <x-modal show="show" :title="__('admin.change_password')" icon="ph-key" max-width="480px">
+            <div class="flex flex-col gap-4">
+                <p class="text-[12.5px] leading-relaxed text-t65">
+                    {{ __('admin.change_password_for', ['name' => $passwordUserName ?? '—']) }}
+                </p>
+
+                <div>
+                    <label for="np" class="mb-1.5 block text-[11.5px] text-t55">{{ __('admin.new_password') }}</label>
+                    <input id="np" type="text" wire:model="newUserPassword" class="dbena-input font-display tracking-wide"
+                           autocomplete="off" spellcheck="false">
+                    @error('newUserPassword')
+                        <p class="mt-1.5 text-[12px]" style="color: oklch(0.65 0.2 25)">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <div>
+                    <label for="npc" class="mb-1.5 block text-[11.5px] text-t55">{{ __('admin.confirm_password') }}</label>
+                    <input id="npc" type="text" wire:model="newUserPasswordConfirmation" class="dbena-input font-display tracking-wide"
+                           autocomplete="off" spellcheck="false">
+                </div>
+
+                <button type="button" wire:click="generatePassword"
+                        class="flex w-fit items-center gap-2 rounded-[9px] px-3.5 py-2 text-[12.5px] font-semibold text-t80"
+                        style="border: 1px solid var(--border2)">
+                    <i class="ph-duotone ph-dice-five" aria-hidden="true"></i>
+                    {{ __('admin.generate_password') }}
+                </button>
+
+                <p class="rounded-lg px-3.5 py-2.5 text-[11.5px] leading-relaxed"
+                   style="background: var(--hover-bg3); color: var(--t65)">
+                    {{ __('admin.password_rules') }}
+                </p>
+            </div>
+
+            <x-slot:footer>
+                <button type="button" x-on:click="show = false"
+                        class="rounded-[9px] px-4 py-2.5 text-[12.5px] font-semibold text-t70"
+                        style="border: 1px solid var(--border2)">{{ __('app.cancel') }}</button>
+                <button type="button" wire:click="savePassword"
+                        class="dbena-btn-gold px-4 py-2.5 text-[12.5px]">{{ __('admin.change_password') }}</button>
+            </x-slot:footer>
+        </x-modal>
     </div>
 
     {{-- ══ MODAL: Cipta Pengguna ══ --}}

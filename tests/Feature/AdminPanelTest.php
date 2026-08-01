@@ -83,23 +83,69 @@ it('creates a user with a generated password that is never stored in plain text'
         ->and($created->password)->toStartWith('$2y$');
 });
 
-it('resets a user password to a fresh random value', function (): void {
+it('lets an admin set a specific password for a user', function (): void {
     $target = User::where('role', UserRole::User)->firstOrFail();
     $before = $target->password;
 
-    $component = Livewire::actingAs($this->admin)
+    Livewire::actingAs($this->admin)
         ->test(ConfigPanel::class)
-        ->call('resetUserPassword', $target->id);
+        ->call('openPasswordModal', $target->id)
+        ->set('newUserPassword', 'KataLaluanBaru123')
+        ->set('newUserPasswordConfirmation', 'KataLaluanBaru123')
+        ->call('savePassword')
+        ->assertHasNoErrors();
 
-    $new = $component->get('resetPasswordValue');
+    $fresh = $target->fresh();
 
-    expect($new)->toBeString()->not->toBeEmpty()
-        ->and($target->fresh()->password)->not->toBe($before)
+    expect($fresh->password)->not->toBe($before)
         // Disimpan di-hash, tidak pernah sebagai teks biasa
-        ->and($target->fresh()->password)->not->toBe($new)
-        ->and($target->fresh()->password)->toStartWith('$2y$');
+        ->and($fresh->password)->not->toBe('KataLaluanBaru123')
+        ->and($fresh->password)->toStartWith('$2y$')
+        ->and(Illuminate\Support\Facades\Hash::check('KataLaluanBaru123', $fresh->password))->toBeTrue();
 
     $this->assertDatabaseHas('audit_logs', ['action' => 'user.password_reset']);
+});
+
+it('rejects a password that is too weak', function (): void {
+    $target = User::where('role', UserRole::User)->firstOrFail();
+
+    Livewire::actingAs($this->admin)
+        ->test(ConfigPanel::class)
+        ->call('openPasswordModal', $target->id)
+        ->set('newUserPassword', 'abc')
+        ->set('newUserPasswordConfirmation', 'abc')
+        ->call('savePassword')
+        ->assertHasErrors('newUserPassword');
+});
+
+it('rejects mismatched confirmation', function (): void {
+    $target = User::where('role', UserRole::User)->firstOrFail();
+
+    Livewire::actingAs($this->admin)
+        ->test(ConfigPanel::class)
+        ->call('openPasswordModal', $target->id)
+        ->set('newUserPassword', 'KataLaluanBaru123')
+        ->set('newUserPasswordConfirmation', 'LainSamaSekali456')
+        ->call('savePassword')
+        ->assertHasErrors('newUserPassword');
+});
+
+it('generates a password that satisfies its own rules', function (): void {
+    $target = User::where('role', UserRole::User)->firstOrFail();
+
+    $component = Livewire::actingAs($this->admin)
+        ->test(ConfigPanel::class)
+        ->call('openPasswordModal', $target->id)
+        ->call('generatePassword');
+
+    $generated = $component->get('newUserPassword');
+
+    expect(strlen($generated))->toBeGreaterThanOrEqual(8)
+        ->and($generated)->toMatch('/[A-Za-z]/')
+        ->and($generated)->toMatch('/\d/')
+        ->and($component->get('newUserPasswordConfirmation'))->toBe($generated);
+
+    $component->call('savePassword')->assertHasNoErrors();
 });
 
 it('cancels outstanding OTPs when a password is reset', function (): void {
@@ -114,7 +160,10 @@ it('cancels outstanding OTPs when a password is reset', function (): void {
 
     Livewire::actingAs($this->admin)
         ->test(ConfigPanel::class)
-        ->call('resetUserPassword', $target->id);
+        ->call('openPasswordModal', $target->id)
+        ->set('newUserPassword', 'KataLaluanBaru123')
+        ->set('newUserPasswordConfirmation', 'KataLaluanBaru123')
+        ->call('savePassword');
 
     expect(App\Models\Otp::where('user_id', $target->id)->whereNull('consumed_at')->count())->toBe(0);
 });
@@ -124,7 +173,7 @@ it('does not let a plain user reset anyone password', function (): void {
 
     Livewire::actingAs($user)
         ->test(ConfigPanel::class)
-        ->call('resetUserPassword', $this->admin->id)
+        ->call('openPasswordModal', $this->admin->id)
         ->assertForbidden();
 })->throws(Illuminate\Auth\Access\AuthorizationException::class);
 

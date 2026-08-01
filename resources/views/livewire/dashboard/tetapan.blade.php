@@ -94,18 +94,6 @@
         </form>
     </div>
 
-    {{-- Kata laluan diurus secara berpusat oleh Admin --}}
-    <div class="dbena-card flex items-start gap-3 p-5 sm:p-6">
-        <i class="ph-duotone ph-lock-key mt-0.5 shrink-0 text-xl"
-           style="color: oklch(0.78 0.12 85)" aria-hidden="true"></i>
-        <div>
-            <h2 class="text-base font-bold">{{ __('tetapan.change_password') }}</h2>
-            <p class="mt-1 text-[12.5px] leading-relaxed text-t65">
-                {{ __('tetapan.password_admin_only') }}
-            </p>
-        </div>
-    </div>
-
     {{-- ══ Paparan & Bahasa ══ --}}
     <div class="dbena-card p-5 sm:p-6">
         <div class="mb-5 flex items-center gap-2.5">

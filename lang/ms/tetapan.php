@@ -24,11 +24,6 @@ return [
     'profile_saved' => 'Profil berjaya dikemaskini',
     'avatar_saved' => 'Gambar profil dikemaskini',
     'avatar_removed' => 'Gambar profil dibuang',
-
-    'change_password' => 'Tukar Kata Laluan',
-
-    'password_admin_only' => 'Kata laluan diurus secara berpusat. Hubungi pentadbir sistem untuk menetapkan semula kata laluan anda.',
-
     'appearance' => 'Paparan & Bahasa',
     'theme' => 'Tema',
     'theme_dark' => 'Gelap',

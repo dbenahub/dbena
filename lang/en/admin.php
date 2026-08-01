@@ -71,11 +71,14 @@ return [
     'never' => 'Never',
 
     'col_password' => 'Password',
-    'reset_password' => 'Reset',
-    'password_reset_confirm' => 'Reset the password for :name? The old password stops working immediately.',
-    'password_reset_done' => 'Password reset for :name',
-    'password_reset_title' => 'New password for :name',
-    'password_reset_note' => 'Deliver this password to the user over a secure channel. It will not be shown again — the system stores only a hash.',
+
+    'change_password' => 'Change Password',
+    'change_password_for' => 'Set a new password for :name. The old password stops working immediately.',
+    'new_password' => 'New Password',
+    'confirm_password' => 'Confirm Password',
+    'generate_password' => 'Generate Random',
+    'password_rules' => 'At least 8 characters, containing letters and numbers. Passwords are stored hashed — pass it to the user before closing this window.',
+    'password_changed' => 'Password changed for :name',
 
     'audit_title' => 'Audit Log',
     'audit_hint' => 'Records every configuration change — who, what, when, and old vs new values.',

@@ -16,6 +16,7 @@ use App\Models\YearGrowthFactor;
 use App\Services\AuditLogger;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -54,9 +55,12 @@ class ConfigPanel extends Component
     public string $userRole = 'user';
     public ?string $generatedPassword = null;
 
-    /** Kata laluan yang baru ditetapkan semula — dipapar sekali sahaja. */
-    public ?string $resetPasswordFor = null;
-    public ?string $resetPasswordValue = null;
+    // Modal tukar kata laluan pengguna
+    public bool $showPasswordModal = false;
+    public ?int $passwordUserId = null;
+    public ?string $passwordUserName = null;
+    public string $newUserPassword = '';
+    public string $newUserPasswordConfirmation = '';
 
     public function mount(): void
     {
@@ -311,36 +315,63 @@ class ConfigPanel extends Component
     }
 
     /**
-     * Tetapkan semula kata laluan pengguna.
+     * Buka modal tukar kata laluan untuk seorang pengguna.
      *
-     * Kata laluan diurus secara berpusat — pengguna tidak boleh menukar sendiri.
-     * Kata laluan baharu dijana rawak dan dipaparkan SEKALI sahaja; ia disimpan
-     * di-hash dan tidak pernah boleh dibaca semula, termasuk oleh Admin.
+     * Kata laluan diurus secara berpusat — pengguna tidak boleh menukar sendiri
+     * melalui Tetapan. Admin boleh menetapkan kata laluan tertentu, atau menjana
+     * yang rawak.
      */
-    public function resetUserPassword(int $userId, AuditLogger $audit): void
+    public function openPasswordModal(int $userId): void
     {
         $this->authorize('manage-users');
 
         $user = User::findOrFail($userId);
-        $password = Str::password(16, symbols: false);
 
-        $user->update(['password' => $password]);
+        $this->passwordUserId = $user->id;
+        $this->passwordUserName = $user->name;
+        $this->newUserPassword = '';
+        $this->newUserPasswordConfirmation = '';
+        $this->showPasswordModal = true;
 
-        // Batalkan sebarang OTP belum guna — sesi lama tidak boleh diteruskan.
+        $this->resetErrorBag();
+    }
+
+    /** Isi medan dengan kata laluan rawak yang kuat. */
+    public function generatePassword(): void
+    {
+        $this->authorize('manage-users');
+
+        $generated = Str::password(14, symbols: false);
+
+        $this->newUserPassword = $generated;
+        $this->newUserPasswordConfirmation = $generated;
+    }
+
+    public function savePassword(AuditLogger $audit): void
+    {
+        $this->authorize('manage-users');
+
+        $this->validate([
+            'newUserPassword' => ['required', 'confirmed:newUserPasswordConfirmation', Password::min(8)->letters()->numbers()],
+        ], attributes: [
+            'newUserPassword' => __('admin.new_password'),
+        ]);
+
+        $user = User::findOrFail($this->passwordUserId);
+
+        $user->update(['password' => $this->newUserPassword]);
+
+        // Batalkan OTP belum guna — percubaan log masuk separa dengan kata
+        // laluan lama tidak boleh diteruskan.
         $user->otps()->whereNull('consumed_at')->update(['consumed_at' => now()]);
 
         $audit->log('user.password_reset', $user, $user->name);
 
-        $this->resetPasswordFor = $user->name;
-        $this->resetPasswordValue = $password;
+        $this->showPasswordModal = false;
+        $this->newUserPassword = '';
+        $this->newUserPasswordConfirmation = '';
 
-        $this->dispatch('dbena-toast', message: __('admin.password_reset_done', ['name' => $user->name]));
-    }
-
-    public function dismissResetPassword(): void
-    {
-        $this->resetPasswordFor = null;
-        $this->resetPasswordValue = null;
+        $this->dispatch('dbena-toast', message: __('admin.password_changed', ['name' => $user->name]));
     }
 
     public function toggleUserActive(int $userId, AuditLogger $audit): void
