@@ -99,6 +99,11 @@ class Service extends Model
         return $disalin;
     }
 
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
+    }
+
     public function criticalMetrics(): HasMany
     {
         return $this->hasMany(CriticalMetric::class)->orderBy('sort_order');

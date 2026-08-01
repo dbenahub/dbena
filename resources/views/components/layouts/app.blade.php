@@ -161,6 +161,70 @@
                 </div>
             </div>
 
+            {{-- ── Projek + kategori ──
+                 Corak yang sama seperti Dashboard Utama: satu item peringkat
+                 atas, kategori sebagai sub-item. Kategori ialah servis yang
+                 sama, jadi menambah servis di Admin Panel menambah kategori
+                 projek tanpa perubahan kod. --}}
+            @php
+                $diProjek = request()->routeIs('projek');
+                $servisProjek = request()->query('servis');
+            @endphp
+
+            <div x-data="{ bukaProjek: @js($diProjek) }" class="mb-0.5">
+                <div class="flex items-stretch gap-1">
+                    <a href="{{ route('projek') }}" wire:navigate
+                       x-on:click="sidebarOpen = false; bukaProjek = true"
+                       @if ($diProjek) aria-current="page" @endif
+                       class="flex min-w-0 flex-1 items-center gap-3 rounded-[10px] px-3.5 py-3 transition-colors hover:bg-hover"
+                       @style([
+                           'background: var(--hover-bg2); border-left: 3px solid oklch(0.78 0.12 85)' => $diProjek,
+                           'border-left: 3px solid transparent' => ! $diProjek,
+                       ])>
+                        <i class="ph-duotone ph-folders shrink-0 text-[22px]"
+                           style="color: {{ $diProjek ? 'oklch(0.78 0.12 85)' : 'var(--t68)' }}"
+                           aria-hidden="true"></i>
+                        <span class="truncate text-sm font-semibold"
+                              style="color: {{ $diProjek ? 'var(--t96)' : 'var(--t68)' }}">
+                            {{ __('project.nav') }}
+                        </span>
+                    </a>
+
+                    <button type="button" x-on:click="bukaProjek = ! bukaProjek"
+                            :aria-expanded="bukaProjek ? 'true' : 'false'"
+                            aria-controls="nav-projek"
+                            aria-label="{{ __('project.nav') }}"
+                            class="flex w-10 shrink-0 items-center justify-center rounded-[10px] transition-colors hover:bg-hover"
+                            style="background: var(--hover-bg3); border: 1px solid var(--border2)">
+                        <i class="ph-duotone ph-caret-down text-[18px] transition-transform duration-200"
+                           :class="bukaProjek ? 'rotate-180' : ''"
+                           style="color: oklch(0.78 0.12 85)" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <div id="nav-projek" x-show="bukaProjek" x-collapse x-cloak class="mt-0.5">
+                    @foreach ($services as $service)
+                        @php $aktifP = $diProjek && $servisProjek === $service->key; @endphp
+                        <a href="{{ route('projek', ['servis' => $service->key]) }}" wire:navigate
+                           x-on:click="sidebarOpen = false"
+                           @if ($aktifP) aria-current="page" @endif
+                           class="mb-0.5 ml-4 flex items-center gap-2.5 rounded-[9px] py-2.5 pl-3 pr-3 transition-colors hover:bg-hover"
+                           @style([
+                               'background: var(--hover-bg2); border-left: 2px solid oklch(0.78 0.12 85)' => $aktifP,
+                               'border-left: 2px solid var(--border2)' => ! $aktifP,
+                           ])>
+                            <i class="ph-duotone {{ $service->icon_class }} shrink-0 text-[17px]"
+                               style="color: {{ $aktifP ? 'oklch(0.78 0.12 85)' : 'var(--t60)' }}"
+                               aria-hidden="true"></i>
+                            <span class="truncate text-[12.5px] font-semibold"
+                                  style="color: {{ $aktifP ? 'var(--t96)' : 'var(--t65)' }}">
+                                {{ $service->name }}
+                            </span>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+
             {{-- ── Selebihnya ── --}}
             @foreach ($lain as $item)
                 <a href="{{ $item['route'] }}" wire:navigate

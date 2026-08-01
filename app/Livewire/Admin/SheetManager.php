@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\SheetIntegration;
 use App\Models\SheetSyncLog;
 use App\Services\AuditLogger;
+use App\Services\Sheets\ProjectSyncService;
 use App\Services\Sheets\SheetSyncService;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
@@ -57,6 +58,13 @@ class SheetManager extends Component
     /** @var array<string, mixed>|null */
     public ?array $preview = null;
 
+    // ── Tab Master Project ────────────────────────────────────────────
+    // Fail Google Sheet yang SAMA, tab yang berbeza. Strukturnya tiada
+    // kaitan dengan Data Kritikal, jadi konfigurasinya berasingan.
+    public string $projectUrl = '';
+    public string $projectTab = '';
+    public int $projectHeaderRow = 0;
+
     public ?string $previewError = null;
     public bool $showAppsScript = false;
 
@@ -70,6 +78,8 @@ class SheetManager extends Component
         // NULL = satu sheet memegang SEMUA servis (susun atur DBENA sebenar).
         $this->selectedServiceId = null;
         $this->loadIntegration();
+
+        $this->loadProjectSheet();
     }
 
     /** Simpan serta-merta apabila suis sync ditukar, supaya UI tidak menipu. */
@@ -104,6 +114,80 @@ class SheetManager extends Component
         foreach (array_keys($this->columnMap) as $field) {
             $this->columnMap[$field] = (string) ($map[$field] ?? '');
         }
+    }
+
+    private function projectIntegration(): SheetIntegration
+    {
+        return SheetIntegration::firstOrCreate(
+            ['kind' => 'project', 'service_id' => null],
+            ['connected' => false]
+        );
+    }
+
+    private function loadProjectSheet(): void
+    {
+        $p = $this->projectIntegration();
+
+        $this->projectUrl = (string) ($p->url ?? '');
+        $this->projectTab = (string) ($p->tab_name ?? '');
+        $this->projectHeaderRow = (int) ($p->header_row ?? 0);
+    }
+
+    /** Simpan tetapan tab Master Project. */
+    public function saveProjectSheet(AuditLogger $audit): SheetIntegration
+    {
+        $this->authorize('sync-projects');
+
+        $p = $this->projectIntegration();
+
+        $p->fill([
+            'url' => trim($this->projectUrl) ?: null,
+            'spreadsheet_id' => SheetIntegration::extractSpreadsheetId($this->projectUrl),
+            'gid' => SheetIntegration::extractGid($this->projectUrl),
+            'tab_name' => trim($this->projectTab) ?: null,
+            'header_row' => max(0, $this->projectHeaderRow),
+            'connected' => filled(trim($this->projectUrl)),
+            'updated_by' => auth()->id(),
+        ])->save();
+
+        $audit->log('project_sheet.saved', $p, $p->tab_name ?? '—');
+
+        $this->dispatch('dbena-toast', message: __('sheets.saved'));
+
+        return $p;
+    }
+
+    /** Tarik tab Master Project sekarang. */
+    public function syncProjects(AuditLogger $audit, ProjectSyncService $sync): void
+    {
+        $this->authorize('sync-projects');
+
+        $p = $this->saveProjectSheet($audit);
+
+        if (blank($p->url)) {
+            $this->dispatch('dbena-toast', message: __('sheets.not_ready.no_url'), variant: 'error');
+
+            return;
+        }
+
+        $result = $sync->sync($p);
+
+        $audit->log('project_sheet.synced', $p, $p->tab_name ?? '—', [
+            'written' => $result['written'],
+            'skipped' => $result['skipped'],
+        ]);
+
+        $mesej = $result['message'];
+
+        if (! empty($result['unknownServices'])) {
+            $mesej .= ' '.__('project.sync.unknown_services', [
+                'names' => implode(', ', $result['unknownServices']),
+            ]);
+        }
+
+        $this->dispatch('dbena-toast',
+            message: $mesej,
+            variant: $result['status'] === 'failed' ? 'error' : 'success');
     }
 
     private function integration(): SheetIntegration
@@ -344,6 +428,8 @@ class SheetManager extends Component
             'months' => __('calendar.months_full'),
             'years' => range(2023, 2032),
             'driverLabel' => app(\App\Contracts\SheetReader::class)->label(),
+            'projectSheet' => $this->projectIntegration(),
+            'projectCount' => \App\Models\Project::count(),
         ])->layoutData([
             'pageTitle' => __('sheets.page_title'),
             'pageSubtitle' => __('sheets.page_subtitle'),

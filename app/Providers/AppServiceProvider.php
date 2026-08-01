@@ -49,5 +49,14 @@ class AppServiceProvider extends ServiceProvider
         Gate::define('manage-users', fn ($user) => $user->isAdmin());
         Gate::define('view-audit-log', fn ($user) => $user->isAdmin());
         Gate::define('manage-sheet-integration', fn ($user) => $user->isAdmin());
+
+        /*
+         * Projek: dashboard ialah paparan sahaja untuk semua orang.
+         * Eksport dan sync ialah tindakan pentadbiran — eksport
+         * mengeluarkan senarai pelanggan penuh dengan telefon dan emel
+         * daripada sistem, dan sync menulis ke pangkalan data.
+         */
+        Gate::define('export-projects', fn ($user) => $user->isAdmin());
+        Gate::define('sync-projects', fn ($user) => $user->isAdmin());
     }
 }

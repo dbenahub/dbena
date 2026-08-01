@@ -81,6 +81,9 @@ return [
 
     'header_too_few' => 'Baris tajuk :row hanya menghasilkan :count lajur — terlalu sedikit untuk dipetakan. Sheet DBENA biasanya mempunyai baris sepanduk di atas, jadi tajuk sebenar berada di baris 2. Tetapkan medan ini kepada 2, atau 0 untuk auto-kesan.',
 
+    'project_hint' => 'Tab berasingan dalam fail sheet yang sama, untuk Master List of Project. Data diisi di sana; sync menariknya ke dashboard.',
+    'project_count' => ':count projek dalam pangkalan data',
+
     'field' => [
         'metric' => 'Nama Metrik',
         'week1' => 'Minggu 1',

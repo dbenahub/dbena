@@ -81,6 +81,9 @@ return [
 
     'header_too_few' => 'Header row :row yields only :count columns — too few to map. DBENA sheets usually start with a banner row, so the real header sits on row 2. Set this field to 2, or 0 to auto-detect.',
 
+    'project_hint' => 'A separate tab in the same sheet file, for the Master List of Project. Data is entered there; syncing pulls it into the dashboard.',
+    'project_count' => ':count projects in the database',
+
     'field' => [
         'metric' => 'Metric Name',
         'week1' => 'Week 1',

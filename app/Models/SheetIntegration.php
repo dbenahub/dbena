@@ -22,7 +22,7 @@ class SheetIntegration extends Model
     public const REQUIRED_FIELDS = ['metric', 'week1', 'week2', 'week3', 'week4'];
 
     protected $fillable = [
-        'service_id', 'url', 'spreadsheet_id', 'tab_name', 'gid', 'column_map',
+        'service_id', 'kind', 'url', 'spreadsheet_id', 'tab_name', 'gid', 'column_map',
         'header_row', 'match_mode', 'layout_mode', 'import_targets', 'detected_services',
         'connected', 'sync_enabled', 'last_synced_at',
         'last_sync_status', 'last_sync_message', 'last_sync_rows', 'webhook_secret',

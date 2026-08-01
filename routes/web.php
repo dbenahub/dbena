@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\OwnerReportPdfController;
+use App\Http\Controllers\ProjectExportController;
 use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\SheetWebhookController;
 use App\Livewire\Admin\ConfigPanel;
@@ -51,6 +52,10 @@ Route::middleware('auth')->prefix('dashboard')->group(function (): void {
     Route::get('/laporan/pemilik', \App\Livewire\Dashboard\OwnerReport::class)->name('laporan.owner');
     Route::get('/laporan/pemilik/pdf', OwnerReportPdfController::class)->name('laporan.owner.pdf');
     Route::get('/tetapan', Tetapan::class)->name('tetapan');
+
+    // Master List of Project — paparan sahaja; eksport dilindungi gate.
+    Route::get('/projek', \App\Livewire\Dashboard\ProjectList::class)->name('projek');
+    Route::get('/projek/eksport', ProjectExportController::class)->name('projek.eksport');
 });
 
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function (): void {

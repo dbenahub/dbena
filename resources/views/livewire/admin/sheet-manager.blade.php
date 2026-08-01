@@ -706,4 +706,48 @@
             <p class="py-4 text-center text-[12.5px] text-t55">{{ __('sheets.no_logs') }}</p>
         @endforelse
     </div>
+
+    {{-- ══ Tab Master Project ══
+         Fail Google Sheet yang SAMA, tab yang berbeza. Sync dan eksport
+         projek ialah tindakan pentadbiran; dashboard pengguna paparan
+         sahaja. --}}
+    <div class="dbena-card p-5 sm:p-6">
+        <h2 class="mb-1 text-base font-bold">{{ __('project.page_title') }}</h2>
+        <p class="mb-5 text-[12px] text-t55">{{ __('sheets.project_hint') }}</p>
+
+        <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <div class="md:col-span-2">
+                <label for="prj-url" class="mb-1.5 block text-[11.5px] text-t55">{{ __('sheets.url') }}</label>
+                <input id="prj-url" type="url" wire:model="projectUrl"
+                       placeholder="https://docs.google.com/spreadsheets/d/…" class="dbena-input">
+            </div>
+            <div>
+                <label for="prj-tab" class="mb-1.5 block text-[11.5px] text-t55">{{ __('sheets.tab_name') }}</label>
+                <input id="prj-tab" type="text" wire:model="projectTab"
+                       placeholder="Master Project" class="dbena-input">
+            </div>
+            <div>
+                <label for="prj-header" class="mb-1.5 block text-[11.5px] text-t55">
+                    {{ __('sheets.header_row') }} <span class="text-t40">· {{ __('sheets.header_auto') }} = 0</span>
+                </label>
+                <input id="prj-header" type="number" min="0" wire:model="projectHeaderRow" class="dbena-input">
+            </div>
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-2.5">
+            <button type="button" wire:click="saveProjectSheet"
+                    class="rounded-[9px] px-4 py-2.5 text-[12.5px] font-semibold text-t80"
+                    style="border: 1px solid var(--border2)">{{ __('sheets.save_config') }}</button>
+
+            <button type="button" wire:click="syncProjects"
+                    class="dbena-btn-gold flex items-center gap-2 px-4 py-2.5 text-[12.5px]">
+                <i class="ph-duotone ph-arrows-clockwise text-base" aria-hidden="true"></i>
+                {{ __('project.sync_now') }}
+            </button>
+
+            <span class="ml-auto text-[11.5px] text-t55">
+                {{ __('sheets.project_count', ['count' => number_format($projectCount)]) }}
+            </span>
+        </div>
+    </div>
 </div>
