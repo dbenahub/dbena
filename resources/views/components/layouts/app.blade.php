@@ -62,50 +62,101 @@
         {{-- Menu navigasi --}}
         <nav class="flex-1" aria-label="{{ __('app.menu') }}">
             @php
-                $items = collect([[
-                    'label' => __('app.nav.dashboard'),
-                    'icon' => 'ph-house',
-                    'route' => route('dashboard'),
-                    'active' => request()->routeIs('dashboard'),
-                ]]);
+                /*
+                 * Servis ialah SUB-ITEM di bawah Dashboard Utama, bukan
+                 * item peringkat atas.
+                 *
+                 * Lima servis di peringkat atas menjadikan sidebar senarai
+                 * lapan destinasi yang sama rata, jadi hubungan sebenar —
+                 * bahawa setiap servis ialah pecahan dashboard — hilang.
+                 * Ia juga bertambah panjang setiap kali servis ditambah,
+                 * dan kini servis boleh ditambah dari Admin Panel.
+                 */
+                $diServis = request()->routeIs('service.detail');
+                $kunciServis = request()->route('key');
 
-                foreach ($services as $service) {
-                    $items->push([
-                        'label' => $service->name,
-                        'icon' => $service->icon_class,
-                        'route' => route('service.detail', $service->key),
-                        'active' => request()->routeIs('service.detail') && request()->route('key') === $service->key,
-                    ]);
-                }
+                $dashboardAktif = request()->routeIs('dashboard');
 
-                $items->push([
-                    'label' => __('app.nav.laporan'),
-                    'icon' => 'ph-chart-bar',
-                    'route' => route('laporan'),
-                    'active' => request()->routeIs('laporan'),
-                ], [
-                    'label' => __('app.nav.owner_report'),
-                    'icon' => 'ph-users-three',
-                    'route' => route('laporan.owner'),
-                    'active' => request()->routeIs('laporan.owner'),
-                ], [
-                    'label' => __('app.nav.tetapan'),
-                    'icon' => 'ph-gear',
-                    'route' => route('tetapan'),
-                    'active' => request()->routeIs('tetapan'),
+                $lain = collect([
+                    ['label' => __('app.nav.laporan'), 'icon' => 'ph-chart-bar',
+                     'route' => route('laporan'), 'active' => request()->routeIs('laporan')],
+                    ['label' => __('app.nav.owner_report'), 'icon' => 'ph-users-three',
+                     'route' => route('laporan.owner'), 'active' => request()->routeIs('laporan.owner')],
+                    ['label' => __('app.nav.tetapan'), 'icon' => 'ph-gear',
+                     'route' => route('tetapan'), 'active' => request()->routeIs('tetapan')],
                 ]);
 
                 if ($user?->isAdmin()) {
-                    $items->push([
-                        'label' => __('app.nav.sheets'),
-                        'icon' => 'ph-plugs-connected',
-                        'route' => route('admin.sheets'),
-                        'active' => request()->routeIs('admin.sheets'),
+                    $lain->push([
+                        'label' => __('app.nav.sheets'), 'icon' => 'ph-plugs-connected',
+                        'route' => route('admin.sheets'), 'active' => request()->routeIs('admin.sheets'),
                     ]);
                 }
             @endphp
 
-            @foreach ($items as $item)
+            {{-- ── Dashboard Utama + servis ── --}}
+            <div x-data="{
+                    buka: @js($dashboardAktif || $diServis),
+                 }" class="mb-0.5">
+
+                <div class="flex items-stretch gap-1">
+                    <a href="{{ route('dashboard') }}" wire:navigate
+                       x-on:click="sidebarOpen = false; buka = true"
+                       @if ($dashboardAktif) aria-current="page" @endif
+                       class="flex min-w-0 flex-1 items-center gap-3 rounded-[10px] px-3.5 py-3 transition-colors hover:bg-hover"
+                       @style([
+                           'background: var(--hover-bg2); border-left: 3px solid oklch(0.78 0.12 85)' => $dashboardAktif,
+                           'border-left: 3px solid transparent' => ! $dashboardAktif,
+                       ])>
+                        <i class="ph-duotone ph-house shrink-0 text-[22px]"
+                           style="color: {{ $dashboardAktif ? 'oklch(0.78 0.12 85)' : 'var(--t68)' }}"
+                           aria-hidden="true"></i>
+                        <span class="truncate text-sm font-semibold"
+                              style="color: {{ $dashboardAktif ? 'var(--t96)' : 'var(--t68)' }}">
+                            {{ __('app.nav.dashboard') }}
+                        </span>
+                    </a>
+
+                    {{-- Butang buka/tutup DIASINGKAN daripada pautan. Menjadikan
+                         keseluruhan baris sebagai suis bermakna tiada cara untuk
+                         pergi ke Dashboard Utama itu sendiri tanpa menutup
+                         senarai servis. --}}
+                    <button type="button" x-on:click="buka = ! buka"
+                            :aria-expanded="buka ? 'true' : 'false'"
+                            aria-controls="nav-servis"
+                            aria-label="{{ __('app.nav.services') }}"
+                            class="flex w-9 shrink-0 items-center justify-center rounded-[10px] transition-colors hover:bg-hover">
+                        <i class="ph-bold text-[13px] transition-transform duration-200"
+                           :class="buka ? 'ph-caret-up' : 'ph-caret-down'"
+                           style="color: var(--t60)" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <div id="nav-servis" x-show="buka" x-collapse x-cloak class="mt-0.5">
+                    @foreach ($services as $service)
+                        @php $aktif = $diServis && $kunciServis === $service->key; @endphp
+                        <a href="{{ route('service.detail', $service->key) }}" wire:navigate
+                           x-on:click="sidebarOpen = false"
+                           @if ($aktif) aria-current="page" @endif
+                           class="mb-0.5 ml-4 flex items-center gap-2.5 rounded-[9px] py-2.5 pl-3 pr-3 transition-colors hover:bg-hover"
+                           @style([
+                               'background: var(--hover-bg2); border-left: 2px solid oklch(0.78 0.12 85)' => $aktif,
+                               'border-left: 2px solid var(--border2)' => ! $aktif,
+                           ])>
+                            <i class="ph-duotone {{ $service->icon_class }} shrink-0 text-[17px]"
+                               style="color: {{ $aktif ? 'oklch(0.78 0.12 85)' : 'var(--t60)' }}"
+                               aria-hidden="true"></i>
+                            <span class="truncate text-[12.5px] font-semibold"
+                                  style="color: {{ $aktif ? 'var(--t96)' : 'var(--t65)' }}">
+                                {{ $service->name }}
+                            </span>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- ── Selebihnya ── --}}
+            @foreach ($lain as $item)
                 <a href="{{ $item['route'] }}" wire:navigate
                    x-on:click="sidebarOpen = false"
                    @if ($item['active']) aria-current="page" @endif

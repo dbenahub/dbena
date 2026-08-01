@@ -103,3 +103,71 @@ it('renders the dashboard overview without a fixed-width overflow trap', functio
         expect($sebelum)->toContain('overflow-x-auto');
     }
 });
+
+/*
+|--------------------------------------------------------------------------
+| Servis bersarang di bawah Dashboard Utama
+|--------------------------------------------------------------------------
+*/
+
+it('nests services under the main dashboard item', function (): void {
+    // Lima servis di peringkat atas menjadikan sidebar senarai lapan
+    // destinasi yang sama rata, jadi hubungan sebenar — setiap servis
+    // ialah pecahan dashboard — hilang.
+    $html = $this->actingAs($this->user)->get(route('dashboard'))->getContent();
+
+    $posDashboard = mb_strpos($html, 'id="nav-servis"');
+
+    expect($posDashboard)->not->toBeFalse();
+
+    foreach (App\Models\Service::all() as $service) {
+        expect(mb_strpos($html, route('service.detail', $service->key)))
+            ->toBeGreaterThan($posDashboard);
+    }
+});
+
+it('opens the service list when a service page is showing', function (): void {
+    // Menutup senarai pada halaman servis menyembunyikan item yang sedang
+    // dilihat pengguna.
+    $service = App\Models\Service::orderBy('sort_order')->firstOrFail();
+
+    $this->actingAs($this->user)
+        ->get(route('service.detail', $service->key))
+        ->assertOk()
+        ->assertSee('buka: true', escape: false);
+});
+
+it('keeps a separate link to the dashboard itself', function (): void {
+    // Menjadikan keseluruhan baris sebagai suis bermakna tiada cara untuk
+    // pergi ke Dashboard Utama tanpa menutup senarai servis.
+    $html = $this->actingAs($this->user)->get(route('dashboard'))->getContent();
+
+    expect($html)->toContain('aria-controls="nav-servis"')
+        ->and($html)->toContain(route('dashboard'));
+});
+
+it('still lists every service exactly once', function (): void {
+    $html = $this->actingAs($this->user)->get(route('dashboard'))->getContent();
+
+    foreach (App\Models\Service::all() as $service) {
+        expect(mb_substr_count($html, route('service.detail', $service->key)))->toBe(1);
+    }
+});
+
+it('shows a newly added service in the nested list', function (): void {
+    // Sidebar dibina daripada jadual servis, jadi servis yang ditambah dari
+    // Admin Panel mesti muncul tanpa perubahan kod.
+    $baharu = App\Models\Service::create([
+        'key' => 'kitchen-top',
+        'name_ms' => 'Kitchen Top',
+        'name_en' => 'Kitchen Top',
+        'icon_class' => 'ph-squares-four',
+        'monthly_target' => 100000,
+        'chart_color' => App\Models\Service::nextChartColor(),
+        'sort_order' => 99,
+    ]);
+
+    $this->actingAs($this->user)
+        ->get(route('dashboard'))
+        ->assertSee($baharu->name);
+});

@@ -32,6 +32,7 @@ return [
         'user' => 'User',
     ],
     'nav' => [
+        'services' => 'Services',
         'dashboard' => 'Main Dashboard',
         'laporan' => 'Reports',
         'owner_report' => 'Owner Report',

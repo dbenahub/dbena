@@ -32,6 +32,7 @@ return [
         'user' => 'Pengguna',
     ],
     'nav' => [
+        'services' => 'Servis',
         'dashboard' => 'Dashboard Utama',
         'laporan' => 'Laporan',
         'owner_report' => 'Laporan Pemilik',
