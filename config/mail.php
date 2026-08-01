@@ -12,7 +12,17 @@ return [
             'port' => env('MAIL_PORT', 2525),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+
+            /*
+             * Had masa WAJIB. Kod OTP dihantar semasa permintaan log masuk,
+             * jadi sambungan SMTP yang tergantung akan menahan permintaan itu
+             * sehingga pelayan web berputus asa — pengguna melihat "504
+             * Gateway time-out" dan tiada petunjuk bahawa emel puncanya.
+             *
+             * Sepuluh saat cukup untuk Gmail pada hari biasa, dan cukup pantas
+             * untuk gagal dengan mesej yang berguna apabila port disekat.
+             */
+            'timeout' => (int) env('MAIL_TIMEOUT', 10),
             'local_domain' => env('MAIL_EHLO_DOMAIN'),
         ],
         'log' => [

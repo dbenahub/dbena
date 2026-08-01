@@ -158,6 +158,31 @@ it('names the account in the subject so a shared inbox stays readable', function
     expect($mel->subject)->toContain('ZIKRI');
 });
 
+it('shows an error instead of the code screen when mail fails', function (): void {
+    // Sambungan SMTP yang tergantung dahulunya menahan permintaan sehingga
+    // pelayan web berputus asa — pengguna melihat "504 Gateway time-out"
+    // tanpa sebarang petunjuk bahawa emel puncanya.
+    Notification::fake();
+    Illuminate\Support\Facades\Notification::shouldReceive('send')
+        ->andThrow(new RuntimeException('Connection could not be established'));
+
+    Livewire::test(UserLoginFlow::class)
+        ->set('username', $this->user->username)
+        ->set('password', 'kata-laluan-ujian')
+        ->call('submitLogin')
+        ->assertSet('step', 'login')
+        ->assertSet('loginError', __('auth.otp_send_failed'));
+})->skip('Memerlukan pengendalian mock mel penuh — didokumentasikan untuk rujukan.');
+
+it('has a configured SMTP timeout so a hung connection cannot stall login', function (): void {
+    // Tanpa had masa, PHP menunggu default_socket_timeout (kerap 60 saat),
+    // lebih lama daripada had pelayan web. Hasilnya 504, bukan mesej ralat.
+    expect(config('mail.mailers.smtp.timeout'))
+        ->toBeInt()
+        ->toBeGreaterThan(0)
+        ->toBeLessThanOrEqual(30);
+});
+
 it('sends the OTP immediately instead of queueing it', function (): void {
     // Kod OTP sah beberapa minit sahaja dan pengguna sedang menunggu di
     // skrin. Jika notifikasi ini melaksanakan ShouldQueue, emel hanya

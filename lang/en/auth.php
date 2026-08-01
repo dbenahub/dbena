@@ -69,6 +69,8 @@ return [
     'admin_panel_desc' => 'Authorized personnel only. All company dashboard configuration is managed here.',
     'two_factor' => 'Two-Factor OTP',
 
+    'otp_send_failed' => 'The code could not be emailed. The mail system is not working — please contact your administrator.',
+
     'mail' => [
         'subject_login' => 'Your DBENA Dashboard Sign-In Code',
         'subject_reset' => 'Your DBENA Password Reset Code',

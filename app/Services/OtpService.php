@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\OtpType;
+use App\Exceptions\OtpDeliveryException;
 use App\Models\Otp;
 use App\Models\User;
 use App\Notifications\SendOtpNotification;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * PEMBETULAN isu #1 — prototaip memaparkan OTP terus di skrin
@@ -42,7 +45,23 @@ class OtpService
             'ip_address' => $ip,
         ]);
 
-        $user->notify(new SendOtpNotification($code, $type));
+        /*
+         * Emel dihantar secara segerak, jadi kegagalan SMTP berlaku DI SINI
+         * dan bukan senyap di latar belakang. Tanpa penangkapan ini, pengguna
+         * melihat halaman ralat mentah dan tiada apa yang menyebut emel.
+         */
+        try {
+            $user->notify(new SendOtpNotification($code, $type));
+        } catch (Throwable $e) {
+            Log::error('Kod OTP gagal dihantar', [
+                'user_id' => $user->id,
+                'mailer' => config('mail.default'),
+                'host' => config('mail.mailers.smtp.host'),
+                'ralat' => $e->getMessage(),
+            ]);
+
+            throw new OtpDeliveryException($e->getMessage(), previous: $e);
+        }
     }
 
     /**

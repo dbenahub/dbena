@@ -6,6 +6,7 @@ namespace App\Livewire\Concerns;
 
 use App\Enums\OtpType;
 use App\Enums\UserRole;
+use App\Exceptions\OtpDeliveryException;
 use App\Models\User;
 use App\Services\OtpService;
 use Illuminate\Support\Facades\Auth;
@@ -108,7 +109,15 @@ trait HandlesOtpFlow
         RateLimiter::clear($throttleKey);
 
         // Kelayakan sah — hantar OTP. Kod TIDAK dikembalikan ke komponen.
-        $otp->issue($user, OtpType::Login, request()->ip());
+        try {
+            $otp->issue($user, OtpType::Login, request()->ip());
+        } catch (OtpDeliveryException) {
+            // Jangan maju ke skrin "masukkan kod" untuk kod yang tidak akan
+            // sampai. Pengguna akan menunggu sesuatu yang tiada.
+            $this->fail('loginError', __('auth.otp_send_failed'));
+
+            return;
+        }
 
         $this->pendingUserId = $user->id;
         $this->password = '';
@@ -177,7 +186,14 @@ trait HandlesOtpFlow
             return;
         }
 
-        $otp->issue($user, OtpType::Login, request()->ip());
+        try {
+            $otp->issue($user, OtpType::Login, request()->ip());
+        } catch (OtpDeliveryException) {
+            $this->fail('otpError', __('auth.otp_send_failed'));
+
+            return;
+        }
+
         $this->otpInput = '';
         $this->otpError = '';
         $this->resendCooldown = (int) config('dbena.otp.resend_cooldown');
@@ -223,7 +239,13 @@ trait HandlesOtpFlow
             return;
         }
 
-        $otp->issue($user, OtpType::Reset, request()->ip());
+        try {
+            $otp->issue($user, OtpType::Reset, request()->ip());
+        } catch (OtpDeliveryException) {
+            $this->fail('loginError', __('auth.otp_send_failed'));
+
+            return;
+        }
 
         $this->resetUserId = $user->id;
         $this->resetOtpInput = '';
