@@ -199,7 +199,112 @@
                         @endforeach
                     </div>
 
-                    {{-- Tindakan --}}
+                    {{-- ══ ANALISIS PUNCA ══ --}}
+                    @if ($block['diagnoses']->isNotEmpty())
+                        <h3 class="mb-1 flex items-center gap-2 text-[13.5px] font-bold">
+                            <i class="ph-duotone ph-tree-structure" style="color: oklch(0.78 0.12 85)" aria-hidden="true"></i>
+                            {{ __('funnel.title') }}
+                        </h3>
+                        <p class="mb-3 text-[12px] text-t55">{{ __('funnel.subtitle') }}</p>
+
+                        <div class="mb-6 flex flex-col gap-3">
+                            @foreach ($block['diagnoses'] as $d)
+                                @php
+                                    $dColor = $d['severity'] === 'critical' ? 'oklch(0.6 0.2 25)' : 'oklch(0.78 0.15 85)';
+                                @endphp
+
+                                <div class="rounded-xl p-4"
+                                     style="background: var(--hover-bg3);
+                                            border: 1px solid var(--border3);
+                                            border-left: 3px solid {{ $dColor }}">
+
+                                    {{-- Metrik & jurang --}}
+                                    <div class="mb-2.5 flex flex-wrap items-baseline justify-between gap-2">
+                                        <span class="text-[13px] font-bold" style="color: {{ $dColor }}">{{ $d['label'] }}</span>
+                                        <span class="text-[11.5px] text-t60">
+                                            {{ $d['actualLabel'] }} / {{ $d['targetLabel'] }}
+                                            @if ($d['gapLabel'] !== '—')
+                                                · {{ __('service.gap_note', ['amount' => $d['gapLabel']]) }}
+                                            @endif
+                                        </span>
+                                    </div>
+
+                                    {{-- Naratif diagnosis --}}
+                                    <p class="mb-3 text-[12.5px] leading-relaxed text-t80">{{ $d['narrative'] }}</p>
+
+                                    {{-- Punca berlabel --}}
+                                    @if (! empty($d['causes']))
+                                        <div class="mb-3">
+                                            <div class="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-t55">
+                                                {{ __('funnel.root_cause') }}
+                                            </div>
+                                            <div class="flex flex-wrap gap-1.5">
+                                                @foreach ($d['causes'] as $cause)
+                                                    <span class="rounded-md px-2 py-1 text-[11px]"
+                                                          style="background: color-mix(in oklch, {{ $dColor }} 12%, transparent); color: {{ $dColor }}">
+                                                        {{ __('funnel.cause.'.$cause['type']) }}
+                                                        @if ($cause['pct'] !== null && in_array($cause['type'], ['driver_failed', 'conversion'], true))
+                                                            · {{ $cause['label'] }} {{ number_format((float) $cause['pct'], 0) }}%
+                                                        @elseif (in_array($cause['type'], ['driver_zero', 'driver_no_data'], true))
+                                                            · {{ $cause['label'] }}
+                                                        @endif
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endif
+
+                                    {{-- Kesan hilir ke atas syarikat --}}
+                                    @if (! empty($d['impacts']))
+                                        <div class="mb-3 rounded-lg px-3 py-2.5"
+                                             style="background: oklch(0.6 0.2 25/0.08); border: 1px solid oklch(0.6 0.2 25/0.25)">
+                                            <div class="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide"
+                                                 style="color: oklch(0.65 0.2 25)">
+                                                <i class="ph-duotone ph-arrow-bend-right-down" aria-hidden="true"></i>
+                                                {{ __('funnel.downstream_impact') }}
+                                            </div>
+                                            @foreach ($d['impacts'] as $imp)
+                                                <div class="text-[12px] leading-relaxed text-t75">
+                                                    • {{ $imp['label'] }} —
+                                                    <span class="text-t60">{{ $imp['actualLabel'] }} / {{ $imp['targetLabel'] }}</span>
+                                                    @if ($imp['pct'] !== null)
+                                                        <b>({{ number_format((float) $imp['pct'], 1) }}%)</b>
+                                                    @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+
+                                    {{-- Tindakan berkuantiti --}}
+                                    @if (! empty($d['actions']))
+                                        <div class="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-t55">
+                                            {{ __('funnel.required_action') }}
+                                        </div>
+                                        <div class="flex flex-col gap-2">
+                                            @foreach ($d['actions'] as $act)
+                                                @php
+                                                    $aColor = $act['priority'] === 'high' ? 'oklch(0.6 0.2 25)'
+                                                        : ($act['priority'] === 'medium' ? 'oklch(0.78 0.15 85)' : 'oklch(0.55 0.15 145)');
+                                                @endphp
+                                                <div class="rounded-lg px-3 py-2.5" style="background: var(--card-bg)">
+                                                    <div class="flex flex-wrap items-center gap-2">
+                                                        <span class="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase"
+                                                              style="background: color-mix(in oklch, {{ $aColor }} 16%, transparent); color: {{ $aColor }}">
+                                                            {{ __('owner_report.priority.'.$act['priority']) }}
+                                                        </span>
+                                                        <span class="text-[12.5px] font-semibold text-t90">{{ $act['label'] }}</span>
+                                                    </div>
+                                                    <p class="mt-1.5 text-[12px] leading-relaxed text-t65">{{ $act['detail'] }}</p>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    {{-- Tindakan umum --}}
                     <h3 class="mb-3 flex items-center gap-2 text-[13.5px] font-bold">
                         <i class="ph-duotone ph-list-checks" style="color: oklch(0.78 0.12 85)" aria-hidden="true"></i>
                         {{ __('owner_report.actions_title') }}

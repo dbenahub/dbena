@@ -138,13 +138,14 @@
 
             <div class="grid gap-4" style="grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr))">
                 @foreach ($ownerPerformance as $op)
-                    <button type="button" wire:click="toggleOwnerFilter({{ $op['owner']->id }})"
-                            class="rounded-xl p-[18px] text-left transition-colors"
-                            style="background: var(--hover-bg3);
-                                   border: 1px solid {{ $ownerFilter === $op['owner']->id ? $op['color'] : 'var(--border3)' }}">
+                    <div class="rounded-xl p-[18px] text-left transition-colors"
+                         style="background: var(--hover-bg3);
+                                border: 1px solid {{ $ownerFilter === $op['owner']->id ? $op['color'] : 'var(--border3)' }}">
                         <div class="mb-3 flex items-center justify-between gap-2">
-                            <x-owner-chip :name="$op['name']" :color="$op['color']"
-                                          :selected="$ownerFilter === $op['owner']->id" />
+                            <button type="button" wire:click="toggleOwnerFilter({{ $op['owner']->id }})">
+                                <x-owner-chip :name="$op['name']" :color="$op['color']"
+                                              :selected="$ownerFilter === $op['owner']->id" />
+                            </button>
                             @if ($op['hasCritical'])
                                 <span class="flex items-center gap-1.5 text-[11px] font-bold"
                                       style="color: oklch(0.6 0.2 25)">
@@ -163,18 +164,49 @@
                             <span class="text-t55">{{ __('service.of_metrics', ['count' => $op['total']]) }}</span>
                         </div>
 
-                        @if ($op['hasCritical'])
-                            <div class="rounded-lg px-3 py-2.5"
-                                 style="background: oklch(0.6 0.2 25/0.1); border: 1px solid oklch(0.6 0.2 25/0.3)">
-                                <div class="mb-1.5 text-[11px] font-bold" style="color: oklch(0.6 0.2 25)">
-                                    {{ __('service.critical_list_title') }}
-                                </div>
-                                @foreach ($op['criticalMetrics'] as $cm)
-                                    <div class="text-[12px] leading-relaxed text-t80">• {{ $cm }}</div>
+                        @if ($op['diagnoses']->isNotEmpty())
+                            <div class="flex flex-col gap-2.5">
+                                @foreach ($op['diagnoses']->take(3) as $d)
+                                    @php
+                                        $dColor = $d['severity'] === 'critical' ? 'oklch(0.6 0.2 25)' : 'oklch(0.78 0.15 85)';
+                                    @endphp
+                                    <div class="rounded-lg px-3 py-2.5 text-left"
+                                         style="background: color-mix(in oklch, {{ $dColor }} 8%, transparent);
+                                                border-left: 3px solid {{ $dColor }}">
+                                        <div class="mb-1 flex flex-wrap items-baseline gap-x-2">
+                                            <span class="text-[12px] font-bold" style="color: {{ $dColor }}">{{ $d['label'] }}</span>
+                                            <span class="text-[11px] text-t60">
+                                                {{ $d['actualLabel'] }} / {{ $d['targetLabel'] }}
+                                            </span>
+                                        </div>
+
+                                        <p class="text-[11.5px] leading-relaxed text-t75">{{ $d['narrative'] }}</p>
+
+                                        @if (! empty($d['actions']))
+                                            <div class="mt-2 flex flex-col gap-1">
+                                                @foreach (array_slice($d['actions'], 0, 2) as $act)
+                                                    <div class="flex gap-1.5 text-[11.5px] leading-relaxed text-t70">
+                                                        <i class="ph-duotone ph-arrow-elbow-down-right mt-px shrink-0"
+                                                           style="color: {{ $dColor }}" aria-hidden="true"></i>
+                                                        <span><b>{{ $act['label'] }}</b> — {{ $act['detail'] }}</span>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
                                 @endforeach
+
+                                @if ($op['diagnoses']->count() > 3)
+                                    <a href="{{ route('laporan.owner', ['servis' => $service->key, 'bulan' => $month, 'tahun' => $year]) }}"
+                                       wire:navigate
+                                       class="text-[11.5px] font-semibold"
+                                       style="color: oklch(0.78 0.12 85)">
+                                        {{ __('funnel.see_all', ['count' => $op['diagnoses']->count()]) }}
+                                    </a>
+                                @endif
                             </div>
                         @endif
-                    </button>
+                    </div>
                 @endforeach
             </div>
         </div>

@@ -17,7 +17,10 @@ use Illuminate\Support\Collection;
  */
 class CriticalDataService
 {
-    public function __construct(private readonly DashboardMetricsService $metrics) {}
+    public function __construct(
+        private readonly DashboardMetricsService $metrics,
+        private readonly FunnelAnalysisService $funnel,
+    ) {}
 
     /**
      * @return Collection<int, array<string, mixed>>
@@ -100,10 +103,12 @@ class CriticalDataService
      */
     public function ownerPerformance(Collection $rows): Collection
     {
+        $allRows = $rows;
+
         return $rows
             ->filter(fn (array $r) => $r['owner'] !== null && ! $r['owner']->is_system)
             ->groupBy(fn (array $r) => $r['owner']->id)
-            ->map(function (Collection $ownerRows) {
+            ->map(function (Collection $ownerRows) use ($allRows) {
                 $owner = $ownerRows->first()['owner'];
 
                 $score = $this->metrics->calculateOwnerScore(
@@ -122,6 +127,9 @@ class CriticalDataService
                     'criticalMetrics' => $score['criticalMetrics'],
                     'hasCritical' => $score['red'] > 0,
                     'barColor' => $this->metrics->ownerScoreColor($score['scorePct']),
+                    // Diagnosis corong — mengapa metrik ini gagal, dan apa
+                    // kesannya ke atas metrik hilir syarikat.
+                    'diagnoses' => $this->funnel->diagnoseOwner($ownerRows, $rows),
                 ];
             })
             ->values();

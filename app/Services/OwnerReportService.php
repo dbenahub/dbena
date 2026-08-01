@@ -26,7 +26,10 @@ use Illuminate\Support\Collection;
  */
 class OwnerReportService
 {
-    public function __construct(private readonly DashboardMetricsService $metrics) {}
+    public function __construct(
+        private readonly DashboardMetricsService $metrics,
+        private readonly FunnelAnalysisService $funnel,
+    ) {}
 
     /**
      * @return array<string, mixed>
@@ -41,8 +44,12 @@ class OwnerReportService
         $owners = Owner::scorable()->orderBy('name')->get();
         $months = $this->monthsFor($period, $month);
 
+        // Semua baris metrik dalam skop — diperlukan supaya analisis corong
+        // boleh melihat pemacu hulu walaupun ia dimiliki PIC yang lain.
+        $contextRows = $this->contextRows($year, $months, $week, $serviceId);
+
         $rows = $owners
-            ->map(fn (Owner $owner) => $this->buildOwnerBlock($owner, $period, $year, $months, $week, $serviceId))
+            ->map(fn (Owner $owner) => $this->buildOwnerBlock($owner, $period, $year, $months, $week, $serviceId, $contextRows))
             ->filter(fn (array $block) => $block['total'] > 0)
             ->sortByDesc('scorePct')
             ->values();
@@ -79,6 +86,7 @@ class OwnerReportService
         array $months,
         ?int $week,
         ?int $serviceId,
+        ?Collection $contextRows = null,
     ): array {
         $assignments = CriticalMetricMonth::query()
             ->where('owner_id', $owner->id)
@@ -159,7 +167,62 @@ class OwnerReportService
             'criticalMetrics' => $metricRows->where('status', MetricStatus::Red)->values(),
             'commentary' => $this->commentary($owner, $scorePct, $total, $green, $yellow, $red, $pending, $trend, $metricRows),
             'actions' => $this->actions($scorePct, $red, $yellow, $pending, $metricRows),
+            // Punca dan kesan hilir bagi setiap metrik yang gagal
+            'diagnoses' => $this->funnel->diagnoseOwner(
+                $metricRows->map(fn (array $r) => $this->toFunnelRow($r)),
+                ($contextRows ?? $metricRows->map(fn (array $r) => $this->toFunnelRow($r)))
+            ),
         ];
+    }
+
+    /**
+     * Tukar baris laporan kepada bentuk yang difahami FunnelAnalysisService.
+     *
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function toFunnelRow(array $row): array
+    {
+        return [
+            'metricKey' => $row['metric']->metric_key,
+            'label' => $row['label'],
+            'actual' => $row['actual'],
+            'actualLabel' => $row['actualLabel'],
+            'target' => $row['target'],
+            'targetLabel' => $row['targetLabel'],
+            'valueType' => $row['metric']->value_type,
+            'pct' => $row['pct'],
+            'status' => $row['status'],
+            'actionPlan' => $row['actionPlan'],
+        ];
+    }
+
+    /**
+     * Semua metrik dalam skop, tanpa mengira pemiliknya.
+     *
+     * Analisis corong perlu melihat pemacu hulu walaupun metrik itu dimiliki
+     * orang lain — "quotation HAFIZAN gagal kerana lead ZIKRI kosong" ialah
+     * penemuan yang sah dan penting.
+     *
+     * @param  array<int, int>  $months
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function contextRows(int $year, array $months, ?int $week, ?int $serviceId): Collection
+    {
+        $metrics = CriticalMetric::query()
+            ->when($serviceId, fn ($q) => $q->where('service_id', $serviceId))
+            ->with(['service', 'targets' => fn ($q) => $q->where('year', $year)])
+            ->get();
+
+        $rows = collect();
+
+        foreach ($months as $month) {
+            foreach ($metrics as $metric) {
+                $rows->push($this->toFunnelRow($this->evaluate($metric, $year, $month, $week, null)));
+            }
+        }
+
+        return $rows;
     }
 
     /**

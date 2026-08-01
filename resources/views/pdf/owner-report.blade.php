@@ -93,6 +93,23 @@
         .p-medium { background: #fef4e2; color: #b45309; border-left-color: #b45309; }
         .p-low { background: #e7f6ec; color: #15803d; border-left-color: #15803d; }
 
+        .diag {
+            border: 1px solid #e3e6ec;
+            border-left: 3px solid #9096a3;
+            background: #fafbfc;
+            padding: 6px 8px;
+            margin-bottom: 5px;
+            page-break-inside: avoid;
+        }
+        .diag-head { font-size: 10px; font-weight: bold; margin-bottom: 3px; }
+        .diag-nums { font-weight: normal; color: #6b7280; font-size: 8.5px; margin-left: 5px; }
+        .diag-text { font-size: 9px; color: #374151; line-height: 1.45; }
+        .diag-impact {
+            font-size: 8.5px; color: #b42318; margin-top: 4px;
+            background: #fdf3f2; padding: 4px 6px; border-radius: 3px;
+        }
+        .diag-action { font-size: 8.5px; color: #4b5563; margin-top: 4px; line-height: 1.45; }
+
         .metrics { margin-top: 8px; font-size: 8.5px; }
         .metrics th {
             text-align: left; font-size: 7.5px; text-transform: uppercase;
@@ -205,7 +222,36 @@
             <div class="comment">{{ $line }}</div>
         @endforeach
 
-        {{-- Tindakan --}}
+        {{-- Analisis punca --}}
+        @if ($block['diagnoses']->isNotEmpty())
+            <h3>{{ __('funnel.title') }}</h3>
+            @foreach ($block['diagnoses'] as $d)
+                @php $dHex = $d['severity'] === 'critical' ? '#b42318' : '#b45309'; @endphp
+                <div class="diag" style="border-left-color: {{ $dHex }}">
+                    <div class="diag-head" style="color: {{ $dHex }}">
+                        {{ $d['label'] }}
+                        <span class="diag-nums">{{ $d['actualLabel'] }} / {{ $d['targetLabel'] }}</span>
+                    </div>
+                    <div class="diag-text">{{ $d['narrative'] }}</div>
+
+                    @if (! empty($d['impacts']))
+                        <div class="diag-impact">
+                            <b>{{ __('funnel.downstream_impact') }}:</b>
+                            {{ collect($d['impacts'])->map(fn ($i) => $i['label'].' ('.($i['pct'] !== null ? number_format((float) $i['pct'], 1).'%' : '—').')')->implode(', ') }}
+                        </div>
+                    @endif
+
+                    @foreach ($d['actions'] as $act)
+                        <div class="diag-action">
+                            <span class="pill p-{{ $act['priority'] }}">{{ __('owner_report.priority.'.$act['priority']) }}</span>
+                            <b>{{ $act['label'] }}</b> — {{ $act['detail'] }}
+                        </div>
+                    @endforeach
+                </div>
+            @endforeach
+        @endif
+
+        {{-- Tindakan umum --}}
         <h3>{{ __('owner_report.actions_title') }}</h3>
         @foreach ($block['actions'] as $action)
             <div class="action p-{{ $action['priority'] }}">
