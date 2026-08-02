@@ -268,9 +268,16 @@ it('redirects with a full page visit, not wire:navigate', function (): void {
     // wire:navigate mengambil halaman melalui fetch menggunakan token yang
     // sudah lapuk selepas penjanaan semula sesi. Lawatan penuh memuatkan
     // token baharu bersama halaman baharu.
+    // Komen dibuang sebelum memeriksa: prosa yang MENERANGKAN kenapa
+    // navigate: true dielakkan akan menyebabkan ujian ini gagal terhadap
+    // kod yang betul, dan ujian yang menghukum penjelasan yang baik akan
+    // menyebabkan penjelasan itu dipadam.
     $sumber = file_get_contents(app_path('Livewire/Concerns/HandlesOtpFlow.php'));
 
-    expect($sumber)->not->toContain('navigate: true');
+    $kod = preg_replace(['#/\*.*?\*/#s', '#//[^\n]*#'], '', $sumber);
+
+    expect($kod)->not->toContain('navigate: true')
+        ->and($kod)->toContain('$this->redirect($tuju)');
 });
 
 it('lands on the page the user was trying to reach', function (): void {
