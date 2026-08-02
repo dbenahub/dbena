@@ -211,3 +211,77 @@ it('tells an admin which sheet to edit', function (): void {
         ->test(ServiceDetail::class, ['key' => 'renovation'])
         ->assertSee(__('align.body'));
 });
+
+/*
+|--------------------------------------------------------------------------
+| Akses sheet dari kepala papan — Admin sahaja
+|--------------------------------------------------------------------------
+*/
+
+/** Sambungkan tab strategic planning servis ini. */
+function connectStrategySheet(int $serviceId): SheetIntegration
+{
+    return SheetIntegration::updateOrCreate(
+        ['kind' => 'strategy', 'service_id' => $serviceId],
+        [
+            'url' => 'https://docs.google.com/spreadsheets/d/pelanstrategik12345678/edit',
+            'tab_name' => 'RENOVATION',
+            'connected' => true,
+        ]
+    );
+}
+
+it('gives an admin a link to the planning sheet', function (): void {
+    connectStrategySheet($this->renovation->id);
+
+    Livewire::actingAs($this->admin)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertSee('pelanstrategik12345678', false);
+});
+
+it('does not give a plain user that link', function (): void {
+    // Tab ini boleh DISUNTING oleh sesiapa yang membukanya, dan pelan
+    // strategik ialah dokumen tadbir urus yang diluluskan pengurusan.
+    // Menghantar pengguna ke sel yang boleh diubah menjemput suntingan
+    // yang tiada siapa minta dan tiada siapa akan perasan.
+    connectStrategySheet($this->renovation->id);
+
+    Livewire::actingAs($this->user)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertDontSee('pelanstrategik12345678', false);
+});
+
+it('shows no link when no planning sheet is connected', function (): void {
+    Livewire::actingAs($this->admin)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertDontSee(__('project.view_sheet'));
+});
+
+it('links to the planning sheet, not the critical data sheet', function (): void {
+    // Ketiga-tiga jenis integrasi wujud untuk servis ini. Mencari tanpa
+    // jenis memulangkan pautan ke sheet yang salah.
+    SheetIntegration::updateOrCreate(
+        ['kind' => 'critical', 'service_id' => $this->renovation->id],
+        ['url' => 'https://docs.google.com/spreadsheets/d/datakritikal987654321/edit']
+    );
+
+    connectStrategySheet($this->renovation->id);
+
+    Livewire::actingAs($this->admin)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertSee('pelanstrategik12345678', false)
+        ->assertDontSee('datakritikal987654321', false);
+});
+
+it('still links when only the spreadsheet id was saved', function (): void {
+    // ID mentah yang ditampal tidak menghasilkan medan url, dan butang
+    // hilang senyap walaupun sheet bersambung dan sedang menyegerak.
+    SheetIntegration::updateOrCreate(
+        ['kind' => 'strategy', 'service_id' => $this->renovation->id],
+        ['spreadsheet_id' => 'pelanstrategik12345678', 'tab_name' => 'RENOVATION', 'connected' => true]
+    );
+
+    Livewire::actingAs($this->admin)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertSee('pelanstrategik12345678', false);
+});

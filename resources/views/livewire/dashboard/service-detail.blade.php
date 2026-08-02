@@ -105,7 +105,7 @@
          suntingan hilang secara senyap pada sync berikutnya. --}}
     <x-strategy-board :service="$service" :plan="$strategyPlan"
                       :tiles="$strategyTiles" :rows="$strategyRows"
-                      :mismatch="$targetMismatch" />
+                      :mismatch="$targetMismatch" :sheet="$strategySheet" />
 
     {{-- ══ Peta Perjalanan Sales ══
          Diletak SEBELUM carta trend dengan sengaja. Carta menunjukkan

@@ -389,6 +389,12 @@ class ServiceDetail extends Component
              * tiada tindakan pada skrin ini menulis kepadanya, termasuk
              * untuk Admin.
              */
+            // 'kind' MESTI disertakan. Integrasi kritikal dan projek
+            // turut wujud untuk servis ini, dan mencari tanpa jenis
+            // memulangkan pautan ke sheet yang salah.
+            'strategySheet' => SheetIntegration::where('kind', 'strategy')
+                ->where('service_id', $service->id)
+                ->first(),
             'strategyPlan' => StrategyPlan::where('service_id', $service->id)->first(),
             'strategyTiles' => StrategyTile::where('service_id', $service->id)
                 ->orderBy('position')->get(),

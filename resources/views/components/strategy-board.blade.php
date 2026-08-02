@@ -1,4 +1,4 @@
-@props(['service', 'plan' => null, 'tiles' => null, 'rows' => null, 'mismatch' => []])
+@props(['service', 'plan' => null, 'tiles' => null, 'rows' => null, 'mismatch' => [], 'sheet' => null])
 
 @php
     $tiles = collect($tiles ?? []);
@@ -31,16 +31,37 @@
 <div class="dbena-card overflow-hidden">
 
     {{-- ══ Kepala ══ --}}
-    <div class="px-5 py-4 text-center sm:px-6 sm:py-5"
+    <div class="flex items-center gap-3 px-5 py-4 sm:px-6 sm:py-5"
          style="background: linear-gradient(135deg, oklch(0.24 0.10 18), oklch(0.34 0.13 20) 55%, oklch(0.22 0.08 18));
                 border-bottom: 2px solid {{ $emas }}">
-        <h2 class="text-[15px] font-extrabold leading-tight text-white sm:text-[19px]">
-            {{ __('strategy.title') }}
-            <span style="color: {{ $emas }}">— {{ mb_strtoupper($service->name) }}</span>
-        </h2>
-        <div class="mt-0.5 text-[11px] font-bold tracking-wide sm:text-[12px]" style="color: {{ $emas }}">
-            {{ __('strategy.subtitle') }}
+        <div class="min-w-0 flex-1 text-center">
+            <h2 class="text-[15px] font-extrabold leading-tight text-white sm:text-[19px]">
+                {{ __('strategy.title') }}
+                <span style="color: {{ $emas }}">— {{ mb_strtoupper($service->name) }}</span>
+            </h2>
+            <div class="mt-0.5 text-[11px] font-bold tracking-wide sm:text-[12px]" style="color: {{ $emas }}">
+                {{ __('strategy.subtitle') }}
+            </div>
         </div>
+
+        {{-- Akses sheet — Admin sahaja.
+
+             Berbeza daripada butang sheet di halaman Projek, yang terbuka
+             kepada kedua-dua peranan. Tab ini boleh DISUNTING oleh sesiapa
+             yang membukanya, dan pelan strategik ialah dokumen tadbir urus
+             yang diluluskan pengurusan. Pengguna membacanya di sini;
+             menghantar mereka ke sel yang boleh diubah menjemput suntingan
+             yang tiada siapa minta dan tiada siapa akan perasan. --}}
+        @can('manage-strategy')
+            @if ($sheet?->viewUrl())
+                <a href="{{ $sheet->viewUrl() }}" target="_blank" rel="noopener noreferrer"
+                   class="flex shrink-0 items-center gap-2 rounded-[9px] px-3 py-2 text-[12px] font-semibold text-white/90 transition-colors hover:bg-white/10"
+                   style="border: 1px solid oklch(0.62 0.10 20)">
+                    <i class="ph-duotone ph-google-logo text-base" aria-hidden="true"></i>
+                    <span class="hidden sm:inline">{{ __('project.view_sheet') }}</span>
+                </a>
+            @endif
+        @endcan
     </div>
 
     @if ($rows->isEmpty())
