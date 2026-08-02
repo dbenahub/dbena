@@ -91,9 +91,20 @@ Rupanya salah satu daripada ini:
 
 Kedua-duanya sah.
 
-> **Jangan** salin "Secret address in iCal format" atau "Public address in iCal
-> format". Kita tidak menggunakannya, dan pautan rahsia itu memberi akses penuh
-> kepada sesiapa yang mendapatnya.
+> **Jangan** salin "Secret address in iCal format". Kita tidak menggunakannya,
+> dan pautan rahsia itu memberi akses kekal kepada sesiapa yang mendapatnya.
+
+**Kalau anda tersalah salin pautan, tidak apa.** Tampal sahaja — sistem akan
+keluarkan ID daripadanya dan memaparkan apa yang diambil. Ketiga-tiga bentuk ini
+diterima:
+
+```
+https://calendar.google.com/calendar/embed?src=dbenagroup%40gmail.com&ctz=...
+https://calendar.google.com/calendar/u/0?cid=dbenagroup%40gmail.com
+https://calendar.google.com/calendar/ical/dbenagroup%40gmail.com/private/basic.ics
+```
+
+Kesemuanya menghasilkan `dbenagroup@gmail.com`.
 
 ---
 
@@ -120,14 +131,19 @@ kecil di penjuru. Klik bulan itu untuk lihat senarai acara dengan tarikh penuh.
 
 Mesej ralat akan muncul dalam merah. Ini maksudnya:
 
-### "Sheet ini belum dikongsi dengan ..." / ralat 403 atau 404
+### "Itu bukan Calendar ID"
+
+Anda menampal sesuatu yang tiada ID di dalamnya. Kembali ke **Settings and
+sharing → Integrate calendar → Calendar ID** dan salin nilai medan itu.
+
+### "Google menolak permintaan. Buka calendar.google.com → ..." (403/404)
 
 Tiga kemungkinan, ikut turutan semakan:
 
-1. **Emel robot salah taip.** Salin semula dari halaman Roadmap. Emel itu panjang
+1. **Kalendar belum dikongsi.** Ini punca paling biasa. Ulang LANGKAH 2 dengan
+   teliti — khususnya, pastikan anda menekan **Send** di hujungnya.
+2. **Emel robot salah taip.** Salin semula dari halaman Roadmap. Emel itu panjang
    dan mudah terpotong hujungnya semasa salin.
-2. **Calendar ID salah.** Pastikan anda salin dari *Integrate calendar*, bukan
-   nama kalendar.
 3. **Kalendar yang salah dikongsi.** Kalau anda ada beberapa kalendar, mudah
    tersilap kongsi kalendar A tetapi salin ID kalendar B.
 
