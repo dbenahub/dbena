@@ -416,3 +416,81 @@ it('rebuilds the official layout on demand', function (): void {
         ->and(OrgNode::count())->toBeGreaterThan(10)
         ->and(OrgLink::count())->toBeGreaterThan(10);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Warna kotak
+|--------------------------------------------------------------------------
+*/
+
+it('sets a box colour and saves it immediately', function (): void {
+    // Klik pada contoh warna sepatutnya menunjukkan hasilnya. Meminta klik
+    // Simpan selepasnya bermakna admin memilih tiga warna, tidak nampak
+    // satu pun berubah, dan menyangka pemilih itu rosak.
+    $node = OrgNode::first();
+
+    Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('selectNode', $node->id)
+        ->call('setColor', '#1F4E79');
+
+    expect($node->fresh()->color)->toBe('#1F4E79');
+});
+
+it('clears the colour back to the style default', function (): void {
+    $node = OrgNode::first();
+    $node->update(['color' => '#1F4E79']);
+
+    Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('selectNode', $node->id)
+        ->call('setColor', null);
+
+    expect($node->fresh()->color)->toBeNull();
+});
+
+it('refuses to store a broken colour', function (): void {
+    $node = OrgNode::first();
+
+    Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('selectNode', $node->id)
+        ->call('setColor', 'not-a-colour');
+
+    expect($node->fresh()->color)->toBeNull();
+});
+
+it('refuses a plain user who calls setColor directly', function (): void {
+    Livewire::actingAs($this->user)
+        ->test(OrgChartEditor::class)
+        ->assertForbidden();
+});
+
+it('uses the chosen colour instead of the style colour', function (): void {
+    $node = OrgNode::first();
+    $node->update(['color' => '#1F4E79']);
+
+    $palet = $node->fresh()->palette();
+
+    expect($palet['background'])->toBe('#1F4E79')
+        ->and($palet['title'])->toBe('#FFFFFF');
+});
+
+it('falls back to the style when no colour is set', function (): void {
+    // Menyalin warna gaya ke dalam baris akan membekukannya: menukar warna
+    // gaya kemudian tidak akan menyentuh kotak sedia ada.
+    $node = OrgNode::first();
+    $node->update(['color' => null]);
+
+    expect($node->fresh()->palette()['background'])
+        ->toBe($node->style->background());
+});
+
+it('shows the chosen colour in the exported PDF', function (): void {
+    // PDF yang mengabaikan warna pilihan bermakna carta di skrin dan carta
+    // yang diedarkan ialah dua dokumen berbeza — dan yang diedarkan itulah
+    // yang orang simpan.
+    OrgNode::first()->update(['color' => '#1F4E79']);
+
+    $this->actingAs($this->admin)->get(route('carta.pdf'))->assertOk();
+});

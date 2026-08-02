@@ -104,6 +104,53 @@
                            wire:model="height" class="dbena-input">
                 </div>
 
+                {{-- ══ Warna kotak ══
+                     Palet ditetapkan, bukan pemilih bebas: dua belas warna
+                     yang telah disemak lebih berguna daripada 16 juta warna
+                     yang separuh daripadanya tidak boleh dibaca.
+
+                     Warna teks TIDAK dipilih di sini — ia dikira daripada
+                     warna latar, jadi tiada gabungan yang menghasilkan teks
+                     tidak kelihatan. --}}
+                <div>
+                    <span class="mb-1.5 block text-[11.5px] text-t60">{{ __('org.editor.field_color') }}</span>
+
+                    <div class="flex flex-wrap gap-1.5">
+                        <button type="button" wire:click="setColor(null)"
+                                class="flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[10.5px] font-semibold text-t75"
+                                style="border: {{ blank($selected->color) ? '2px solid oklch(0.82 0.15 85)' : '1px solid var(--border2)' }}"
+                                title="{{ __('org.editor.color_default') }}">
+                            <i class="ph-duotone ph-paint-brush text-[13px]" aria-hidden="true"></i>
+                            {{ __('org.editor.color_default') }}
+                        </button>
+
+                        @foreach ($palette as $hex => $nama)
+                            <button type="button" wire:click="setColor('{{ $hex }}')"
+                                    class="h-8 w-8 rounded-lg transition-transform hover:scale-110"
+                                    style="background: {{ $hex }};
+                                           border: {{ strcasecmp((string) $selected->color, $hex) === 0
+                                                ? '2px solid oklch(0.85 0.15 85)'
+                                                : '1px solid var(--border2)' }}"
+                                    title="{{ $hex }}"
+                                    aria-label="{{ $hex }}"></button>
+                        @endforeach
+                    </div>
+
+                    <div class="mt-2 flex items-center gap-2">
+                        <input type="text" wire:model="color" wire:change="setColor($event.target.value)"
+                               class="dbena-input flex-1 font-mono text-[11.5px]"
+                               placeholder="#6B1F47" maxlength="7"
+                               aria-label="{{ __('org.editor.field_color') }}">
+                        <span class="h-8 w-8 shrink-0 rounded-lg"
+                              style="background: {{ $selected->palette()['background'] }};
+                                     border: 1px solid var(--border2)"></span>
+                    </div>
+
+                    <p class="mt-1.5 text-[10.5px] leading-relaxed text-t55">
+                        {{ __('org.editor.color_hint') }}
+                    </p>
+                </div>
+
                 <div>
                     <label for="org-icon" class="mb-1.5 block text-[11.5px] text-t60">{{ __('org.editor.field_icon') }}</label>
                     <select id="org-icon" wire:model="icon" class="dbena-input">

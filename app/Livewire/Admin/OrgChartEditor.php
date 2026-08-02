@@ -9,6 +9,7 @@ use App\Enums\OrgNodeStyle;
 use App\Models\OrgLink;
 use App\Models\OrgNode;
 use App\Services\AuditLogger;
+use App\Support\OrgPalette;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -48,6 +49,9 @@ class OrgChartEditor extends Component
 
     public int $height = 66;
 
+    /** Kosong bermakna "ikut gaya". */
+    public string $color = '';
+
     public function mount(): void
     {
         $this->authorize('manage-org-chart');
@@ -86,6 +90,7 @@ class OrgChartEditor extends Component
         $this->style = $node->style->value;
         $this->width = $node->width;
         $this->height = $node->boxHeight();
+        $this->color = (string) $node->color;
     }
 
     /**
@@ -159,11 +164,37 @@ class OrgChartEditor extends Component
             // Had tinggi atas sebab yang sama seperti lebar: satu kotak
             // setinggi halaman menolak segala-galanya keluar dari skrin.
             'height' => max(48, min(180, $this->height)),
+            // Hex yang tidak sah menjadi NULL, bukan disimpan mentah. Nilai
+            // yang rosak dalam lajur ini menghasilkan kotak lutsinar dalam
+            // penyemak imbas tanpa sebarang ralat untuk dikesan.
+            'color' => OrgPalette::clean($this->color),
         ])->save();
 
         $audit->log('org_chart.node_saved', $node, (string) $node->title);
 
         $this->dispatch('dbena-toast', message: __('org.editor.saved'));
+    }
+
+    /**
+     * Tetapkan warna dan simpan serta-merta.
+     *
+     * Klik pada contoh warna sepatutnya menunjukkan hasilnya. Meminta klik
+     * Simpan selepasnya bermakna admin memilih tiga warna, tidak nampak
+     * satu pun berubah, dan menyangka pemilih itu rosak.
+     */
+    public function setColor(?string $hex): void
+    {
+        $this->authorize('manage-org-chart');
+
+        $node = $this->node();
+
+        if ($node === null) {
+            return;
+        }
+
+        $this->color = (string) OrgPalette::clean($hex);
+
+        $node->update(['color' => $this->color ?: null]);
     }
 
     public function deleteNode(AuditLogger $audit): void
@@ -278,6 +309,7 @@ class OrgChartEditor extends Component
                     ->orWhere('to_node_id', $selected->id)
                     ->get()
                 : collect(),
+            'palette' => \App\Support\OrgPalette::COLORS,
             'styles' => OrgNodeStyle::cases(),
             'linkStyles' => OrgLinkStyle::cases(),
         ])->layoutData([

@@ -86,24 +86,42 @@
 
         @foreach ($nodes as $node)
             @php
-                $kelas = match ($node->style->value) {
-                    'executive' => 'eksekutif terang',
-                    'support' => 'sokongan gelap',
-                    default => 'jabatan gelap',
+                /*
+                 * Warna per-kotak dihormati dalam cetakan juga.
+                 *
+                 * PDF yang mengabaikan warna pilihan bermakna carta di
+                 * skrin dan carta yang diedarkan ialah dua dokumen
+                 * berbeza, dan yang diedarkan itulah yang orang simpan.
+                 */
+                $hex = \App\Support\OrgPalette::clean($node->color);
+
+                $kelas = $hex !== null ? 'kotak' : match ($node->style->value) {
+                    'executive' => 'kotak eksekutif terang',
+                    'support' => 'kotak sokongan gelap',
+                    default => 'kotak jabatan gelap',
                 };
+
+                $gayaWarna = $hex === null ? '' : sprintf(
+                    'background: %s; border: 1px solid %s; color: %s;',
+                    $hex,
+                    \App\Support\OrgPalette::borderOn($hex),
+                    \App\Support\OrgPalette::textOn($hex),
+                );
             @endphp
 
-            <div class="kotak {{ $kelas }}"
+            <div class="{{ $kelas }}"
                  style="left: {{ $node->x }}px; top: {{ $node->y }}px;
-                        width: {{ $node->width - 18 }}px; height: {{ $node->boxHeight() - 14 }}px">
+                        width: {{ $node->width - 18 }}px; height: {{ $node->boxHeight() - 14 }}px;
+                        {{ $gayaWarna }}">
                 @if (filled($node->title))
-                    <div class="jawatan">{{ $node->title }}</div>
+                    <div class="jawatan" @if ($hex) style="color: inherit" @endif>{{ $node->title }}</div>
                 @endif
                 @if (filled($node->subtitle))
-                    <div class="sub-baris">{{ $node->subtitle }}</div>
+                    <div class="sub-baris"
+                         @if ($hex) style="color: {{ \App\Support\OrgPalette::mutedTextOn($hex) }}" @endif>{{ $node->subtitle }}</div>
                 @endif
                 @if (filled($node->name))
-                    <div class="nama">{{ $node->name }}</div>
+                    <div class="nama" @if ($hex) style="color: inherit" @endif>{{ $node->name }}</div>
                 @endif
             </div>
         @endforeach

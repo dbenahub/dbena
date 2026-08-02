@@ -1,8 +1,6 @@
 @props(['nodes', 'links', 'editable' => false, 'selectedId' => null, 'connectFrom' => null])
 
 @php
-    use App\Models\OrgNode;
-
     $nodes = collect($nodes);
     $links = collect($links);
 
@@ -103,7 +101,10 @@
                 {{-- ══ Kotak ══ --}}
                 @foreach ($nodes as $node)
                     @php
-                        $gaya = $node->style;
+                        // Warna per-kotak jika ditetapkan, kalau tidak warna
+                        // gaya. Satu tempat memutuskan; paparan hanya
+                        // menggunakan apa yang diberi.
+                        $warna = $node->palette();
                         $dipilih = $selectedId === $node->id;
                         $sumber = $connectFrom === $node->id;
                     @endphp
@@ -118,8 +119,8 @@
                          ])
                          style="left: {{ $node->x }}px; top: {{ $node->y }}px;
                                 width: {{ $node->width }}px; height: {{ $node->boxHeight() }}px;
-                                background: {{ $gaya->background() }};
-                                border: {{ $sumber ? '2px solid oklch(0.82 0.15 85)' : ($dipilih ? '2px solid oklch(0.72 0.16 340)' : $gaya->border()) }};
+                                background: {{ $warna['background'] }};
+                                border: {{ $sumber ? '2px solid oklch(0.82 0.15 85)' : ($dipilih ? '2px solid oklch(0.72 0.16 340)' : $warna['border']) }};
                                 box-shadow: 0 4px 14px -8px oklch(0.1 0 0 / 0.8);
                                 touch-action: none"
                          @if ($editable)
@@ -133,16 +134,16 @@
                              bertemu kotak, jadi hujung garisan tidak kelihatan
                              menusuk masuk. --}}
                         <span class="absolute left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full"
-                              style="top: -16px; background: {{ $gaya->badge() }};
-                                     border: 2px solid {{ $gaya->badgeRing() }}">
+                              style="top: -16px; background: {{ $warna['badge'] }};
+                                     border: 2px solid {{ $warna['badgeRing'] }}">
                             <i class="ph-duotone {{ $node->icon ?: 'ph-user' }} text-[16px]"
-                               style="color: {{ $gaya->badgeIcon() }}" aria-hidden="true"></i>
+                               style="color: {{ $warna['badgeIcon'] }}" aria-hidden="true"></i>
                         </span>
 
                         <div class="flex h-full flex-col items-center justify-center gap-px pt-2 text-center">
                             @if (filled($node->title))
                                 <span class="line-clamp-2 w-full text-[11px] font-bold leading-tight"
-                                      style="color: {{ $gaya->titleColor() }}">{{ $node->title }}</span>
+                                      style="color: {{ $warna['title'] }}">{{ $node->title }}</span>
                             @endif
 
                             {{-- "Head of Dept." — baris tengah yang lebih kecil
@@ -152,12 +153,12 @@
                                  menjadikan carta boleh diimbas. --}}
                             @if (filled($node->subtitle))
                                 <span class="w-full truncate text-[9.5px] leading-tight"
-                                      style="color: {{ $gaya->subtitleColor() }}">{{ $node->subtitle }}</span>
+                                      style="color: {{ $warna['subtitle'] }}">{{ $node->subtitle }}</span>
                             @endif
 
                             @if (filled($node->name))
                                 <span class="line-clamp-2 w-full text-[10.5px] font-extrabold leading-tight"
-                                      style="color: {{ $gaya->nameColor() }}">{{ $node->name }}</span>
+                                      style="color: {{ $warna['name'] }}">{{ $node->name }}</span>
                             @endif
                         </div>
                     </div>
