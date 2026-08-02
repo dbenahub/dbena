@@ -19,7 +19,7 @@ beforeEach(function (): void {
     $this->admin = User::where('role', UserRole::Admin)->firstOrFail();
     $this->user = User::where('role', UserRole::User)->firstOrFail();
 
-    $this->sales = TaskDepartment::where('name', 'SALES & MARKETING')->firstOrFail();
+    $this->sales = TaskDepartment::where('name', 'Marketing Department')->firstOrFail();
 
     $this->year = (int) now()->year;
     $this->month = (int) now()->month;
@@ -406,4 +406,100 @@ it('exports a February without overflowing the page', function (): void {
     $this->actingAs($this->user)
         ->get(route('task-planning.pdf', ['tahun' => 2027, 'bulan' => 2]))
         ->assertOk();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Lima jabatan sebenar
+|--------------------------------------------------------------------------
+*/
+
+it('seeds every department, including the empty ones', function (): void {
+    // Jabatan yang hilang daripada papan bermakna tiada tempat untuk butang
+    // "tambah tugasan", jadi tugasan pertama Design atau Contract tidak
+    // boleh dimasukkan langsung — dan orang menulisnya di tempat lain.
+    $nama = TaskDepartment::orderBy('sort_order')->pluck('name')->all();
+
+    expect($nama)->toBe([
+        'Marketing Department',
+        'Design Department',
+        'Management Department',
+        'Contract Department',
+        'Operation Department',
+    ]);
+});
+
+it('shows a department with no tasks and still offers Add', function (): void {
+    $design = TaskDepartment::where('name', 'Design Department')->firstOrFail();
+
+    Livewire::actingAs($this->user)
+        ->test(TaskPlanner::class)
+        ->assertSee('Design Department')
+        ->assertSee(__('task.add_task'))
+        ->call('startAdd', $design->id)
+        ->set('newTitle', 'Siapkan 3D view rumah Klang')
+        ->call('addTask');
+
+    expect(MonthlyTask::where('task_department_id', $design->id)->count())->toBe(1);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Papan Ogos 2026 yang disemai
+|--------------------------------------------------------------------------
+*/
+
+it('seeds the real August board', function (): void {
+    // Menaip semula tujuh tugasan dan dua puluh tanda sebelum ciri ini
+    // boleh dinilai ialah halangan yang menyebabkan ia tidak pernah
+    // dinilai.
+    $ogos = MonthlyTask::where('year', 2026)->where('month', 8)->get();
+
+    expect($ogos)->toHaveCount(7)
+        ->and($ogos->pluck('title'))->toContain('Join event nextworking BNI')
+        ->and(TaskDayMark::whereIn('monthly_task_id', $ogos->pluck('id'))->count())
+        ->toBeGreaterThan(15);
+});
+
+it('places the marks on the days the sheet shows', function (): void {
+    $task = MonthlyTask::where('title', 'Joint booth 3 hari di Putrajaya')->firstOrFail();
+
+    $hari = $task->marks->pluck('mark', 'day');
+
+    expect($hari[18])->toBe(TaskMark::Planning)
+        ->and($hari[19])->toBe(TaskMark::Planning)
+        ->and($hari[20])->toBe(TaskMark::Planning);
+});
+
+it('does not duplicate the board when seeded twice', function (): void {
+    // Menjalankan seeder dua kali tidak boleh menggandakan papan yang
+    // sedang digunakan.
+    $sebelum = MonthlyTask::where('year', 2026)->where('month', 8)->count();
+
+    $this->seed(Database\Seeders\TaskPlanningExampleSeeder::class);
+
+    expect(MonthlyTask::where('year', 2026)->where('month', 8)->count())->toBe($sebelum);
+});
+
+it('fills the priority and notes panels from the sheet', function (): void {
+    $board = TaskBoardNote::where('year', 2026)->where('month', 8)->firstOrFail();
+
+    expect($board->prepared_by)->toBe('NIZAM')
+        ->and($board->priorities)->toContain('Increase leads & site visit')
+        ->and($board->notes)->toHaveCount(3);
+});
+
+it('summarises the August board the way the sheet does', function (): void {
+    // Enam tugasan Marketing + satu Operation. Satu dibatalkan, tiga siap,
+    // satu KIV, dua dalam perancangan.
+    $summary = Livewire::actingAs($this->user)
+        ->test(TaskPlanner::class)
+        ->call('goToMonth', 2026, 8)
+        ->viewData('summary');
+
+    expect($summary['total'])->toBe(7)
+        ->and($summary['cancelled'])->toBe(1)
+        ->and($summary['completed'])->toBe(3)
+        ->and($summary['pending'])->toBe(1)
+        ->and($summary['inProgress'])->toBe(2);
 });

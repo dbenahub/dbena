@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             OrgChartSeeder::class,
             TaskDepartmentSeeder::class,
+            TaskPlanningExampleSeeder::class,
             DemoWeeklyDataSeeder::class,
         ]);
     }

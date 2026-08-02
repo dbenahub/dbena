@@ -22,7 +22,7 @@ return [
 
     'col' => [
         'no' => 'BIL',
-        'task' => 'TASK / AKTIVITI',
+        'task' => 'ITEM',
         'action_by' => 'ACTION BY',
         'monitor_by' => 'MONITOR BY',
         'remark' => 'REMARK / CATATAN',
