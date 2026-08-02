@@ -9,6 +9,7 @@ return [
     'target' => 'Sasaran',
     'gap' => 'Kurang',
     'blocked_by' => 'Tersekat oleh :stage',
+    'blocked_by_owner' => 'Tersekat oleh :stage — :owner',
     'blocked_note' => 'Peringkat ini akan pulih sendiri sebaik sahaja :stage dibetulkan. Jangan kejar ia berasingan.',
 
     'stage' => [
@@ -48,6 +49,19 @@ return [
     'action_owner' => 'TINDAKAN OLEH :owner',
     'action_owner_none' => 'TINDAKAN DIPERLUKAN',
     'owner_label' => 'PIC',
+
+    'break_missing_title' => 'Jalan terputus di :stage — tiada data direkodkan',
+    'break_body_missing' => 'Tiada satu pun :stage direkodkan untuk tempoh ini. :next tidak dapat disediakan tanpa :stage, jadi :count peringkat di hilirnya tersekat DI SINI — bukan pada pemilik masing-masing.',
+    'break_body_missing_single' => 'Tiada satu pun :stage direkodkan untuk tempoh ini. Peringkat selepasnya bergantung sepenuhnya pada data ini.',
+    'justify_owner' => 'JUSTIFIKASI OLEH :owner',
+    'justify_owner_none' => 'PEMILIK :stage BELUM DITETAPKAN',
+    'justify_missing' => ':owner perlu jelaskan kenapa tiada :stage direkodkan, dan beri pelan kontingensi minggu ini.',
+    'justify_below' => ':owner perlu beri justifikasi kenapa sasaran :stage tidak dicapai, dan pelan kontingensi minggu ini.',
+    'justify_missing_none' => 'Tetapkan pemilik :stage dahulu. Peringkat tanpa nama ialah peringkat tanpa justifikasi.',
+    'waiting_title' => 'Tersekat menunggu :stage',
+    'waiting_note' => 'Pemilik ini tidak dapat capai sasaran selagi :stage tidak dibetulkan. Jangan minta justifikasi daripada mereka.',
+    'waiting_owner' => ':owner (:stage)',
+    'waiting_owner_none' => '— (:stage)',
 
     'legend_ok' => 'Capai sasaran',
     'legend_warn' => 'Hampir sasaran',

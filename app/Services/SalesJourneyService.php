@@ -96,13 +96,51 @@ class SalesJourneyService
 
         $stages = $this->markBlocked($stages, $firstBreak);
 
+        $blocked = collect($stages)->where('blocked', true)->values();
+
+        /*
+         * Peringkat SEBAIK sahaja selepas halangan. Ia menamakan kos
+         * dalam ayat yang pemilik terus faham: "Quotation tidak dapat
+         * disediakan tanpa Site Visit." Nombor tidak menyampaikan itu.
+         */
+        $next = null;
+
+        if ($firstBreak !== null) {
+            $selepas = false;
+
+            foreach ($stages as $stage) {
+                if ($selepas) {
+                    $next = $stage;
+                    break;
+                }
+
+                if ($stage['key'] === $firstBreak['key']) {
+                    $selepas = true;
+                }
+            }
+        }
+
         return [
             'stages' => $stages,
             'firstBreak' => $firstBreak,
+            'nextStage' => $next,
             'healthy' => $firstBreak === null,
-            'blockedCount' => $firstBreak === null
-                ? 0
-                : collect($stages)->where('blocked', true)->count(),
+            'blockedCount' => $blocked->count(),
+
+            /*
+             * Pemilik hilir yang sedang menunggu, dinamakan.
+             *
+             * Ini disenaraikan supaya jelas mereka BUKAN orang yang perlu
+             * membuat justifikasi. Tanpa senarai ini, empat kad merah
+             * kelihatan seperti empat orang yang gagal, dan mesyuarat
+             * menghabiskan masa pada tiga orang yang tersekat.
+             */
+            'waiting' => $blocked
+                ->map(fn (array $s): array => [
+                    'title' => $s['title'],
+                    'owner' => $s['owner'],
+                ])
+                ->all(),
         ];
     }
 
@@ -134,11 +172,34 @@ class SalesJourneyService
         $target = $row['target'] !== null ? (float) $row['target'] : null;
         $actual = $row['actual'] !== null ? (float) $row['actual'] : null;
 
+        /*
+         * Sasaran yang ditetapkan tanpa satu pun rekod BUKAN "tiada data" —
+         * ia peringkat yang gagal sepenuhnya, dan yang paling teruk sekali.
+         *
+         * Melayan pct null sebagai neutral menyebabkan bug yang membuang
+         * masa sebenar: site visit kosong dilangkau, halangan pertama
+         * jatuh pada QUOTATION, dan pemilik quotation disuruh membuat
+         * justifikasi untuk kerja yang dia memang tidak boleh mulakan.
+         * Orang yang salah dipersalahkan, dan punca sebenar terlepas.
+         */
+        $hasTarget = $target !== null && $target > 0.0;
+        $recorded = $actual !== null;
+
         $status = match (true) {
+            $hasTarget && ! $recorded => 'red',
             $pct === null => 'none',
             $pct < self::BREAK_THRESHOLD => 'red',
             $pct < self::WARN_THRESHOLD => 'amber',
             default => 'green',
+        };
+
+        // Tiada rekod langsung menuntut soalan yang berbeza daripada
+        // rekod yang rendah. "Kenapa tidak cukup?" dan "Kenapa tiada
+        // langsung?" bukan perbualan yang sama.
+        $breakReason = match (true) {
+            $status !== 'red' => null,
+            $hasTarget && ! $recorded => 'missing',
+            default => 'below',
         };
 
         $amount = isset($def['amountMetric']) ? $byKey->get($def['amountMetric']) : null;
@@ -182,8 +243,10 @@ class SalesJourneyService
 
             'status' => $status,
             'broken' => $status === 'red',
+            'breakReason' => $breakReason,
             'blocked' => false,
             'blockedBy' => null,
+            'blockedByOwner' => null,
             'cause' => $status === 'red' ? __('journey.cause.'.$def['key']) : null,
             'causeTitle' => __('journey.cause_title.'.$def['key']),
         ];
@@ -220,6 +283,11 @@ class SalesJourneyService
             if ($lepas && $stage['status'] !== 'green') {
                 $stages[$i]['blocked'] = true;
                 $stages[$i]['blockedBy'] = $firstBreak['title'];
+
+                // Nama pemilik hulu dibawa turun. Tanpanya pemilik hilir
+                // membaca kad merahnya sendiri dan menganggap dia yang
+                // perlu menjawab.
+                $stages[$i]['blockedByOwner'] = $firstBreak['owner'];
             }
         }
 

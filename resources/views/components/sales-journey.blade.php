@@ -98,37 +98,94 @@
                     border: 1px solid oklch(0.63 0.22 25/0.4);
                     box-shadow: 0 6px 18px -10px oklch(0.63 0.22 25/0.7), inset 0 1px 0 oklch(0.63 0.22 25/0.3)">
 
+            @php
+                /*
+                 * Tiada rekod langsung dan rekod yang rendah menuntut soalan
+                 * yang berbeza. "Kenapa tidak cukup?" dan "Kenapa tiada
+                 * langsung?" bukan perbualan yang sama, dan menggabungkan
+                 * kedua-duanya menghasilkan arahan yang tidak bermakna
+                 * kepada kedua-dua pemilik.
+                 */
+                $hilang = ($break['breakReason'] ?? null) === 'missing';
+                $adaPemilik = filled($break['owner']) && $break['owner'] !== '—';
+                $seterusnya = $journey['nextStage'];
+            @endphp
+
             <div class="flex gap-3 px-4 pb-3 pt-3.5">
                 <i class="ph-duotone ph-warning-octagon mt-px text-xl shrink-0"
                    style="color: oklch(0.66 0.21 25)" aria-hidden="true"></i>
                 <div class="min-w-0">
                     <div class="text-[13.5px] font-extrabold" style="color: oklch(0.7 0.2 25)">
-                        {{ __('journey.break_title', ['stage' => $break['title']]) }}
+                        {{ $hilang
+                            ? __('journey.break_missing_title', ['stage' => $break['title']])
+                            : __('journey.break_title', ['stage' => $break['title']]) }}
                     </div>
                     <p class="mt-1 text-[12px] leading-relaxed text-t75">
-                        {{ $journey['blockedCount'] > 0
-                            ? __('journey.break_body', ['stage' => $break['title'], 'count' => $journey['blockedCount']])
-                            : __('journey.break_body_single', ['stage' => $break['title']]) }}
+                        @if ($hilang && $seterusnya && $journey['blockedCount'] > 0)
+                            {{ __('journey.break_body_missing', [
+                                'stage' => $break['title'],
+                                'next' => $seterusnya['title'],
+                                'count' => $journey['blockedCount'],
+                            ]) }}
+                        @elseif ($hilang)
+                            {{ __('journey.break_body_missing_single', ['stage' => $break['title']]) }}
+                        @elseif ($journey['blockedCount'] > 0)
+                            {{ __('journey.break_body', ['stage' => $break['title'], 'count' => $journey['blockedCount']]) }}
+                        @else
+                            {{ __('journey.break_body_single', ['stage' => $break['title']]) }}
+                        @endif
                     </p>
                 </div>
             </div>
 
-            {{-- Jalur tindakan. Pemilik dinamakan: peringkat yang gagal tanpa
-                 nama ialah masalah yang setiap orang harap orang lain
-                 uruskan. --}}
+            {{-- Jalur justifikasi — SATU nama, pemilik peringkat yang
+                 terputus. Peringkat yang gagal tanpa nama ialah masalah
+                 yang setiap orang harap orang lain uruskan. --}}
             <div class="flex flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-2.5"
                  style="background: oklch(0.72 0.17 60/0.12); border-top: 1px solid oklch(0.72 0.17 60/0.3)">
                 <span class="flex items-center gap-1.5 rounded-md px-2 py-1 text-[10.5px] font-extrabold tracking-wide"
                       style="background: oklch(0.72 0.17 60); color: oklch(0.18 0.02 260)">
                     <i class="ph-duotone ph-flag-banner" aria-hidden="true"></i>
-                    {{ filled($break['owner']) && $break['owner'] !== '—'
-                        ? __('journey.action_owner', ['owner' => $break['owner']])
-                        : __('journey.action_owner_none') }}
+                    {{ $adaPemilik
+                        ? __('journey.justify_owner', ['owner' => $break['owner']])
+                        : __('journey.justify_owner_none', ['stage' => $break['title']]) }}
                 </span>
                 <span class="text-[12px] font-semibold text-t80">
-                    {{ __('journey.break_action', ['stage' => $break['title']]) }}
+                    @if (! $adaPemilik)
+                        {{ __('journey.justify_missing_none', ['stage' => $break['title']]) }}
+                    @elseif ($hilang)
+                        {{ __('journey.justify_missing', ['owner' => $break['owner'], 'stage' => $break['title']]) }}
+                    @else
+                        {{ __('journey.justify_below', ['owner' => $break['owner'], 'stage' => $break['title']]) }}
+                    @endif
                 </span>
             </div>
+
+            {{-- Jalur menunggu — pemilik hilir dinamakan supaya jelas mereka
+                 BUKAN orang yang perlu menjawab. Tanpa jalur ini, empat kad
+                 merah kelihatan seperti empat orang yang gagal, dan
+                 mesyuarat menghabiskan masa pada tiga orang yang tersekat. --}}
+            @if (count($journey['waiting']) > 0)
+                <div class="flex flex-wrap items-start gap-x-3 gap-y-1.5 px-4 py-2.5"
+                     style="background: var(--hover-bg3); border-top: 1px solid var(--border3)">
+                    <span class="flex shrink-0 items-center gap-1.5 rounded-md px-2 py-1 text-[10.5px] font-extrabold tracking-wide"
+                          style="background: var(--hover-bg2); border: 1px solid var(--border2); color: var(--t70)">
+                        <i class="ph-duotone ph-pause-circle" aria-hidden="true"></i>
+                        {{ __('journey.waiting_title', ['stage' => $break['title']]) }}
+                    </span>
+
+                    <span class="min-w-0 text-[12px] text-t70">
+                        <span class="font-semibold text-t80">
+                            @foreach ($journey['waiting'] as $w)
+                                {{ filled($w['owner']) && $w['owner'] !== '—'
+                                    ? __('journey.waiting_owner', ['owner' => $w['owner'], 'stage' => $w['title']])
+                                    : __('journey.waiting_owner_none', ['stage' => $w['title']]) }}{{ ! $loop->last ? ' · ' : '' }}
+                            @endforeach
+                        </span>
+                        <span class="text-t55">— {{ __('journey.waiting_note', ['stage' => $break['title']]) }}</span>
+                    </span>
+                </div>
+            @endif
         </div>
     @endif
 
@@ -209,7 +266,9 @@
                     @elseif ($s['blocked'])
                         <div class="px-3 py-2" style="background: var(--card-bg); border-top: 1px dashed var(--border2)">
                             <span class="text-[10.5px] font-bold text-t60">
-                                {{ __('journey.blocked_by', ['stage' => $s['blockedBy']]) }}
+                                {{ filled($s['blockedByOwner']) && $s['blockedByOwner'] !== '—'
+                                    ? __('journey.blocked_by_owner', ['stage' => $s['blockedBy'], 'owner' => $s['blockedByOwner']])
+                                    : __('journey.blocked_by', ['stage' => $s['blockedBy']]) }}
                             </span>
                         </div>
                     @endif
@@ -420,7 +479,9 @@
                                 <div class="flex items-center gap-1.5">
                                     <i class="ph-duotone ph-link-break shrink-0 text-[13px] text-t50" aria-hidden="true"></i>
                                     <span class="truncate text-[10.5px] font-bold text-t60">
-                                        {{ __('journey.blocked_by', ['stage' => $s['blockedBy']]) }}
+                                        {{ filled($s['blockedByOwner']) && $s['blockedByOwner'] !== '—'
+                                    ? __('journey.blocked_by_owner', ['stage' => $s['blockedBy'], 'owner' => $s['blockedByOwner']])
+                                    : __('journey.blocked_by', ['stage' => $s['blockedBy']]) }}
                                     </span>
                                 </div>
                             </div>

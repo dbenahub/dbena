@@ -16,6 +16,7 @@ function jrow(
     ?float $actual,
     ?float $target,
     MetricValueType $type = MetricValueType::Number,
+    ?string $owner = null,
 ): array {
     return [
         'metricKey' => $key,
@@ -28,6 +29,7 @@ function jrow(
         'pct' => ($actual !== null && $target !== null && $target > 0) ? $actual / $target * 100 : null,
         'status' => MetricStatus::Red,
         'actionPlan' => null,
+        'ownerName' => $owner,
     ];
 }
 
@@ -179,4 +181,103 @@ it('survives a metric with no target', function (): void {
 it('returns no stages when the service tracks none of the funnel metrics', function (): void {
     expect($this->journey->build(collect([jrow('cost_per_lead', 10, 10)]))['stages'])
         ->toBeEmpty();
+});
+
+/*
+|--------------------------------------------------------------------------
+| Sasaran tanpa satu pun rekod
+|--------------------------------------------------------------------------
+*/
+
+it('treats a stage with a target but no record as the break', function (): void {
+    // Bug sebenar: site visit kosong dilangkau kerana pct null dianggap
+    // neutral, halangan pertama jatuh pada QUOTATION, dan pemilik
+    // quotation disuruh membuat justifikasi untuk kerja yang dia memang
+    // tidak boleh mulakan.
+    $out = $this->journey->build(collect([
+        jrow('no_of_lead', 600, 600, MetricValueType::Number, 'AZMAN'),
+        jrow('no_of_site_visit', null, 24, MetricValueType::Number, 'ZIKRI'),
+        jrow('no_of_new_quotation', 4, 16, MetricValueType::Number, 'HAFIZAN'),
+        jrow('revenue_sales', 50000, 500000, MetricValueType::Currency, 'AZMAN'),
+    ]));
+
+    expect($out['firstBreak']['key'])->toBe('site_visit')
+        ->and($out['firstBreak']['owner'])->toBe('ZIKRI')
+        ->and($out['firstBreak']['breakReason'])->toBe('missing');
+});
+
+it('does not ask the downstream owner to justify', function (): void {
+    $out = $this->journey->build(collect([
+        jrow('no_of_lead', 600, 600, MetricValueType::Number, 'AZMAN'),
+        jrow('no_of_site_visit', null, 24, MetricValueType::Number, 'ZIKRI'),
+        jrow('no_of_new_quotation', 4, 16, MetricValueType::Number, 'HAFIZAN'),
+    ]));
+
+    $quotation = collect($out['stages'])->firstWhere('key', 'quotation');
+
+    expect($out['firstBreak']['owner'])->not->toBe('HAFIZAN')
+        ->and($quotation['blocked'])->toBeTrue()
+        ->and($quotation['blockedByOwner'])->toBe('ZIKRI');
+});
+
+it('names the stage that cannot proceed', function (): void {
+    // "Quotation tidak dapat disediakan tanpa Site Visit" ialah ayat yang
+    // pemilik terus faham. Peratusan tidak menyampaikan itu.
+    $out = $this->journey->build(collect([
+        jrow('no_of_lead', 600, 600),
+        jrow('no_of_site_visit', null, 24, MetricValueType::Number, 'ZIKRI'),
+        jrow('no_of_new_quotation', 4, 16, MetricValueType::Number, 'HAFIZAN'),
+    ]));
+
+    expect($out['nextStage']['key'])->toBe('quotation');
+});
+
+it('lists the waiting owners so they are not blamed', function (): void {
+    // Tanpa senarai ini, empat kad merah kelihatan seperti empat orang
+    // yang gagal, dan mesyuarat menghabiskan masa pada tiga orang yang
+    // tersekat.
+    $out = $this->journey->build(collect([
+        jrow('no_of_lead', 600, 600, MetricValueType::Number, 'AZMAN'),
+        jrow('no_of_site_visit', null, 24, MetricValueType::Number, 'ZIKRI'),
+        jrow('no_of_new_quotation', 4, 16, MetricValueType::Number, 'HAFIZAN'),
+        jrow('revenue_sales', 50000, 500000, MetricValueType::Currency, 'SITI'),
+    ]));
+
+    expect(collect($out['waiting'])->pluck('owner')->all())->toBe(['HAFIZAN', 'SITI'])
+        ->and($out['blockedCount'])->toBe(2);
+});
+
+it('separates missing data from a low number', function (): void {
+    // "Kenapa tidak cukup?" dan "Kenapa tiada langsung?" bukan perbualan
+    // yang sama.
+    $rendah = $this->journey->build(collect([
+        jrow('no_of_lead', 200, 600, MetricValueType::Number, 'AZMAN'),
+    ]));
+
+    expect($rendah['firstBreak']['breakReason'])->toBe('below');
+});
+
+it('leaves an untracked metric alone when there is no target either', function (): void {
+    // Metrik yang memang tidak diukur bukan kegagalan. Menandakannya merah
+    // menghasilkan halangan hantu yang menyembunyikan yang sebenar.
+    $out = $this->journey->build(collect([
+        jrow('no_of_lead', null, null),
+        jrow('no_of_site_visit', 24, 24),
+        jrow('no_of_new_quotation', 16, 16),
+    ]));
+
+    $lead = collect($out['stages'])->firstWhere('key', 'lead');
+
+    expect($lead['status'])->toBe('none')
+        ->and($lead['broken'])->toBeFalse()
+        ->and($out['healthy'])->toBeTrue();
+});
+
+it('a zero target is not a failure either', function (): void {
+    $out = $this->journey->build(collect([
+        jrow('no_of_lead', null, 0.0),
+        jrow('no_of_site_visit', 24, 24),
+    ]));
+
+    expect(collect($out['stages'])->firstWhere('key', 'lead')['broken'])->toBeFalse();
 });
