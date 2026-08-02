@@ -44,7 +44,16 @@ enum RoadmapStatus: string
             self::Campaign => 'oklch(0.65 0.18 45)',
             self::Paused => 'oklch(0.42 0.02 260)',
             self::Resumed => 'oklch(0.55 0.15 150)',
-            self::None => 'oklch(0.24 0.02 260)',
+            /*
+             * Sel kosong dicerahkan daripada 0.24 kepada 0.30.
+             *
+             * Pada 0.24 dengan teks 0.60, nisbahnya 4.2:1 — di bawah
+             * minimum AA, dan pada saiz label sel ia hanya kelihatan
+             * seperti kotak gelap. Sel kosong mesti boleh dibaca: ia
+             * memberitahu bulan mana yang belum dirancang, yang merupakan
+             * separuh gunanya grid perancangan.
+             */
+            self::None => 'oklch(0.30 0.015 260)',
         };
     }
 
@@ -52,9 +61,24 @@ enum RoadmapStatus: string
     public function textColor(): string
     {
         return match ($this) {
-            self::None => 'oklch(0.60 0.02 260)',
+            self::None => 'oklch(0.82 0.01 260)',
             default => 'oklch(0.99 0 0)',
         };
+    }
+
+    /**
+     * Sempadan putus-putus untuk sel kosong.
+     *
+     * Warna sahaja tidak mencukupi untuk membezakan "belum dirancang"
+     * daripada "dijeda dengan sengaja" — kedua-duanya kelabu. Sempadan
+     * putus-putus membaca sebagai kosong walaupun kepada mata yang tidak
+     * membezakan dua warna kelabu itu.
+     */
+    public function border(): string
+    {
+        return $this === self::None
+            ? '1px dashed oklch(0.48 0.02 260)'
+            : '1px solid transparent';
     }
 
     /**

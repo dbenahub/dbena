@@ -175,12 +175,12 @@
                             @else
                                 @foreach ($row['months'] as $cell)
                                     @php $st = $cell['status']; @endphp
-                                    <div class="flex flex-col items-center justify-center gap-1 rounded-lg px-1 py-2"
-                                         style="background: {{ $st->color() }}"
+                                    <div class="flex flex-col items-center justify-center gap-1 rounded-lg px-1 py-2.5"
+                                         style="background: {{ $st->color() }}; border: {{ $st->border() }}"
                                          title="{{ $s->name }} — {{ $bulan[$cell['month'] - 1] }}: {{ $st->label() }}">
-                                        <i class="ph-duotone {{ $st->icon() }} text-[15px]"
+                                        <i class="ph-duotone {{ $st->icon() }} text-[16px]"
                                            style="color: {{ $st->textColor() }}" aria-hidden="true"></i>
-                                        <span class="text-center text-[8.5px] font-bold leading-tight"
+                                        <span class="text-center text-[9.5px] font-bold leading-tight"
                                               style="color: {{ $st->textColor() }}">{{ $st->label() }}</span>
                                     </div>
                                 @endforeach
@@ -212,7 +212,7 @@
                                 @foreach ($q['months'] as $m)
                                     @php $st = $row['months'][$m]['status']; @endphp
                                     <span class="h-4 flex-1 rounded"
-                                          style="background: {{ $st->color() }}"
+                                          style="background: {{ $st->color() }}; border: {{ $st->border() }}"
                                           title="{{ $bulan[$m - 1] }}: {{ $st->label() }}"></span>
                                 @endforeach
                             </div>

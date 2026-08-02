@@ -39,8 +39,25 @@
                         {{ __('roadmap.service_col') }}
                     </div>
                     @foreach (range(1, 12) as $m)
-                        <div class="rounded-md py-1.5 text-center text-[11px] font-bold text-t75"
-                             style="background: var(--hover-bg2)">{{ $months[$m - 1] }}</div>
+                        @php $acara = $preview['events'][$m] ?? []; @endphp
+                        <div class="relative rounded-md py-1.5 text-center text-[11.5px] font-bold text-t85"
+                             style="background: var(--hover-bg2)">
+                            {{ $months[$m - 1] }}
+
+                            {{-- Kiraan acara di sini juga, bukan hanya dalam
+                                 pratonton di bawah. Admin merancang bulan
+                                 SAMBIL melihat apa yang sudah dijadualkan
+                                 pada bulan itu; menghantar mereka menatal ke
+                                 bawah untuk menyemak bermakna mereka tidak
+                                 akan menyemak. --}}
+                            @if ($acara !== [])
+                                <span class="absolute -top-1.5 right-0 rounded-full px-1.5 text-[9.5px] font-extrabold"
+                                      style="background: oklch(0.72 0.16 255); color: oklch(0.99 0 0)"
+                                      title="{{ __('roadmap.calendar.events', ['count' => count($acara)]) }}">
+                                    {{ count($acara) }}
+                                </span>
+                            @endif
+                        </div>
                     @endforeach
                 </div>
 
@@ -68,13 +85,17 @@
                                 $cell = $cells[$service->id.'-'.$m] ?? null;
                                 $st = $cell?->status ?? \App\Enums\RoadmapStatus::None;
                             @endphp
+                            {{-- 9px, bukan 7.5px. Label pada saiz itu tidak
+                                 boleh dibaca walaupun kontrasnya cukup —
+                                 nisbah kontras mengukur kecerahan, bukan
+                                 berapa banyak piksel yang dicat. --}}
                             <button type="button" wire:click="cycle({{ $service->id }}, {{ $m }})"
-                                    class="flex h-[46px] flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 transition-opacity hover:opacity-80"
-                                    style="background: {{ $st->color() }}"
+                                    class="flex h-[54px] flex-col items-center justify-center gap-1 rounded-lg px-0.5 transition-opacity hover:opacity-80"
+                                    style="background: {{ $st->color() }}; border: {{ $st->border() }}"
                                     title="{{ $service->name }} — {{ $months[$m - 1] }}: {{ $st->label() }}">
-                                <i class="ph-duotone {{ $st->icon() }} text-[14px]"
+                                <i class="ph-duotone {{ $st->icon() }} text-[16px]"
                                    style="color: {{ $st->textColor() }}" aria-hidden="true"></i>
-                                <span class="text-center text-[7.5px] font-bold leading-none"
+                                <span class="text-center text-[9px] font-bold leading-tight"
                                       style="color: {{ $st->textColor() }}">{{ $st->label() }}</span>
                             </button>
                         @endforeach
@@ -82,6 +103,62 @@
                 @endforeach
             </div>
         </div>
+    </div>
+
+    {{-- ══ Semua acara kalendar ══
+         Sentiasa kelihatan, bukan tersembunyi di belakang klik. Ini skrin
+         perancangan: acara yang perlu dilihat semasa memutuskan bulan mana
+         aktif tidak sepatutnya memerlukan satu klik lagi untuk dilihat. --}}
+    <div class="dbena-card p-4 sm:p-5">
+        <div class="mb-3 flex flex-wrap items-center gap-2">
+            <i class="ph-duotone ph-calendar-dots text-lg"
+               style="color: oklch(0.72 0.16 255)" aria-hidden="true"></i>
+            <h2 class="text-base font-bold">{{ __('roadmap.calendar.title') }} — {{ $year }}</h2>
+            <span class="rounded-md px-2 py-0.5 text-[11px] font-bold"
+                  style="background: oklch(0.62 0.19 255/0.18); color: oklch(0.76 0.15 255)">
+                {{ __('roadmap.calendar.events', ['count' => $preview['eventCount']]) }}
+            </span>
+        </div>
+
+        @if ($preview['calendarError'])
+            <p class="text-[12px] leading-relaxed" style="color: oklch(0.75 0.16 25)">
+                {{ __('roadmap.calendar.failed', ['message' => $preview['calendarError']]) }}
+            </p>
+        @elseif ($preview['eventCount'] === 0)
+            <p class="text-[12.5px] text-t65">
+                {{ filled($preview['plan']->calendar_id)
+                    ? __('roadmap.calendar.none')
+                    : __('roadmap.calendar.not_connected') }}
+            </p>
+        @else
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                @foreach ($preview['events'] as $bulanNo => $senarai)
+                    <div class="overflow-hidden rounded-xl" style="border: 1px solid var(--border3)">
+                        <div class="flex items-center gap-2 px-3 py-2"
+                             style="background: var(--hover-bg2)">
+                            <span class="text-[12px] font-extrabold text-t94">
+                                {{ __('calendar.months_full')[$bulanNo - 1] }}
+                            </span>
+                            <span class="ml-auto text-[10.5px] font-bold text-t65">{{ count($senarai) }}</span>
+                        </div>
+
+                        <div class="flex flex-col gap-1.5 px-3 py-2.5">
+                            @foreach ($senarai as $acara)
+                                <div class="flex flex-wrap items-baseline gap-x-2 text-[12px]">
+                                    <span class="font-bold text-t90" style="min-width: 62px">
+                                        {{ $acara['start']->translatedFormat('d M') }}
+                                    </span>
+                                    <span class="font-medium text-t85">{{ $acara['title'] }}</span>
+                                    @unless ($acara['allDay'])
+                                        <span class="text-t65">{{ $acara['start']->format('H:i') }}</span>
+                                    @endunless
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        @endif
     </div>
 
     {{-- ══ Teks & Kalendar ══ --}}

@@ -96,3 +96,32 @@ it('rejects a pasted url as a usable id', function (): void {
         ->and(RoadmapPlan::looksLikeCalendarId('dbenagroup@gmail.com'))->toBeTrue()
         ->and(RoadmapPlan::looksLikeCalendarId('bukan id'))->toBeFalse();
 });
+
+it('marks the empty cell with a dashed border, not colour alone', function (): void {
+    // "Belum dirancang" dan "dijeda dengan sengaja" kedua-duanya kelabu.
+    // Sempadan putus-putus membaca sebagai kosong walaupun kepada mata
+    // yang tidak membezakan dua warna kelabu itu.
+    expect(RoadmapStatus::None->border())->toContain('dashed');
+
+    foreach ([RoadmapStatus::Paused, RoadmapStatus::Campaign, RoadmapStatus::Resumed] as $st) {
+        expect($st->border())->not->toContain('dashed');
+    }
+});
+
+it('keeps the empty cell readable', function (): void {
+    // Sel kosong memberitahu bulan mana yang belum dirancang, yang
+    // merupakan separuh gunanya grid perancangan. Pada 0.24 dengan teks
+    // 0.60 nisbahnya 4.2:1 — di bawah minimum AA.
+    $lightness = static function (string $oklch): float {
+        preg_match('/oklch\(([\d.]+)/', $oklch, $m);
+
+        return (float) $m[1];
+    };
+
+    $bg = $lightness(RoadmapStatus::None->color());
+    $fg = $lightness(RoadmapStatus::None->textColor());
+
+    $ratio = (max($fg ** 3, $bg ** 3) + 0.05) / (min($fg ** 3, $bg ** 3) + 0.05);
+
+    expect($ratio)->toBeGreaterThan(4.5);
+});
