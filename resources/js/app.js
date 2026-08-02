@@ -69,61 +69,116 @@ window.dbenaSetDensity = (density) => {
  * seretan terasa rosak.
  */
 window.cartaOrganisasi = () => ({
-    id: null,
+    kumpulan: [],
     mulaX: 0,
     mulaY: 0,
-    asalX: 0,
-    asalY: 0,
-    el: null,
+    bergerak: false,
 
-    mula(event, id, x, y) {
-        // Butang kanan dan klik tengah bukan seretan.
+    /**
+     * Kotak mana yang akan bergerak.
+     *
+     * Menekan kotak yang SUDAH dipilih menyeret seluruh pilihan. Menekan
+     * kotak yang tidak dipilih menyeret kotak itu sahaja — kalau tidak,
+     * satu klik tersasar akan mengalihkan setiap kotak dalam carta dan
+     * tiada butang buat asal untuk mengembalikannya.
+     *
+     * Dibaca daripada DOM dan bukan daripada keadaan Alpine, kerana
+     * Livewire memaparkan semula kanvas selepas setiap pilihan dan
+     * keadaan Alpine yang disalin semasa muat pertama akan menjadi lapuk.
+     */
+    kumpul(el) {
+        if (el.dataset.selected === undefined) return [el];
+
+        return Array.from(document.querySelectorAll('[data-node][data-selected]'));
+    },
+
+    mula(event) {
         if (event.button !== undefined && event.button !== 0) return;
 
-        this.id = id;
-        this.el = event.currentTarget;
+        const el = event.currentTarget;
+
         this.mulaX = event.clientX;
         this.mulaY = event.clientY;
-        this.asalX = x;
-        this.asalY = y;
+        this.bergerak = false;
 
-        // Tangkap penuding supaya seretan bertahan walaupun kursor
-        // bergerak lebih laju daripada pengecatan dan meninggalkan kotak.
-        try { this.el.setPointerCapture(event.pointerId); } catch (e) { /* noop */ }
+        this.kumpulan = this.kumpul(el).map((node) => ({
+            el: node,
+            id: Number(node.dataset.node),
+            x: parseInt(node.style.left, 10) || 0,
+            y: parseInt(node.style.top, 10) || 0,
+        }));
+
+        // Tangkap penuding supaya seretan bertahan walaupun kursor bergerak
+        // lebih laju daripada pengecatan dan meninggalkan kotak.
+        try { el.setPointerCapture(event.pointerId); } catch (e) { /* noop */ }
+    },
+
+    /**
+     * Had dikenakan pada ANJAKAN, bukan pada setiap kotak.
+     *
+     * Mengapit setiap kotak secara berasingan pada sifar akan meruntuhkan
+     * susunan: kotak di tepi kiri berhenti sementara yang lain terus
+     * bergerak, dan carta yang disusun dengan teliti menjadi longgokan.
+     * Menghentikan SELURUH kumpulan apabila ahli pertama mencecah tepi
+     * mengekalkan setiap jarak antara kotak.
+     */
+    anjakan(event) {
+        let dx = event.clientX - this.mulaX;
+        let dy = event.clientY - this.mulaY;
+
+        const minX = Math.min(...this.kumpulan.map((n) => n.x));
+        const minY = Math.min(...this.kumpulan.map((n) => n.y));
+
+        if (minX + dx < 0) dx = -minX;
+        if (minY + dy < 0) dy = -minY;
+
+        return { dx, dy };
     },
 
     gerak(event) {
-        if (this.id === null || ! this.el) return;
+        if (this.kumpulan.length === 0) return;
 
-        // Kanvas tidak boleh mempunyai koordinat negatif: kotak yang
-        // diseret melepasi tepi kiri atau atas menjadi tidak boleh dicapai
-        // dan kelihatan seolah-olah ia telah dipadam.
-        const x = Math.max(0, this.asalX + (event.clientX - this.mulaX));
-        const y = Math.max(0, this.asalY + (event.clientY - this.mulaY));
+        const { dx, dy } = this.anjakan(event);
 
-        this.el.style.left = `${x}px`;
-        this.el.style.top = `${y}px`;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) this.bergerak = true;
+
+        this.kumpulan.forEach((n) => {
+            n.el.style.left = `${n.x + dx}px`;
+            n.el.style.top = `${n.y + dy}px`;
+        });
     },
 
     lepas(event) {
-        if (this.id === null || ! this.el) return;
+        if (this.kumpulan.length === 0) return;
 
-        const x = Math.max(0, this.asalX + (event.clientX - this.mulaX));
-        const y = Math.max(0, this.asalY + (event.clientY - this.mulaY));
+        const { dx, dy } = this.anjakan(event);
+        const kumpulan = this.kumpulan;
+        const bergerak = this.bergerak;
 
-        const id = this.id;
-        this.id = null;
-        this.el = null;
+        this.kumpulan = [];
+        this.bergerak = false;
 
         // Klik tanpa gerakan ialah PILIHAN, bukan seretan. Menghantarnya
         // sebagai gerakan bermakna setiap klik menulis ke pangkalan data
         // dan log audit dipenuhi pergerakan sifar piksel.
-        if (Math.abs(x - this.asalX) < 3 && Math.abs(y - this.asalY) < 3) {
-            window.Livewire.dispatch('org-node-clicked', { id });
+        if (! bergerak) {
+            window.Livewire.dispatch('org-node-clicked', {
+                id: kumpulan[0].id,
+                // Ctrl atau Shift menambah kepada pilihan dan bukan
+                // menggantikannya — itu isyarat yang sama seperti pengurus
+                // fail, jadi tiada apa yang perlu dipelajari.
+                additive: event.ctrlKey || event.metaKey || event.shiftKey,
+            });
 
             return;
         }
 
-        window.Livewire.dispatch('org-node-moved', { id, x: Math.round(x), y: Math.round(y) });
+        window.Livewire.dispatch('org-nodes-moved', {
+            moves: kumpulan.map((n) => ({
+                id: n.id,
+                x: Math.round(n.x + dx),
+                y: Math.round(n.y + dy),
+            })),
+        });
     },
 });

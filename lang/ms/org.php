@@ -57,6 +57,11 @@ return [
         'snap' => 'Lekat pada grid',
         'tidy' => 'Kemas kedudukan',
         'tidied' => 'Kedudukan dikemaskan pada grid.',
+        'select_all' => 'Pilih semua',
+        'clear_selection' => 'Kosongkan pilihan',
+        'selected_count' => ':count kotak dipilih',
+        'group_drag_hint' => 'Seret mana-mana kotak yang dipilih untuk mengalihkan kesemuanya sekali gus.',
+        'ctrl_hint' => 'Tahan Ctrl semasa klik untuk memilih beberapa kotak.',
         'drag_hint' => 'Seret mana-mana kotak untuk mengubah kedudukannya. Disimpan sebaik dilepaskan.',
     ],
 ];

@@ -494,3 +494,170 @@ it('shows the chosen colour in the exported PDF', function (): void {
 
     $this->actingAs($this->admin)->get(route('carta.pdf'))->assertOk();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Pilih semua & seret berkumpulan
+|--------------------------------------------------------------------------
+*/
+
+it('selects every box at once', function (): void {
+    $component = Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('selectAll');
+
+    expect($component->get('selectedIds'))->toHaveCount(OrgNode::count())
+        ->and($component->get('selectedId'))->not->toBeNull();
+});
+
+it('keeps a primary box so the detail panel has something to show', function (): void {
+    // Panel yang menjadi kosong sebaik semuanya dipilih kelihatan seperti
+    // pilihan itu memecahkan sesuatu.
+    $component = Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('selectAll');
+
+    expect($component->get('title'))->not->toBe('');
+});
+
+it('moves every selected box in one transaction', function (): void {
+    // Tujuh belas UPDATE berasingan boleh gagal separuh jalan, dan carta
+    // yang separuh beralih lebih teruk daripada carta yang tidak beralih
+    // langsung — tiada siapa tahu susunan asalnya.
+    $asal = OrgNode::orderBy('id')->get()->mapWithKeys(
+        fn (OrgNode $n) => [$n->id => ['x' => $n->x, 'y' => $n->y]]
+    );
+
+    $moves = $asal->map(fn (array $p, int $id) => [
+        'id' => $id, 'x' => $p['x'] + 100, 'y' => $p['y'] + 50,
+    ])->values()->all();
+
+    Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('moveNodes', $moves);
+
+    foreach (OrgNode::all() as $node) {
+        expect($node->x)->toBe($asal[$node->id]['x'] + 100)
+            ->and($node->y)->toBe($asal[$node->id]['y'] + 50);
+    }
+});
+
+it('keeps the spacing between boxes after a group move', function (): void {
+    // Ini ujian yang penting: susunan yang disusun dengan teliti mesti
+    // bertahan. Jarak antara kotak ialah maklumat.
+    $sebelum = OrgNode::orderBy('id')->pluck('x', 'id');
+
+    $moves = $sebelum->map(fn (int $x, int $id) => ['id' => $id, 'x' => $x + 200, 'y' => 300])
+        ->values()->all();
+
+    Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('moveNodes', $moves);
+
+    $selepas = OrgNode::orderBy('id')->pluck('x', 'id');
+
+    foreach ($sebelum as $id => $x) {
+        expect($selepas[$id] - $x)->toBe(200);
+    }
+});
+
+it('snaps a group move to the grid', function (): void {
+    $node = OrgNode::first();
+
+    Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('moveNodes', [['id' => $node->id, 'x' => 347, 'y' => 213]]);
+
+    expect($node->fresh()->x)->toBe(350)
+        ->and($node->fresh()->y)->toBe(210);
+});
+
+it('refuses a negative group move', function (): void {
+    $node = OrgNode::first();
+
+    Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('moveNodes', [['id' => $node->id, 'x' => -400, 'y' => -200]]);
+
+    expect($node->fresh()->x)->toBe(0)
+        ->and($node->fresh()->y)->toBe(0);
+});
+
+it('adds to the selection on a ctrl click', function (): void {
+    // Isyarat yang sama seperti pengurus fail, jadi tiada apa yang perlu
+    // dipelajari.
+    [$a, $b] = OrgNode::take(2)->get()->all();
+
+    $component = Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('selectNode', $a->id, false)
+        ->call('selectNode', $b->id, true);
+
+    expect($component->get('selectedIds'))->toBe([$a->id, $b->id]);
+});
+
+it('removes a box from the selection on a second ctrl click', function (): void {
+    // Tanpa itu, tersalah tambah satu kotak bermakna mula semula dari
+    // kosong.
+    [$a, $b] = OrgNode::take(2)->get()->all();
+
+    $component = Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('selectNode', $a->id, false)
+        ->call('selectNode', $b->id, true)
+        ->call('selectNode', $b->id, true);
+
+    expect($component->get('selectedIds'))->toBe([$a->id]);
+});
+
+it('replaces the selection on a plain click', function (): void {
+    [$a, $b] = OrgNode::take(2)->get()->all();
+
+    $component = Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('selectAll')
+        ->call('selectNode', $b->id, false);
+
+    expect($component->get('selectedIds'))->toBe([$b->id]);
+});
+
+it('colours every selected box at once', function (): void {
+    // Menukar warna satu demi satu untuk tujuh belas kotak ialah kerja
+    // yang tiada siapa akan siapkan, jadi carta kekal separuh berwarna.
+    Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('selectAll')
+        ->call('setColorForSelection', '#1F4E79');
+
+    expect(OrgNode::where('color', '#1F4E79')->count())->toBe(OrgNode::count());
+});
+
+it('clears the selection', function (): void {
+    $component = Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('selectAll')
+        ->call('clearSelection');
+
+    expect($component->get('selectedIds'))->toBe([])
+        ->and($component->get('selectedId'))->toBeNull();
+});
+
+it('drops a deleted box out of the selection', function (): void {
+    // Pilihan yang memegang ID yang sudah tiada menghasilkan seretan
+    // berkumpulan yang cuba mengalihkan kotak hantu.
+    $node = OrgNode::first();
+
+    $component = Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('selectAll')
+        ->call('selectNode', $node->id, false)
+        ->call('deleteNode');
+
+    expect($component->get('selectedIds'))->not->toContain($node->id);
+});
+
+it('refuses a plain user who calls a group method directly', function (): void {
+    Livewire::actingAs($this->user)
+        ->test(OrgChartEditor::class)
+        ->assertForbidden();
+});

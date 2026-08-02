@@ -57,6 +57,11 @@ return [
         'snap' => 'Snap to grid',
         'tidy' => 'Tidy positions',
         'tidied' => 'Positions snapped to the grid.',
+        'select_all' => 'Select all',
+        'clear_selection' => 'Clear selection',
+        'selected_count' => ':count boxes selected',
+        'group_drag_hint' => 'Drag any selected box to move them all together.',
+        'ctrl_hint' => 'Hold Ctrl while clicking to select several boxes.',
         'drag_hint' => 'Drag any box to move it. Saved as soon as you let go.',
     ],
 ];

@@ -2,7 +2,8 @@
 
     <div class="min-w-0 flex-1">
         <x-org-chart :nodes="$nodes" :links="$links" :editable="true"
-                     :selected-id="$selectedId" :connect-from="$connectFrom">
+                     :selected-id="$selectedId" :selected-ids="$selectedIds"
+                     :connect-from="$connectFrom">
             <x-slot:actions>
                 <div class="flex flex-wrap items-center gap-2">
                     <button type="button" wire:click="addNode"
@@ -11,6 +12,22 @@
                         <i class="ph-duotone ph-plus-circle text-sm" aria-hidden="true"></i>
                         {{ __('org.editor.add') }}
                     </button>
+
+                    <button type="button" wire:click="selectAll"
+                            class="flex items-center gap-2 rounded-[9px] px-3.5 py-2 text-[12px] font-semibold text-white/90 transition-colors hover:bg-white/10"
+                            style="border: 1px solid oklch(0.60 0.12 340)">
+                        <i class="ph-duotone ph-selection-all text-sm" aria-hidden="true"></i>
+                        {{ __('org.editor.select_all') }}
+                    </button>
+
+                    @if ($selectedCount > 0)
+                        <button type="button" wire:click="clearSelection"
+                                class="flex items-center gap-2 rounded-[9px] px-3.5 py-2 text-[12px] font-semibold text-white/90 transition-colors hover:bg-white/10"
+                                style="border: 1px solid oklch(0.60 0.12 340)">
+                            <i class="ph-duotone ph-selection-slash text-sm" aria-hidden="true"></i>
+                            {{ __('org.editor.clear_selection') }}
+                        </button>
+                    @endif
 
                     <button type="button" wire:click="tidy"
                             class="flex items-center gap-2 rounded-[9px] px-3.5 py-2 text-[12px] font-semibold text-white/90 transition-colors hover:bg-white/10"
@@ -49,10 +66,28 @@
                     {{ __('org.editor.cancel_connect') }}
                 </button>
             </div>
+        @elseif ($selectedCount > 1)
+            {{-- Pilihan berbilang mesti menyatakan dirinya. Seretan yang
+                 mengalihkan tujuh belas kotak sedangkan admin menyangka ia
+                 mengalihkan satu tidak boleh dibuat asal. --}}
+            <div class="dbena-card mt-3 flex flex-wrap items-center gap-3 px-4 py-3"
+                 style="border-color: oklch(0.62 0.14 200/0.5); background: oklch(0.62 0.14 200/0.08)">
+                <i class="ph-duotone ph-selection-all text-lg" style="color: oklch(0.72 0.13 200)" aria-hidden="true"></i>
+                <span class="text-[12.5px] font-semibold text-t85">
+                    {{ __('org.editor.selected_count', ['count' => $selectedCount]) }}
+                </span>
+                <span class="text-[11.5px] text-t60">{{ __('org.editor.group_drag_hint') }}</span>
+
+                <button type="button" wire:click="clearSelection"
+                        class="ml-auto rounded-[9px] px-3 py-1.5 text-[11.5px] font-semibold text-t80"
+                        style="border: 1px solid var(--border2)">
+                    {{ __('org.editor.clear_selection') }}
+                </button>
+            </div>
         @else
             <p class="mt-2.5 text-[11.5px] text-t60">
                 <i class="ph-duotone ph-hand-grabbing text-[13px]" aria-hidden="true"></i>
-                {{ __('org.editor.drag_hint') }}
+                {{ __('org.editor.drag_hint') }} {{ __('org.editor.ctrl_hint') }}
             </p>
         @endif
     </div>
@@ -61,7 +96,38 @@
     <div class="dbena-card w-full shrink-0 p-4 sm:p-5 xl:w-[330px]">
         <h2 class="mb-3 text-base font-bold">{{ __('org.editor.panel') }}</h2>
 
-        @if (! $selected)
+        @if ($selectedCount > 1)
+            {{-- Panel bertukar kepada tindakan KUMPULAN. Menunjukkan medan
+                 satu kotak sementara tujuh belas dipilih menjemput admin
+                 menaip nama dan menyangka ia dikenakan pada kesemuanya. --}}
+            <p class="mb-3 text-[12.5px] leading-relaxed text-t75">
+                {{ __('org.editor.selected_count', ['count' => $selectedCount]) }}
+            </p>
+
+            <span class="mb-1.5 block text-[11.5px] text-t60">{{ __('org.editor.field_color') }}</span>
+
+            <div class="flex flex-wrap gap-1.5">
+                <button type="button" wire:click="setColorForSelection(null)"
+                        class="flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[10.5px] font-semibold text-t75"
+                        style="border: 1px solid var(--border2)">
+                    <i class="ph-duotone ph-paint-brush text-[13px]" aria-hidden="true"></i>
+                    {{ __('org.editor.color_default') }}
+                </button>
+
+                @foreach ($palette as $hex => $nama)
+                    <button type="button" wire:click="setColorForSelection('{{ $hex }}')"
+                            class="h-8 w-8 rounded-lg transition-transform hover:scale-110"
+                            style="background: {{ $hex }}; border: 1px solid var(--border2)"
+                            title="{{ $hex }}" aria-label="{{ $hex }}"></button>
+                @endforeach
+            </div>
+
+            <button type="button" wire:click="clearSelection"
+                    class="mt-4 w-full rounded-[9px] px-3.5 py-2 text-[12px] font-semibold text-t80"
+                    style="border: 1px solid var(--border2)">
+                {{ __('org.editor.clear_selection') }}
+            </button>
+        @elseif (! $selected)
             <p class="text-[12.5px] leading-relaxed text-t65">{{ __('org.editor.panel_none') }}</p>
         @else
             <div class="flex flex-col gap-3">

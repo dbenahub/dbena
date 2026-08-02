@@ -10,6 +10,7 @@ use App\Models\OrgLink;
 use App\Models\OrgNode;
 use App\Services\AuditLogger;
 use App\Support\OrgPalette;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -29,6 +30,17 @@ class OrgChartEditor extends Component
     private const GRID = 10;
 
     public ?int $selectedId = null;
+
+    /**
+     * Semua kotak yang dipilih.
+     *
+     * $selectedId kekal sebagai pilihan UTAMA — kotak yang panel butiran
+     * sedang menyunting. Dua konsep, dua medan: menggabungkannya bermakna
+     * panel perlu meneka kotak mana yang dimaksudkan apabila lima dipilih.
+     *
+     * @var array<int, int>
+     */
+    public array $selectedIds = [];
 
     public ?int $connectFrom = null;
 
@@ -63,7 +75,7 @@ class OrgChartEditor extends Component
     }
 
     #[On('org-node-clicked')]
-    public function selectNode(int $id): void
+    public function selectNode(int $id, bool $additive = false): void
     {
         $this->authorize('manage-org-chart');
 
@@ -82,6 +94,23 @@ class OrgChartEditor extends Component
             return;
         }
 
+        if ($additive) {
+            // Ctrl-klik pada kotak yang sudah dipilih MEMBUANGNYA. Tanpa
+            // itu, tersalah tambah satu kotak bermakna mula semula dari
+            // kosong.
+            $this->selectedIds = in_array($node->id, $this->selectedIds, true)
+                ? array_values(array_diff($this->selectedIds, [$node->id]))
+                : [...$this->selectedIds, $node->id];
+        } else {
+            $this->selectedIds = [$node->id];
+        }
+
+        $this->loadForm($node);
+    }
+
+    /** Isi medan borang daripada satu kotak. */
+    private function loadForm(OrgNode $node): void
+    {
         $this->selectedId = $node->id;
         $this->title = (string) $node->title;
         $this->subtitle = (string) $node->subtitle;
@@ -109,6 +138,74 @@ class OrgChartEditor extends Component
             'x' => max(0, (int) round($x / self::GRID) * self::GRID),
             'y' => max(0, (int) round($y / self::GRID) * self::GRID),
         ]);
+    }
+
+    /**
+     * Simpan kedudukan selepas seretan berkumpulan.
+     *
+     * Satu transaksi, bukan satu penulisan setiap kotak. Menyeret tujuh
+     * belas kotak menghasilkan tujuh belas UPDATE yang boleh gagal separuh
+     * jalan — dan carta yang separuh beralih lebih teruk daripada carta
+     * yang tidak beralih langsung, kerana tiada siapa tahu susunan asalnya.
+     *
+     * @param  array<int, array{id: int|string, x: int|string, y: int|string}>  $moves
+     */
+    #[On('org-nodes-moved')]
+    public function moveNodes(array $moves): void
+    {
+        $this->authorize('manage-org-chart');
+
+        DB::transaction(function () use ($moves): void {
+            foreach ($moves as $move) {
+                OrgNode::where('id', (int) ($move['id'] ?? 0))->update([
+                    'x' => max(0, (int) round(((int) ($move['x'] ?? 0)) / self::GRID) * self::GRID),
+                    'y' => max(0, (int) round(((int) ($move['y'] ?? 0)) / self::GRID) * self::GRID),
+                ]);
+            }
+        });
+    }
+
+    /** Pilih setiap kotak — untuk mengalihkan seluruh carta sekali gus. */
+    public function selectAll(): void
+    {
+        $this->authorize('manage-org-chart');
+
+        $semua = OrgNode::orderBy('sort_order')->get();
+
+        $this->selectedIds = $semua->pluck('id')->all();
+        $this->connectFrom = null;
+
+        // Kotak pertama menjadi pilihan UTAMA supaya panel butiran
+        // mempunyai sesuatu untuk ditunjukkan dan bukan menjadi kosong
+        // sebaik sahaja semuanya dipilih.
+        $utama = $semua->first();
+
+        if ($utama !== null) {
+            $this->loadForm($utama);
+        }
+    }
+
+    public function clearSelection(): void
+    {
+        $this->selectedIds = [];
+        $this->selectedId = null;
+        $this->connectFrom = null;
+    }
+
+    /**
+     * Warnakan setiap kotak yang dipilih.
+     *
+     * Menukar warna satu demi satu untuk tujuh belas kotak ialah kerja
+     * yang tiada siapa akan siapkan, jadi carta kekal separuh berwarna.
+     */
+    public function setColorForSelection(?string $hex): void
+    {
+        $this->authorize('manage-org-chart');
+
+        $warna = OrgPalette::clean($hex);
+        $this->color = (string) $warna;
+
+        OrgNode::whereIn('id', $this->selectedIds)->update(['color' => $warna]);
     }
 
     public function addNode(AuditLogger $audit): void
@@ -215,6 +312,7 @@ class OrgChartEditor extends Component
 
         $audit->log('org_chart.node_deleted', null, $nama);
 
+        $this->selectedIds = array_values(array_diff($this->selectedIds, [$node->id]));
         $this->selectedId = null;
         $this->connectFrom = null;
         $this->dispatch('dbena-toast', message: __('org.editor.deleted'));
@@ -310,6 +408,7 @@ class OrgChartEditor extends Component
                     ->get()
                 : collect(),
             'palette' => \App\Support\OrgPalette::COLORS,
+            'selectedCount' => count($this->selectedIds),
             'styles' => OrgNodeStyle::cases(),
             'linkStyles' => OrgLinkStyle::cases(),
         ])->layoutData([

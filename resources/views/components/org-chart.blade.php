@@ -1,4 +1,4 @@
-@props(['nodes', 'links', 'editable' => false, 'selectedId' => null, 'connectFrom' => null])
+@props(['nodes', 'links', 'editable' => false, 'selectedId' => null, 'selectedIds' => [], 'connectFrom' => null])
 
 @php
     $nodes = collect($nodes);
@@ -105,7 +105,8 @@
                         // gaya. Satu tempat memutuskan; paparan hanya
                         // menggunakan apa yang diberi.
                         $warna = $node->palette();
-                        $dipilih = $selectedId === $node->id;
+                        $dipilih = in_array($node->id, (array) $selectedIds, true);
+                        $utama = $selectedId === $node->id;
                         $sumber = $connectFrom === $node->id;
                     @endphp
 
@@ -120,13 +121,22 @@
                          style="left: {{ $node->x }}px; top: {{ $node->y }}px;
                                 width: {{ $node->width }}px; height: {{ $node->boxHeight() }}px;
                                 background: {{ $warna['background'] }};
-                                border: {{ $sumber ? '2px solid oklch(0.82 0.15 85)' : ($dipilih ? '2px solid oklch(0.72 0.16 340)' : $warna['border']) }};
+                                border: {{ $sumber
+                                    ? '2px solid oklch(0.82 0.15 85)'
+                                    : ($utama
+                                        ? '2px solid oklch(0.82 0.16 340)'
+                                        : ($dipilih ? '2px solid oklch(0.62 0.14 200)' : $warna['border'])) }};
                                 box-shadow: 0 4px 14px -8px oklch(0.1 0 0 / 0.8);
                                 touch-action: none"
                          @if ($editable)
                              wire:key="node-{{ $node->id }}"
                              data-node="{{ $node->id }}"
-                             x-on:pointerdown="mula($event, {{ $node->id }}, {{ $node->x }}, {{ $node->y }})"
+                             {{-- Alpine membaca pilihan daripada DOM dan bukan
+                                  daripada keadaannya sendiri: Livewire memapar
+                                  semula kanvas selepas setiap pilihan, dan
+                                  salinan Alpine akan menjadi lapuk. --}}
+                             @if ($dipilih) data-selected="1" @endif
+                             x-on:pointerdown="mula($event)"
                          @endif>
 
                         {{-- Lencana ikon duduk DI ATAS tepi kotak, seperti
