@@ -179,6 +179,17 @@ trait HandlesOtpFlow
      * Satu tempat untuk membuka sesi, tak kira sama ada pengguna melalui
      * OTP atau tidak. Menduplikasi ini bermakna satu laluan akan terlepas
      * penjanaan semula sesi suatu hari nanti.
+     *
+     * MENGALIH TERUS, tanpa skrin "Log Masuk Berjaya" di tengah.
+     *
+     * Skrin itu memerlukan SATU LAGI permintaan Livewire untuk meneruskan —
+     * dan permintaan itu membawa token CSRF yang dijana SEBELUM
+     * session()->regenerate() di atas. Laravel menolaknya sebagai 419, dan
+     * Livewire memaparkan "This page has expired. Would you like to refresh
+     * the page?" kepada seseorang yang baru sahaja berjaya log masuk.
+     *
+     * Kegagalan itu bergantung pada masa, jadi ia tidak muncul dalam ujian
+     * pantas dan muncul untuk pengguna sebenar.
      */
     protected function completeLogin(User $user): void
     {
@@ -189,7 +200,21 @@ trait HandlesOtpFlow
         // Selaraskan locale sesi dengan keutamaan pengguna.
         request()->session()->put('locale', $user->locale);
 
-        $this->step = 'success';
+        /*
+         * Halaman yang cuba dicapai pengguna sebelum dihalang, jika ada.
+         * Menghantar semua orang ke dashboard bermakna pautan terus ke
+         * satu laporan sentiasa mendarat di tempat yang salah.
+         */
+        $tuju = session()->pull('url.intended', $this->redirectAfterLogin());
+
+        /*
+         * Lawatan HALAMAN PENUH, bukan navigate: true.
+         *
+         * wire:navigate mengambil halaman melalui fetch menggunakan token
+         * yang sudah lapuk selepas penjanaan semula sesi. Lawatan penuh
+         * memuatkan token baharu bersama halaman baharu.
+         */
+        $this->redirect($tuju);
     }
 
     public function resendOtp(OtpService $otp): void
@@ -366,9 +391,18 @@ trait HandlesOtpFlow
         $this->passwordVisible = ! $this->passwordVisible;
     }
 
+    /**
+     * Jaring keselamatan.
+     *
+     * Tiada laluan biasa sampai ke sini lagi — completeLogin() mengalihkan
+     * sendiri. Ia dikekalkan untuk sesi yang dibuka sebelum perubahan ini
+     * dan masih memaparkan skrin lama dalam tab yang terbuka.
+     *
+     * Lawatan penuh, bukan navigate: sesi tab itu sudah dijana semula.
+     */
     public function continueToApp(): void
     {
-        $this->redirect($this->redirectAfterLogin(), navigate: true);
+        $this->redirect(session()->pull('url.intended', $this->redirectAfterLogin()));
     }
 
     private function fail(string $property, string $message): void

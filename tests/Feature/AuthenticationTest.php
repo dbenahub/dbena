@@ -245,9 +245,46 @@ it('logs a user straight in when OTP is switched off', function (): void {
         ->set('username', $this->user->username)
         ->set('password', 'kata-laluan-ujian')
         ->call('submitLogin')
-        ->assertSet('step', 'success');
+        ->assertRedirect(route('dashboard'));
 
     expect(auth()->id())->toBe($this->user->id);
+});
+
+it('never parks the user on a success screen', function (): void {
+    // Skrin itu memerlukan satu lagi permintaan Livewire untuk meneruskan,
+    // dan permintaan itu membawa token CSRF yang dijana SEBELUM sesi
+    // dijana semula. Laravel menolaknya sebagai 419, dan pengguna yang
+    // baru sahaja berjaya log masuk melihat "This page has expired".
+    config(['dbena.otp.enabled' => false]);
+
+    Livewire::test(UserLoginFlow::class)
+        ->set('username', $this->user->username)
+        ->set('password', 'kata-laluan-ujian')
+        ->call('submitLogin')
+        ->assertNotSet('step', 'success');
+});
+
+it('redirects with a full page visit, not wire:navigate', function (): void {
+    // wire:navigate mengambil halaman melalui fetch menggunakan token yang
+    // sudah lapuk selepas penjanaan semula sesi. Lawatan penuh memuatkan
+    // token baharu bersama halaman baharu.
+    $sumber = file_get_contents(app_path('Livewire/Concerns/HandlesOtpFlow.php'));
+
+    expect($sumber)->not->toContain('navigate: true');
+});
+
+it('lands on the page the user was trying to reach', function (): void {
+    // Menghantar semua orang ke dashboard bermakna pautan terus ke satu
+    // laporan sentiasa mendarat di tempat yang salah.
+    config(['dbena.otp.enabled' => false]);
+
+    session()->put('url.intended', route('laporan'));
+
+    Livewire::test(UserLoginFlow::class)
+        ->set('username', $this->user->username)
+        ->set('password', 'kata-laluan-ujian')
+        ->call('submitLogin')
+        ->assertRedirect(route('laporan'));
 });
 
 it('never issues an OTP when the step is switched off', function (): void {
