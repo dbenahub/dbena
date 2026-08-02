@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             PrioritySeeder::class,
             AdminSettingSeeder::class,
             UserSeeder::class,
+            OrgChartSeeder::class,
             DemoWeeklyDataSeeder::class,
         ]);
     }

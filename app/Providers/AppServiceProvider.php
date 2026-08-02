@@ -85,5 +85,9 @@ class AppServiceProvider extends ServiceProvider
         // Kerana itu setiap kaedah penulis mesti menyemak gate ini sendiri
         // — menyorok grid tidak menghalang panggilan Livewire terus.
         Gate::define('manage-roadmap', fn ($user) => $user->isAdmin());
+
+        // Carta organisasi membawa nama penuh setiap kakitangan. Pengguna
+        // membacanya; hanya Admin menyunting dan mengeksport.
+        Gate::define('manage-org-chart', fn ($user) => $user->isAdmin());
     }
 }

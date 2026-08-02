@@ -53,6 +53,10 @@ Route::middleware('auth')->prefix('dashboard')->group(function (): void {
     Route::get('/laporan/pemilik/pdf', OwnerReportPdfController::class)->name('laporan.owner.pdf');
     Route::get('/tetapan', Tetapan::class)->name('tetapan');
 
+    // Carta Organisasi — paparan untuk semua; eksport dilindungi gate.
+    Route::get('/carta-organisasi', \App\Livewire\Dashboard\OrgChart::class)->name('carta');
+    Route::get('/carta-organisasi/pdf', \App\Http\Controllers\OrgChartPdfController::class)->name('carta.pdf');
+
     // Master List of Project — paparan sahaja; eksport dilindungi gate.
     Route::get('/projek', \App\Livewire\Dashboard\ProjectList::class)->name('projek');
     Route::get('/projek/eksport', ProjectExportController::class)->name('projek.eksport');
@@ -62,4 +66,5 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function (): v
     Route::get('/', ConfigPanel::class)->name('admin.panel');
     Route::get('/sheets', \App\Livewire\Admin\SheetManager::class)->name('admin.sheets');
     Route::get('/roadmap', \App\Livewire\Admin\RoadmapEditor::class)->name('admin.roadmap');
+    Route::get('/carta-organisasi', \App\Livewire\Admin\OrgChartEditor::class)->name('admin.carta');
 });

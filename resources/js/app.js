@@ -55,3 +55,75 @@ window.dbenaSetDensity = (density) => {
     document.documentElement.dataset.density = density;
     try { localStorage.setItem('dbena_density', density); } catch (e) { /* noop */ }
 };
+
+/**
+ * Seret kotak dalam Carta Organisasi.
+ *
+ * Alpine memegang kedudukan SEMENTARA seretan supaya kotak bergerak pada
+ * kadar 60fps tanpa satu pun panggilan pelayan. Livewire hanya diberitahu
+ * apabila jari atau tetikus dilepaskan.
+ *
+ * Menghantar setiap piksel ke Livewire akan menjadikan seretan tersekat-
+ * sekat dan membanjiri pelayan dengan ratusan penulisan untuk satu
+ * pergerakan — dan kotak akan ketinggalan di belakang kursor sehingga
+ * seretan terasa rosak.
+ */
+window.cartaOrganisasi = () => ({
+    id: null,
+    mulaX: 0,
+    mulaY: 0,
+    asalX: 0,
+    asalY: 0,
+    el: null,
+
+    mula(event, id, x, y) {
+        // Butang kanan dan klik tengah bukan seretan.
+        if (event.button !== undefined && event.button !== 0) return;
+
+        this.id = id;
+        this.el = event.currentTarget;
+        this.mulaX = event.clientX;
+        this.mulaY = event.clientY;
+        this.asalX = x;
+        this.asalY = y;
+
+        // Tangkap penuding supaya seretan bertahan walaupun kursor
+        // bergerak lebih laju daripada pengecatan dan meninggalkan kotak.
+        try { this.el.setPointerCapture(event.pointerId); } catch (e) { /* noop */ }
+    },
+
+    gerak(event) {
+        if (this.id === null || ! this.el) return;
+
+        // Kanvas tidak boleh mempunyai koordinat negatif: kotak yang
+        // diseret melepasi tepi kiri atau atas menjadi tidak boleh dicapai
+        // dan kelihatan seolah-olah ia telah dipadam.
+        const x = Math.max(0, this.asalX + (event.clientX - this.mulaX));
+        const y = Math.max(0, this.asalY + (event.clientY - this.mulaY));
+
+        this.el.style.left = `${x}px`;
+        this.el.style.top = `${y}px`;
+    },
+
+    lepas(event) {
+        if (this.id === null || ! this.el) return;
+
+        const x = Math.max(0, this.asalX + (event.clientX - this.mulaX));
+        const y = Math.max(0, this.asalY + (event.clientY - this.mulaY));
+
+        const id = this.id;
+        this.id = null;
+        this.el = null;
+
+        // Klik tanpa gerakan ialah PILIHAN, bukan seretan. Menghantarnya
+        // sebagai gerakan bermakna setiap klik menulis ke pangkalan data
+        // dan log audit dipenuhi pergerakan sifar piksel.
+        if (Math.abs(x - this.asalX) < 3 && Math.abs(y - this.asalY) < 3) {
+            window.Livewire.dispatch('org-node-clicked', { id });
+
+            return;
+        }
+
+        window.Livewire.dispatch('org-node-moved', { id, x: Math.round(x), y: Math.round(y) });
+    },
+});

@@ -78,6 +78,20 @@
                 $dashboardAktif = request()->routeIs('dashboard');
 
                 $lain = collect([
+                    /*
+                     * Carta Organisasi duduk di atas Reports, sejurus
+                     * selepas Projects: ia menjawab "siapa" sebelum
+                     * laporan menjawab "berapa".
+                     *
+                     * Kekal aktif untuk kedua-dua laluan paparan dan
+                     * editor — admin yang menyunting carta masih berada
+                     * dalam bahagian Carta Organisasi, dan sidebar yang
+                     * tiada apa-apa disorot kelihatan seperti mereka telah
+                     * tersesat keluar dari aplikasi.
+                     */
+                    ['label' => __('org.nav'), 'icon' => 'ph-tree-structure',
+                     'route' => route('carta'),
+                     'active' => request()->routeIs('carta') || request()->routeIs('admin.carta')],
                     ['label' => __('app.nav.laporan'), 'icon' => 'ph-chart-bar',
                      'route' => route('laporan'), 'active' => request()->routeIs('laporan')],
                     ['label' => __('app.nav.owner_report'), 'icon' => 'ph-users-three',
