@@ -423,3 +423,49 @@ it('sends the admin to Calendar, not to Sheets, when sharing is missing', functi
         ->and($mesej)->not->toContain('Google Sheets')
         ->and($mesej)->not->toContain('General access');
 });
+
+/*
+|--------------------------------------------------------------------------
+| 403 mempunyai dua punca, bukan satu
+|--------------------------------------------------------------------------
+*/
+
+it('names the disabled API instead of blaming sharing', function (): void {
+    // Memetakan setiap 403 kepada "belum dikongsi" menghantar admin
+    // membetulkan perkongsian berulang kali sementara punca sebenar —
+    // Calendar API dimatikan — tidak pernah disentuh.
+    $e = App\Exceptions\SheetReadException::calendarRefused(
+        'robot@projek.iam.gserviceaccount.com',
+        'Google Calendar API has not been used in project 12345 before or it is disabled.',
+        'accessNotConfigured',
+        'https://console.cloud.google.com/apis/library/calendar-json.googleapis.com?project=projek'
+    );
+
+    expect($e->getMessage())->toContain('console.cloud.google.com')
+        ->and($e->getMessage())->toContain('ENABLE')
+        ->and($e->getMessage())->not->toContain('Settings and sharing');
+});
+
+it('keeps the sharing message for a real sharing refusal', function (): void {
+    $e = App\Exceptions\SheetReadException::calendarRefused(
+        'robot@projek.iam.gserviceaccount.com',
+        'Not Found',
+        'notFound'
+    );
+
+    expect($e->getMessage())->toContain('Settings and sharing')
+        ->and($e->getMessage())->toContain('robot@projek.iam.gserviceaccount.com');
+});
+
+it('passes Google’s own words through', function (): void {
+    // Ayat Google kadangkala menyebut perkara yang tidak pernah kita
+    // jangka, dan menyembunyikannya bermakna menyembunyikan satu-satunya
+    // petunjuk yang ada.
+    $e = App\Exceptions\SheetReadException::calendarRefused(
+        'robot@projek.iam.gserviceaccount.com',
+        'The service account does not have permission',
+        'forbidden'
+    );
+
+    expect($e->getMessage())->toContain('The service account does not have permission');
+});

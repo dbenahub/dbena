@@ -99,7 +99,22 @@ class GoogleCalendarReader
         try {
             $events = $this->fetch($calendarId, $year);
         } catch (Throwable $e) {
-            return ['ok' => false, 'message' => $e->getMessage(), 'count' => 0];
+            /*
+             * Sebelum melaporkan kegagalan, tanya soalan yang membezakan
+             * dua punca: bolehkah robot bercakap dengan Calendar API
+             * LANGSUNG?
+             *
+             * Panggilan calendarList tidak menyentuh kalendar DBENA. Kalau
+             * ia berjaya, API aktif dan token sah — jadi masalahnya
+             * perkongsian atau ID. Kalau ia gagal dengan cara yang sama,
+             * masalahnya bukan perkongsian langsung, dan menyuruh admin
+             * mengongsi semula ialah membuang masa mereka.
+             */
+            return [
+                'ok' => false,
+                'message' => $this->probe().' '.$e->getMessage(),
+                'count' => 0,
+            ];
         }
 
         return [
@@ -107,6 +122,65 @@ class GoogleCalendarReader
             'message' => __('roadmap.calendar.ok', ['count' => count($events), 'year' => $year]),
             'count' => count($events),
         ];
+    }
+
+    /**
+     * Bolehkah robot bercakap dengan Calendar API sama sekali?
+     *
+     * Mengembalikan satu ayat awalan yang menamakan lapisan mana yang
+     * gagal, supaya admin tahu tetapan mana perlu disentuh.
+     */
+    private function probe(): string
+    {
+        try {
+            $response = Http::withToken($this->accessToken())
+                ->timeout((int) config('dbena.sheets.timeout_seconds'))
+                ->get('https://www.googleapis.com/calendar/v3/users/me/calendarList', ['maxResults' => 10]);
+        } catch (Throwable $e) {
+            return __('roadmap.calendar.probe_network', ['message' => $e->getMessage()]);
+        }
+
+        $reason = (string) ($response->json('error.errors.0.reason') ?? '');
+        $message = (string) ($response->json('error.message') ?? '');
+
+        if ($reason === 'accessNotConfigured' || str_contains($message, 'has not been used in project')) {
+            return __('roadmap.calendar.api_disabled', ['url' => $this->enableApiUrl() ?? '—']);
+        }
+
+        if (! $response->successful()) {
+            return __('roadmap.calendar.probe_failed', ['message' => $message ?: (string) $response->status()]);
+        }
+
+        // API aktif dan token sah. Senaraikan kalendar yang ROBOT nampak —
+        // kalau kalendar DBENA tiada dalam senarai itu, perkongsian belum
+        // sampai, dan senarai itu membuktikannya tanpa perlu diteka.
+        $ids = collect($response->json('items', []))
+            ->pluck('id')
+            ->filter()
+            ->take(5)
+            ->implode(', ');
+
+        return __('roadmap.calendar.probe_ok', ['list' => $ids !== '' ? $ids : __('roadmap.calendar.probe_none')]);
+    }
+
+    /**
+     * Pautan terus untuk mengaktifkan Calendar API dalam projek yang betul.
+     *
+     * ID projek terbenam dalam emel service account:
+     *   dbena-sync@PROJEK.iam.gserviceaccount.com
+     *
+     * Membina pautan itu bermakna admin menekan sekali, bukan mencari
+     * projek yang betul antara beberapa dalam Cloud Console.
+     */
+    private function enableApiUrl(): ?string
+    {
+        $email = ServiceAccountSheetReader::serviceAccountEmail();
+
+        if (! is_string($email) || ! preg_match('/@([^.]+)\.iam\.gserviceaccount\.com$/', $email, $m)) {
+            return null;
+        }
+
+        return 'https://console.cloud.google.com/apis/library/calendar-json.googleapis.com?project='.$m[1];
     }
 
     /**
@@ -135,12 +209,23 @@ class GoogleCalendarReader
         }
 
         if ($response->status() === 403 || $response->status() === 404) {
-            // Mesej khusus KALENDAR. Yang untuk sheet menyuruh admin
-            // membuka fail dalam Google Sheets dan menetapkan General
-            // access — arahan yang menghantar mereka ke aplikasi yang
-            // salah untuk mencari tetapan yang tidak wujud di sana.
-            throw SheetReadException::calendarNotShared(
-                ServiceAccountSheetReader::serviceAccountEmail()
+            /*
+             * Google MEMBERITAHU sebab sebenar; jangan buang.
+             *
+             * Versi pertama memetakan setiap 403 kepada "belum dikongsi".
+             * Tetapi 403 juga bermaksud "Calendar API belum diaktifkan
+             * dalam projek ini" — masalah yang sama sekali berbeza dengan
+             * pembetulan yang sama sekali berbeza. Menekan kedua-duanya
+             * menjadi satu mesej menghantar admin membetulkan perkongsian
+             * berulang kali sementara punca sebenar tidak pernah disentuh.
+             *
+             * Sebab Google dibawa keluar dan pemanggil memutuskan.
+             */
+            throw SheetReadException::calendarRefused(
+                ServiceAccountSheetReader::serviceAccountEmail(),
+                (string) ($response->json('error.message') ?? ''),
+                (string) ($response->json('error.errors.0.reason') ?? ''),
+                $this->enableApiUrl()
             );
         }
 

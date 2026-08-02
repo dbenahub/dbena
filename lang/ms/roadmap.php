@@ -59,6 +59,12 @@ return [
         'not_shared' => 'Google menolak permintaan. Kalendar ini belum dikongsi dengan service account.',
         'not_shared_service' => 'Google menolak permintaan. Buka calendar.google.com → hover nama kalendar → tiga titik → Settings and sharing → Share with specific people → Add people → :email → pilih "See all event details" → Send. Google akan beri amaran emel itu kelihatan pelik; teruskan sahaja. Kalendar kekal Private.',
         'id_from_url' => 'Calendar ID diambil daripada pautan yang ditampal: :id',
+        'api_disabled' => 'Google Calendar API belum diaktifkan dalam projek Google Cloud anda. Ini BUKAN masalah perkongsian — kalendar anda mungkin sudah dikongsi dengan betul. Buka pautan ini dan tekan ENABLE, tunggu seminit, kemudian uji semula: :url',
+        'google_said' => 'Google berkata: ":message"',
+        'probe_ok' => 'Calendar API aktif dan robot boleh log masuk. Kalendar yang robot nampak sekarang: :list',
+        'probe_none' => '(tiada kalendar langsung — perkongsian belum sampai)',
+        'probe_failed' => 'Robot tidak dapat bercakap dengan Calendar API langsung (:message).',
+        'probe_network' => 'Robot tidak dapat menghubungi Google (:message).',
         'bad_id' => 'Itu bukan Calendar ID. Salin dari Settings and sharing → Integrate calendar → Calendar ID (contoh: nama@gmail.com atau c_xxxx@group.calendar.google.com).',
     ],
 

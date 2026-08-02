@@ -37,6 +37,40 @@ class SheetReadException extends RuntimeException
      * tiada makna untuk kalendar, dan yang menghantar mereka ke aplikasi
      * yang salah sepenuhnya untuk mencari tetapan yang tidak wujud di sana.
      */
+    /**
+     * Google menolak permintaan kalendar — dengan sebabnya sendiri.
+     *
+     * 403 bermaksud SAMA ADA "belum dikongsi" ATAU "Calendar API belum
+     * diaktifkan dalam projek ini". Dua masalah, dua pembetulan yang
+     * berlainan sepenuhnya. Memetakan kedua-duanya kepada satu mesej
+     * menghantar admin membetulkan perkongsian berulang kali sementara
+     * punca sebenar tidak pernah disentuh.
+     */
+    public static function calendarRefused(
+        ?string $serviceAccount,
+        string $googleMessage = '',
+        string $reason = '',
+        ?string $enableUrl = null,
+    ): self {
+        $apiMati = $reason === 'accessNotConfigured'
+            || str_contains($googleMessage, 'has not been used in project');
+
+        if ($apiMati) {
+            return new self(__('roadmap.calendar.api_disabled', ['url' => $enableUrl ?? '—']));
+        }
+
+        $asas = filled($serviceAccount)
+            ? __('roadmap.calendar.not_shared_service', ['email' => $serviceAccount])
+            : __('roadmap.calendar.not_shared');
+
+        // Ayat Google disertakan mentah. Ia kadangkala menyebut perkara
+        // yang tidak pernah kita jangka, dan menyembunyikannya bermakna
+        // menyembunyikan satu-satunya petunjuk yang ada.
+        return new self($googleMessage !== ''
+            ? $asas.' '.__('roadmap.calendar.google_said', ['message' => $googleMessage])
+            : $asas);
+    }
+
     public static function calendarNotShared(?string $serviceAccount = null): self
     {
         return new self(filled($serviceAccount)

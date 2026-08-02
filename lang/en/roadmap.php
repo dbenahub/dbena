@@ -59,6 +59,12 @@ return [
         'not_shared' => 'Google refused the request. This calendar has not been shared with the service account.',
         'not_shared_service' => 'Google refused the request. Open calendar.google.com → hover the calendar name → three dots → Settings and sharing → Share with specific people → Add people → :email → choose "See all event details" → Send. Google will warn that the address looks odd; carry on. The calendar stays Private.',
         'id_from_url' => 'Calendar ID taken from the pasted link: :id',
+        'api_disabled' => 'The Google Calendar API is not enabled in your Google Cloud project. This is NOT a sharing problem — your calendar may already be shared correctly. Open this link, press ENABLE, wait a minute, then test again: :url',
+        'google_said' => 'Google said: ":message"',
+        'probe_ok' => 'The Calendar API is on and the robot can sign in. Calendars the robot can currently see: :list',
+        'probe_none' => '(no calendars at all — the sharing has not landed)',
+        'probe_failed' => 'The robot could not talk to the Calendar API at all (:message).',
+        'probe_network' => 'The robot could not reach Google (:message).',
         'bad_id' => 'That is not a Calendar ID. Copy it from Settings and sharing → Integrate calendar → Calendar ID (for example name@gmail.com or c_xxxx@group.calendar.google.com).',
     ],
 
