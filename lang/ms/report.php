@@ -99,12 +99,34 @@ return [
         'close_gap_why' => 'Servis ini mencatat pencapaian terendah pada :pct% dan menyumbang jurang terbesar.',
     ],
 
+    'part_a' => 'BAHAGIAN A — PRESTASI KESELURUHAN',
+    'part_b' => 'BAHAGIAN B — ANALISIS MENGIKUT SERVIS',
+
+    'roadmap' => [
+        'status' => 'Status Roadmap',
+        'unknown' => 'Belum ditetapkan',
+        'active_note' => ':count daripada :total servis sedang berjalan bulan ini.',
+        'active_list' => 'Aktif: :names',
+        'paused_list' => 'Dijeda: :names',
+        'months_active' => ':count bulan aktif tahun ini',
+        'not_set' => 'Roadmap servis ini belum ditetapkan untuk tahun :year, jadi analisis di bawah menganggapnya sedang berjalan.',
+    ],
+
+    'service' => [
+        'section' => 'SERVIS :name',
+        'paused' => ':service dijeda dalam roadmap (:status). Jualan :actual bulan ini adalah dijangka, bukan kegagalan — tiada kempen berjalan dan tiada sasaran dikenakan. Tiada tindakan pemulihan dicadangkan untuk servis ini.',
+        'narrative_green' => ':service mencapai :pct daripada sasaran (:actual daripada :target) dan berada pada landasan. Roadmap menandakannya :status. Tumpuan sepatutnya kekal pada mengekalkan rentak ini.',
+        'narrative_amber' => ':service mencapai :pct daripada sasaran (:actual daripada :target) dengan jurang :gap yang masih terbuka. Roadmap menandakannya :status, jadi sasaran itu memang terpakai dan jurang ini perlu ditutup dalam tempoh yang sama.',
+        'narrative_red' => ':service mencapai hanya :pct daripada sasaran (:actual daripada :target), meninggalkan jurang :gap. Roadmap menandakannya :status — kempen sedang berjalan, jadi jurang ini bukan disebabkan servis yang dijeda dan memerlukan tindakan segera di bawah.',
+        'no_causes' => 'Tiada punca direkodkan untuk servis ini.',
+        'no_actions' => 'Tiada tindakan diperlukan untuk servis ini pada tempoh ini.',
+    ],
+
     'none' => 'Tiada isu direkodkan untuk seksyen ini.',
     'page' => 'Halaman',
     'generated' => 'Dijana :date oleh :by',
 
     'export_pdf' => 'Laporan PDF',
-    'export_csv' => 'Data CSV',
     'period_label' => 'Tempoh',
     'week_label' => 'Minggu',
 ];

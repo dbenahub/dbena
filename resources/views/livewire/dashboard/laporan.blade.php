@@ -90,21 +90,16 @@
         @endif
 
         <div class="ml-auto flex flex-wrap items-center gap-2">
-            {{-- PDF ialah butang utama. CSV kekal kerana data mentah masih
-                 diperlukan untuk kerja lanjutan, tetapi ia bukan lagi
-                 satu-satunya pilihan — dan ia bukan laporan. --}}
+            {{-- Satu butang sahaja. CSV ialah senarai nombor tanpa analisis;
+                 mengekalkannya di sebelah laporan sebenar hanya menjemput
+                 orang memilih yang salah, dan kemudian bertanya kenapa
+                 laporan itu tidak lengkap. --}}
             <a href="{{ route('laporan.pdf', [
                     'tempoh' => $period, 'tahun' => $year, 'bulan' => $month,
                     'minggu' => $week, 'servis' => $serviceKey,
                ]) }}"
                class="dbena-btn-gold flex items-center gap-2 px-4 py-2.5 text-[13px]">
                 <i class="ph-duotone ph-file-pdf" aria-hidden="true"></i> {{ __('report.export_pdf') }}
-            </a>
-
-            <a href="{{ route('laporan.export', ['tahun' => $year, 'bulan' => $month, 'servis' => $serviceKey]) }}"
-               class="flex items-center gap-2 rounded-[10px] px-3.5 py-2.5 text-[12.5px] font-semibold text-t80"
-               style="border: 1px solid var(--border2)">
-                <i class="ph-duotone ph-file-csv" aria-hidden="true"></i> {{ __('report.export_csv') }}
             </a>
         </div>
     </div>

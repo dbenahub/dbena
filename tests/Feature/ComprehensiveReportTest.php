@@ -5,6 +5,8 @@ declare(strict_types=1);
 use App\Enums\ReportPeriod;
 use App\Enums\UserRole;
 use App\Livewire\Dashboard\Laporan;
+use App\Enums\RoadmapStatus;
+use App\Models\RoadmapCell;
 use App\Models\Service;
 use App\Models\User;
 use App\Services\ComprehensiveReportService;
@@ -232,12 +234,11 @@ it('turns a guest away', function (): void {
     $this->get(route('laporan.pdf'))->assertRedirect(route('login'));
 });
 
-it('keeps the CSV export working alongside the PDF', function (): void {
-    // Data mentah masih diperlukan untuk kerja lanjutan; membuangnya
-    // memecahkan aliran kerja yang tiada kaitan dengan aduan asal.
-    $this->actingAs($this->user)
-        ->get(route('laporan.export', ['tahun' => 2026, 'bulan' => 8]))
-        ->assertOk();
+it('offers the PDF as the only export', function (): void {
+    // CSV ialah senarai nombor tanpa analisis. Mengekalkannya di sebelah
+    // laporan sebenar hanya menjemput orang memilih yang salah, dan
+    // kemudian bertanya kenapa laporan itu tidak lengkap.
+    expect(\Illuminate\Support\Facades\Route::has('laporan.export'))->toBeFalse();
 });
 
 /*
@@ -268,9 +269,142 @@ it('clamps the week to the four a month has', function (): void {
         ->assertSet('week', 4);
 });
 
-it('shows both export buttons', function (): void {
+it('shows only the PDF button', function (): void {
     Livewire::actingAs($this->user)
         ->test(Laporan::class)
         ->assertSee(__('report.export_pdf'))
-        ->assertSee(__('report.export_csv'));
+        ->assertDontSee('CSV');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Bahagian B — analisis setiap servis
+|--------------------------------------------------------------------------
+*/
+
+it('gives every service its own section', function (): void {
+    // Ringkasan syarikat menjawab "adakah kita pada landasan"; ia tidak
+    // boleh menjawab "kenapa Kabinet tersasar sedangkan Renovation tidak".
+    $data = $this->reports->build(ReportPeriod::Monthly, $this->year, $this->month);
+
+    expect($data['perService'])->toHaveCount(Service::count());
+
+    foreach ($data['perService'] as $bahagian) {
+        expect($bahagian)->toHaveKeys(['service', 'summary', 'roadmap', 'narrative', 'funnel', 'causes', 'owners', 'actions'])
+            ->and($bahagian['narrative'])->not->toBe('');
+    }
+});
+
+it('writes a different sentence for each verdict', function (): void {
+    // Menggabungkan lima servis ke dalam satu ulasan menghasilkan ayat
+    // yang benar untuk purata dan salah untuk setiap servis.
+    $data = $this->reports->build(ReportPeriod::Monthly, $this->year, $this->month);
+
+    $ulasan = collect($data['perService'])->pluck('narrative');
+
+    foreach ($ulasan as $u) {
+        expect($u)->not->toContain('narrative_');
+    }
+});
+
+it('names the service in its own commentary', function (): void {
+    $data = $this->reports->build(ReportPeriod::Monthly, $this->year, $this->month);
+
+    foreach ($data['perService'] as $bahagian) {
+        expect($bahagian['narrative'])->toContain($bahagian['service']->name);
+    }
+});
+
+/*
+|--------------------------------------------------------------------------
+| Kaitan roadmap
+|--------------------------------------------------------------------------
+*/
+
+it('treats a paused service as planned, not failed', function (): void {
+    // Bulan di bawah sasaran ketika tiada kempen berjalan bukan kegagalan,
+    // ia rancangan. Menghakimi kedua-duanya dengan ayat yang sama
+    // menghukum keputusan yang betul.
+    $divider = Service::where('key', 'divider')->firstOrFail();
+
+    RoadmapCell::updateOrCreate(
+        ['service_id' => $divider->id, 'year' => $this->year, 'month' => $this->month],
+        ['status' => RoadmapStatus::Paused->value]
+    );
+
+    $bahagian = collect($this->reports->build(ReportPeriod::Monthly, $this->year, $this->month)['perService'])
+        ->firstWhere('service.id', $divider->id);
+
+    expect($bahagian['roadmap']['active'])->toBeFalse()
+        ->and($bahagian['narrative'])->toContain($divider->name)
+        ->and($bahagian['actions'])->toBe([])
+        ->and($bahagian['causes'])->toBe([]);
+});
+
+it('still analyses a service the roadmap marks running', function (): void {
+    $renovation = Service::where('key', 'renovation')->firstOrFail();
+
+    RoadmapCell::updateOrCreate(
+        ['service_id' => $renovation->id, 'year' => $this->year, 'month' => $this->month],
+        ['status' => RoadmapStatus::Campaign->value]
+    );
+
+    $bahagian = collect($this->reports->build(ReportPeriod::Monthly, $this->year, $this->month)['perService'])
+        ->firstWhere('service.id', $renovation->id);
+
+    expect($bahagian['roadmap']['active'])->toBeTrue()
+        ->and($bahagian['roadmap']['label'])->toBe(RoadmapStatus::Campaign->label());
+});
+
+it('says so when the roadmap was never set', function (): void {
+    // Melaporkannya sebagai "dijeda" akan menyenyapkan analisis untuk
+    // servis yang mungkin sedang berjalan; melaporkannya sebagai "aktif"
+    // mendakwa niat yang tiada siapa rekodkan.
+    RoadmapCell::query()->delete();
+
+    $bahagian = collect($this->reports->build(ReportPeriod::Monthly, $this->year, $this->month)['perService'])->first();
+
+    expect($bahagian['roadmap']['known'])->toBeFalse()
+        ->and($bahagian['roadmap']['active'])->toBeTrue()
+        ->and($bahagian['roadmap']['label'])->toBe(__('report.roadmap.unknown'));
+});
+
+it('counts how many services are running this month', function (): void {
+    // Tanpa ini, pembaca menganggap setiap servis di bawah sasaran ialah
+    // kegagalan — termasuk yang memang dijeda dengan sengaja.
+    RoadmapCell::query()->delete();
+
+    foreach (['renovation' => RoadmapStatus::Campaign, 'kabinet' => RoadmapStatus::Paused] as $kunci => $status) {
+        $s = Service::where('key', $kunci)->firstOrFail();
+
+        RoadmapCell::create([
+            'service_id' => $s->id, 'year' => $this->year,
+            'month' => $this->month, 'status' => $status->value,
+        ]);
+    }
+
+    $roadmap = $this->reports->build(ReportPeriod::Monthly, $this->year, $this->month)['roadmap'];
+
+    expect($roadmap['total'])->toBe(Service::count())
+        ->and($roadmap['active'])->toContain('Renovation')
+        ->and($roadmap['paused'])->toContain('Kabinet');
+});
+
+it('exports a PDF with the per-service part', function (): void {
+    $this->actingAs($this->user)
+        ->get(route('laporan.pdf', ['tempoh' => 'monthly', 'tahun' => 2026, 'bulan' => 8]))
+        ->assertOk();
+});
+
+it('exports a PDF when one service is paused', function (): void {
+    $divider = Service::where('key', 'divider')->firstOrFail();
+
+    RoadmapCell::updateOrCreate(
+        ['service_id' => $divider->id, 'year' => 2026, 'month' => 8],
+        ['status' => RoadmapStatus::Paused->value]
+    );
+
+    $this->actingAs($this->user)
+        ->get(route('laporan.pdf', ['tempoh' => 'monthly', 'tahun' => 2026, 'bulan' => 8]))
+        ->assertOk();
 });

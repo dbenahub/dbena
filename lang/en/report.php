@@ -99,12 +99,34 @@ return [
         'close_gap_why' => 'This service recorded the lowest achievement at :pct% and carries the largest gap.',
     ],
 
+    'part_a' => 'PART A — OVERALL PERFORMANCE',
+    'part_b' => 'PART B — ANALYSIS BY SERVICE',
+
+    'roadmap' => [
+        'status' => 'Roadmap Status',
+        'unknown' => 'Not set yet',
+        'active_note' => ':count of :total services are running this month.',
+        'active_list' => 'Active: :names',
+        'paused_list' => 'Paused: :names',
+        'months_active' => ':count active months this year',
+        'not_set' => 'This service has no roadmap set for :year, so the analysis below assumes it is running.',
+    ],
+
+    'service' => [
+        'section' => 'SERVICE :name',
+        'paused' => ':service is paused in the roadmap (:status). The :actual recorded this month is expected, not a failure — no campaign is running and no target applies. No recovery actions are proposed for this service.',
+        'narrative_green' => ':service reached :pct of target (:actual of :target) and is on track. The roadmap marks it :status. The focus should stay on holding this pace.',
+        'narrative_amber' => ':service reached :pct of target (:actual of :target) with a :gap gap still open. The roadmap marks it :status, so the target does apply and this gap must close within the same period.',
+        'narrative_red' => ':service reached only :pct of target (:actual of :target), leaving a :gap gap. The roadmap marks it :status — a campaign is running, so this gap is not caused by a paused service and needs the immediate action below.',
+        'no_causes' => 'No causes recorded for this service.',
+        'no_actions' => 'No action needed for this service in this period.',
+    ],
+
     'none' => 'No issues recorded for this section.',
     'page' => 'Page',
     'generated' => 'Generated :date by :by',
 
     'export_pdf' => 'PDF Report',
-    'export_csv' => 'CSV Data',
     'period_label' => 'Period',
     'week_label' => 'Week',
 ];

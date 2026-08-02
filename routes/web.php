@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\OwnerReportPdfController;
 use App\Http\Controllers\ProjectExportController;
-use App\Http\Controllers\ReportExportController;
 use App\Http\Controllers\SheetWebhookController;
 use App\Livewire\Admin\ConfigPanel;
 use App\Livewire\Auth\AdminLoginFlow;
@@ -48,7 +47,6 @@ Route::middleware('auth')->prefix('dashboard')->group(function (): void {
     Route::get('/', Overview::class)->name('dashboard');
     Route::get('/servis/{key}', ServiceDetail::class)->name('service.detail');
     Route::get('/laporan', Laporan::class)->name('laporan');
-    Route::get('/laporan/eksport', ReportExportController::class)->name('laporan.export');
     Route::get('/laporan/pdf', \App\Http\Controllers\ComprehensiveReportPdfController::class)->name('laporan.pdf');
     Route::get('/laporan/pemilik', \App\Livewire\Dashboard\OwnerReport::class)->name('laporan.owner');
     Route::get('/laporan/pemilik/pdf', OwnerReportPdfController::class)->name('laporan.owner.pdf');

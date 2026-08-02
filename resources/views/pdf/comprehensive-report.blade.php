@@ -116,6 +116,10 @@
         </table>
     </div>
 
+    {{-- ══════════ BAHAGIAN A ══════════ --}}
+    <div style="font-size: 9pt; font-weight: bold; color: {{ $marun }};
+                letter-spacing: 1.4pt; margin-bottom: 6pt">{{ __('report.part_a') }}</div>
+
     {{-- ══════════ 1. RINGKASAN EKSEKUTIF ══════════ --}}
     <h2 class="seksyen">1. {{ __('report.section.summary') }}</h2>
 
@@ -149,6 +153,22 @@
             'pct' => number_format($s['pct'], 1).'%',
             'gap' => number_format($s['gap']),
         ]) }}
+    </div>
+
+    {{-- Berapa banyak servis sedang berjalan. Tanpa ini, pembaca
+         menganggap setiap servis di bawah sasaran ialah kegagalan —
+         termasuk yang memang dijeda dengan sengaja. --}}
+    <div class="nota" style="margin-top: 6pt">
+        {{ __('report.roadmap.active_note', [
+            'count' => $data['roadmap']['activeCount'],
+            'total' => $data['roadmap']['total'],
+        ]) }}
+        @if ($data['roadmap']['active'])
+            &nbsp;·&nbsp; {{ __('report.roadmap.active_list', ['names' => $data['roadmap']['active']]) }}
+        @endif
+        @if ($data['roadmap']['paused'])
+            &nbsp;·&nbsp; {{ __('report.roadmap.paused_list', ['names' => $data['roadmap']['paused']]) }}
+        @endif
     </div>
 
     {{-- ══════════ 2. PERBANDINGAN ══════════ --}}
@@ -395,5 +415,175 @@
             @endforeach
         </table>
     @endif
+
+    {{-- ══════════ BAHAGIAN B — SETIAP SERVIS ══════════
+         Satu halaman setiap servis. Ringkasan syarikat menjawab "adakah
+         kita pada landasan"; ia tidak boleh menjawab "kenapa Kabinet
+         tersasar sedangkan Renovation tidak". Menggabungkan lima servis ke
+         dalam satu ulasan menghasilkan ayat yang benar untuk purata dan
+         salah untuk setiap servis secara individu. --}}
+    @foreach ($data['perService'] as $bahagian)
+        <div class="putus"></div>
+
+        @if ($loop->first)
+            <div style="font-size: 9pt; font-weight: bold; color: {{ $marun }};
+                        letter-spacing: 1.4pt; margin-bottom: 6pt">{{ __('report.part_b') }}</div>
+        @endif
+
+        <h2 class="seksyen">
+            {{ __('report.service.section', ['name' => mb_strtoupper($bahagian['service']->name)]) }}
+        </h2>
+
+        {{-- Status roadmap dinyatakan di ATAS nombor, bukan di bawahnya.
+             Ia mengubah maksud setiap angka yang menyusul. --}}
+        <table style="margin-bottom: 8pt">
+            <tr>
+                @foreach ([
+                    [__('report.summary.actual'), $rm($bahagian['summary']['actual'])],
+                    [__('report.summary.target'), $rm($bahagian['summary']['target'])],
+                    [__('report.summary.achievement'), number_format($bahagian['summary']['pct'], 1).'%'],
+                    [__('report.roadmap.status'), $bahagian['roadmap']['label']],
+                ] as $i => [$label, $nilai])
+                    <td style="width: 25%; padding-right: {{ $i < 3 ? '6pt' : '0' }}">
+                        <table class="kad">
+                            <tr><td class="kad-label">{{ $label }}</td></tr>
+                            <tr>
+                                <td class="kad-nilai"
+                                    style="font-size: {{ $i === 3 ? '9.6pt' : '15pt' }};
+                                           color: {{ $i === 3 && ! $bahagian['roadmap']['active'] ? '#7A7180' : $marunGelap }}">
+                                    {{ $nilai }}
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                @endforeach
+            </tr>
+        </table>
+
+        <div class="naratif"
+             style="border-left-color: {{ $bahagian['roadmap']['active'] ? $bahagian['summary']['status']['color'] : '#9B93A3' }}">
+            {{ $bahagian['narrative'] }}
+        </div>
+
+        @unless ($bahagian['roadmap']['known'])
+            <div class="nota" style="margin-top: 4pt">
+                {{ __('report.roadmap.not_set', ['year' => $data['year']]) }}
+            </div>
+        @endunless
+
+        {{-- Corong servis --}}
+        @if (! empty($bahagian['funnel']))
+            <h3 class="sub">{{ __('report.section.funnel') }}</h3>
+
+            <table class="jadual">
+                <tr>
+                    <th>{{ __('report.col.stage') }}</th>
+                    <th class="kanan">{{ __('report.col.actual') }}</th>
+                    <th class="kanan">{{ __('report.col.target') }}</th>
+                    <th class="kanan">{{ __('report.col.pct') }}</th>
+                    <th style="width: 130pt">{{ __('report.col.status') }}</th>
+                </tr>
+                @foreach ($bahagian['funnel'] as $peringkat)
+                    <tr class="{{ $loop->even ? 'selang' : '' }}">
+                        <td style="font-weight: bold">{{ $peringkat['title'] }}</td>
+                        <td class="kanan">{{ number_format($peringkat['actual']) }}</td>
+                        <td class="kanan">{{ number_format($peringkat['target']) }}</td>
+                        <td class="kanan" style="font-weight: bold">{{ number_format($peringkat['pct'], 0) }}%</td>
+                        <td>
+                            <div class="bar-luar">
+                                <div class="bar-dalam"
+                                     style="width: {{ min(100, max(2, (int) round($peringkat['pct']))) }}%;
+                                            background: {{ $peringkat['status']['color'] }}"></div>
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
+            </table>
+        @endif
+
+        {{-- Punca servis --}}
+        <h3 class="sub">{{ __('report.section.causes') }}</h3>
+
+        @if (empty($bahagian['causes']))
+            <div class="kosong">{{ __('report.service.no_causes') }}</div>
+        @else
+            <table class="jadual">
+                <tr>
+                    <th style="width: 92pt">{{ __('report.col.stage') }}</th>
+                    <th style="width: 62pt">{{ __('report.col.owner') }}</th>
+                    <th>{{ __('report.col.reason') }}</th>
+                    <th style="width: 120pt">{{ __('report.col.effect') }}</th>
+                </tr>
+                @foreach ($bahagian['causes'] as $punca)
+                    <tr class="{{ $loop->even ? 'selang' : '' }}">
+                        <td style="font-weight: bold">{{ $punca['stage'] }}</td>
+                        <td>{{ $punca['owner'] }}</td>
+                        <td>{{ $punca['reason'] }}</td>
+                        <td style="font-size: 7pt; color: #6E6473">{{ $punca['effect'] }}</td>
+                    </tr>
+                @endforeach
+            </table>
+        @endif
+
+        {{-- Pemilik servis --}}
+        @if (! empty($bahagian['owners']))
+            <h3 class="sub">{{ __('report.section.owners') }}</h3>
+
+            <table class="jadual">
+                <tr>
+                    <th>{{ __('report.col.owner') }}</th>
+                    <th class="tengah">{{ __('report.col.metrics') }}</th>
+                    <th class="tengah">{{ __('report.col.red') }}</th>
+                    <th class="tengah">{{ __('report.col.amber') }}</th>
+                    <th class="tengah">{{ __('report.col.green') }}</th>
+                    <th class="kanan">{{ __('report.col.score') }}</th>
+                </tr>
+                @foreach ($bahagian['owners'] as $pemilik)
+                    <tr class="{{ $loop->even ? 'selang' : '' }}">
+                        <td style="font-weight: bold">{{ $pemilik['name'] }}</td>
+                        <td class="tengah">{{ $pemilik['total'] }}</td>
+                        <td class="tengah" style="color: #C0392B; font-weight: bold">{{ $pemilik['red'] }}</td>
+                        <td class="tengah" style="color: #C98A12">{{ $pemilik['amber'] }}</td>
+                        <td class="tengah" style="color: #1E8449">{{ $pemilik['green'] }}</td>
+                        <td class="kanan" style="font-weight: bold">{{ $pemilik['score'] }}%</td>
+                    </tr>
+                @endforeach
+            </table>
+        @endif
+
+        {{-- Tindakan servis --}}
+        <h3 class="sub">{{ __('report.section.actions') }}</h3>
+
+        @if (empty($bahagian['actions']))
+            <div class="kosong">{{ __('report.service.no_actions') }}</div>
+        @else
+            <table class="jadual">
+                <tr>
+                    <th style="width: 26pt">#</th>
+                    <th style="width: 58pt">{{ __('report.col.urgency') }}</th>
+                    <th style="width: 58pt">{{ __('report.col.owner') }}</th>
+                    <th>{{ __('report.col.what') }}</th>
+                    <th style="width: 150pt">{{ __('report.col.why') }}</th>
+                    <th style="width: 50pt">{{ __('report.col.when') }}</th>
+                </tr>
+                @foreach ($bahagian['actions'] as $tindakan)
+                    <tr class="{{ $loop->even ? 'selang' : '' }}">
+                        <td class="tengah" style="font-weight: bold">{{ $loop->iteration }}</td>
+                        <td>
+                            <span class="pil"
+                                  style="background: {{ $tindakan['priority'] <= 2 ? '#C0392B' : '#C98A12' }}">
+                                {{ $tindakan['urgency'] }}
+                            </span>
+                        </td>
+                        <td>{{ $tindakan['owner'] }}</td>
+                        <td style="font-weight: bold">{{ $tindakan['what'] }}</td>
+                        <td style="font-size: 7pt; color: #6E6473">{{ $tindakan['why'] }}</td>
+                        <td style="font-size: 7pt">{{ $tindakan['when'] }}</td>
+                    </tr>
+                @endforeach
+            </table>
+        @endif
+    @endforeach
+
 </body>
 </html>

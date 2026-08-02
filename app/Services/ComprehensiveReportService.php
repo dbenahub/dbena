@@ -6,6 +6,8 @@ namespace App\Services;
 
 use App\Enums\MetricStatus;
 use App\Enums\ReportPeriod;
+use App\Enums\RoadmapStatus;
+use App\Models\RoadmapCell;
 use App\Models\Service;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -86,6 +88,21 @@ class ComprehensiveReportService
             'causes' => $this->causes($services, $year, $month),
             'owners' => $this->owners($services, $year, $month),
             'actions' => $this->actions($services, $year, $month, $breakdown),
+
+            /*
+             * Satu bahagian penuh setiap servis.
+             *
+             * Ringkasan syarikat menjawab "adakah kita pada landasan";
+             * ia tidak boleh menjawab "kenapa Kabinet tersasar sedangkan
+             * Renovation tidak". Menggabungkan lima servis ke dalam satu
+             * ulasan menghasilkan ayat yang benar untuk purata dan salah
+             * untuk setiap servis secara individu.
+             */
+            'perService' => $breakdown
+                ->map(fn (array $row) => $this->serviceSection($row, $year, $month))
+                ->values(),
+
+            'roadmap' => $this->roadmapSummary($services, $year, $month),
         ];
     }
 
@@ -491,6 +508,127 @@ class ComprehensiveReportService
         usort($keluar, fn (array $a, array $b) => $a['priority'] <=> $b['priority']);
 
         return $keluar;
+    }
+
+    /**
+     * Satu bahagian analisis penuh bagi satu servis.
+     *
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function serviceSection(array $row, int $year, int $month): array
+    {
+        $service = $row['service'];
+        $satu = collect([$service]);
+
+        $roadmap = $this->roadmapFor($service, $year, $month);
+
+        return [
+            'service' => $service,
+            'summary' => $row,
+            'roadmap' => $roadmap,
+            'narrative' => $this->serviceNarrative($row, $roadmap),
+            'funnel' => $this->funnel($satu, $year, $month),
+            'causes' => $roadmap['active'] ? $this->causes($satu, $year, $month) : [],
+            'owners' => $this->owners($satu, $year, $month),
+            'actions' => $roadmap['active']
+                ? $this->actions($satu, $year, $month, collect([$row]))
+                : [],
+        ];
+    }
+
+    /**
+     * Ulasan khusus servis, dalam ayat.
+     *
+     * Servis yang roadmap tandakan dijeda mendapat ulasan yang BERBEZA
+     * sepenuhnya: bulan di bawah sasaran ketika tiada kempen berjalan
+     * bukan kegagalan, ia rancangan. Menghakimi kedua-duanya dengan ayat
+     * yang sama menghukum keputusan yang betul.
+     *
+     * @param  array<string, mixed>  $row
+     * @param  array<string, mixed>  $roadmap
+     */
+    private function serviceNarrative(array $row, array $roadmap): string
+    {
+        if (! $roadmap['active']) {
+            return __('report.service.paused', [
+                'service' => $row['service']->name,
+                'status' => $roadmap['label'],
+                'actual' => $this->metrics->formatRm($row['actual']),
+            ]);
+        }
+
+        return __('report.service.narrative_'.$row['status']['key'], [
+            'service' => $row['service']->name,
+            'pct' => number_format($row['pct'], 1).'%',
+            'actual' => $this->metrics->formatRm($row['actual']),
+            'target' => $this->metrics->formatRm($row['target']),
+            'gap' => $this->metrics->formatRm($row['gap']),
+            'status' => $roadmap['label'],
+        ]);
+    }
+
+    /**
+     * Status roadmap servis bagi tempoh ini.
+     *
+     * @return array{active: bool, label: string, months: int, known: bool}
+     */
+    private function roadmapFor(Service $service, int $year, int $month): array
+    {
+        $cells = RoadmapCell::where('service_id', $service->id)
+            ->where('year', $year)
+            ->get()
+            ->keyBy('month');
+
+        if ($cells->isEmpty()) {
+            /*
+             * Tiada roadmap ditetapkan. Melaporkannya sebagai "dijeda"
+             * akan menyenyapkan analisis untuk servis yang mungkin
+             * sedang berjalan; melaporkannya sebagai "aktif" mendakwa
+             * niat yang tiada siapa rekodkan. Dinyatakan seperti adanya.
+             */
+            return ['active' => true, 'label' => __('report.roadmap.unknown'), 'months' => 0, 'known' => false];
+        }
+
+        $status = $cells->get($month)?->status ?? RoadmapStatus::None;
+
+        $aktif = $cells->filter(fn ($c) => $c->status->countsTowardTarget())->count();
+
+        return [
+            'active' => $status->countsTowardTarget(),
+            'label' => $status->label(),
+            'months' => $aktif,
+            'known' => true,
+        ];
+    }
+
+    /**
+     * Berapa banyak servis sedang berjalan bulan ini.
+     *
+     * @param  Collection<int, Service>  $services
+     * @return array<string, mixed>
+     */
+    private function roadmapSummary(Collection $services, int $year, int $month): array
+    {
+        $aktif = [];
+        $jeda = [];
+
+        foreach ($services as $service) {
+            $r = $this->roadmapFor($service, $year, $month);
+
+            if ($r['active']) {
+                $aktif[] = $service->name;
+            } else {
+                $jeda[] = $service->name.' ('.$r['label'].')';
+            }
+        }
+
+        return [
+            'activeCount' => count($aktif),
+            'total' => $services->count(),
+            'active' => implode(', ', $aktif),
+            'paused' => implode(', ', $jeda),
+        ];
     }
 
     /**
