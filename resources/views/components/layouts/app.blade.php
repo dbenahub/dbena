@@ -194,21 +194,56 @@
 
                  Diletak di sini dan bukan dalam kumpulan $lain kerana
                  kumpulan itu dipaparkan SELEPAS Projek. --}}
-            @php $diTask = request()->routeIs('task-planning'); @endphp
+            @php
+                $diTask = request()->routeIs('task-planning');
+                $diKalendar = request()->routeIs('task-calendar');
+            @endphp
 
-            <a href="{{ route('task-planning') }}" wire:navigate
-               class="mb-0.5 flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 transition-colors"
-               @style([
-                   'background: var(--hover-bg2); border-left: 3px solid oklch(0.78 0.12 85)' => $diTask,
-               ])>
-                <i class="ph-duotone ph-calendar-check shrink-0 text-lg"
-                   style="color: {{ $diTask ? 'oklch(0.82 0.12 85)' : 'var(--t60)' }}"
-                   aria-hidden="true"></i>
-                <span class="truncate text-[13px] font-semibold"
-                      style="color: {{ $diTask ? 'var(--t96)' : 'var(--t75)' }}">
-                    {{ __('task.nav') }}
-                </span>
-            </a>
+            {{-- Corak yang sama seperti Dashboard Utama dan Projek: satu
+                 item peringkat atas, sub-item terbuka apabila diklik. --}}
+            <div x-data="{ buka: @js($diTask || $diKalendar) }" class="mb-0.5">
+                <div class="flex items-center gap-1">
+                    <a href="{{ route('task-planning') }}" wire:navigate
+                       class="flex min-w-0 flex-1 items-center gap-2.5 rounded-[10px] px-3 py-2.5 transition-colors"
+                       @style([
+                           'background: var(--hover-bg2); border-left: 3px solid oklch(0.78 0.12 85)' => $diTask,
+                       ])>
+                        <i class="ph-duotone ph-calendar-check shrink-0 text-lg"
+                           style="color: {{ $diTask ? 'oklch(0.82 0.12 85)' : 'var(--t60)' }}"
+                           aria-hidden="true"></i>
+                        <span class="truncate text-[13px] font-semibold"
+                              style="color: {{ $diTask ? 'var(--t96)' : 'var(--t75)' }}">
+                            {{ __('task.nav') }}
+                        </span>
+                    </a>
+
+                    <button type="button" x-on:click="buka = ! buka"
+                            class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                            :aria-expanded="buka ? 'true' : 'false'"
+                            aria-controls="nav-task"
+                            aria-label="{{ __('task.nav') }}">
+                        <i class="ph-duotone ph-caret-down text-sm text-t65 transition-transform"
+                           :class="buka && 'rotate-180'" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <div id="nav-task" x-show="buka" x-collapse x-cloak class="mt-0.5">
+                    <a href="{{ route('task-calendar') }}" wire:navigate
+                       class="ml-3 flex items-center gap-2.5 rounded-[10px] py-2 pl-3 pr-3 transition-colors"
+                       style="border-left: 2px solid var(--border2)"
+                       @style([
+                           'background: var(--hover-bg2); border-left: 2px solid oklch(0.78 0.12 85)' => $diKalendar,
+                       ])>
+                        <i class="ph-duotone ph-calendar-dots shrink-0 text-base"
+                           style="color: {{ $diKalendar ? 'oklch(0.82 0.12 85)' : 'var(--t55)' }}"
+                           aria-hidden="true"></i>
+                        <span class="truncate text-[12.5px] font-semibold"
+                              style="color: {{ $diKalendar ? 'var(--t96)' : 'var(--t65)' }}">
+                            {{ __('calendar_task.nav') }}
+                        </span>
+                    </a>
+                </div>
+            </div>
 
             {{-- ── Projek + kategori ──
                  Corak yang sama seperti Dashboard Utama: satu item peringkat

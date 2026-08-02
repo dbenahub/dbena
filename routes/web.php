@@ -58,6 +58,8 @@ Route::middleware('auth')->prefix('dashboard')->group(function (): void {
     // memadam dan urus jabatan dilindungi gate.
     Route::get('/task-planning', \App\Livewire\Dashboard\TaskPlanner::class)->name('task-planning');
     Route::get('/task-planning/pdf', \App\Http\Controllers\TaskPlannerPdfController::class)->name('task-planning.pdf');
+    Route::get('/task-calendar', \App\Livewire\Dashboard\TaskCalendar::class)->name('task-calendar');
+    Route::get('/task-calendar/pdf', \App\Http\Controllers\TaskCalendarPdfController::class)->name('task-calendar.pdf');
 
     Route::get('/carta-organisasi', \App\Livewire\Dashboard\OrgChart::class)->name('carta');
     Route::get('/carta-organisasi/pdf', \App\Http\Controllers\OrgChartPdfController::class)->name('carta.pdf');

@@ -10,11 +10,18 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class TaskDayMark extends Model
 {
-    protected $fillable = ['monthly_task_id', 'day', 'mark'];
+    protected $fillable = ['monthly_task_id', 'day', 'mark', 'start_time'];
 
     protected function casts(): array
     {
-        return ['day' => 'integer', 'mark' => TaskMark::class];
+        return [
+            'day' => 'integer',
+            'mark' => TaskMark::class,
+            // Dilemparkan sebagai rentetan, bukan datetime. Casting masa
+            // sahaja kepada Carbon melekatkan tarikh hari ini padanya, dan
+            // tarikh itu muncul dalam pengisihan pada hari berikutnya.
+            'start_time' => 'string',
+        ];
     }
 
     public function task(): BelongsTo
