@@ -156,6 +156,11 @@ it('leaves last month’s deadlines out', function (): void {
 it('asks for the action plan before asking for the fix', function (): void {
     // Metrik merah yang sudah mempunyai pelan sedang dikendalikan. Yang
     // tiada pelan sedang tidak dikendalikan oleh sesiapa.
+    RoadmapCell::updateOrCreate(
+        ['service_id' => $this->renovation->id, 'year' => $this->year, 'month' => $this->month],
+        ['status' => RoadmapStatus::ActiveAllYear->value]
+    );
+
     $items = collect(($this->priorities)());
 
     $tiadaPelan = $items->firstWhere('badge', __('priority.badge.no_plan'));
@@ -173,6 +178,11 @@ it('asks for the action plan before asking for the fix', function (): void {
 it('shows the owner’s own action plan, not a generic sentence', function (): void {
     // Ia ayat yang pemilik sendiri tulis, dan menggantikannya dengan ayat
     // generik memadam satu-satunya maklumat khusus di sini.
+    RoadmapCell::updateOrCreate(
+        ['service_id' => $this->renovation->id, 'year' => $this->year, 'month' => $this->month],
+        ['status' => RoadmapStatus::ActiveAllYear->value]
+    );
+
     $metric = CriticalMetric::where('service_id', $this->renovation->id)->firstOrFail();
 
     CriticalMetricMonth::updateOrCreate(
@@ -197,10 +207,9 @@ it('flags a service the roadmap says is active but has no figures', function ():
     // Percanggahan itu tidak kelihatan di mana-mana skrin lain.
     $divider = Service::where('key', 'divider')->firstOrFail();
 
-    RoadmapCell::create([
-        'service_id' => $divider->id, 'year' => $this->year,
-        'month' => $this->month, 'status' => RoadmapStatus::Campaign->value,
-    ]);
+    RoadmapCell::updateOrCreate([
+        'service_id' => $divider->id, 'year' => $this->year, 'month' => $this->month,
+    ], ['status' => RoadmapStatus::Campaign->value]);
 
     $badges = collect(($this->priorities)())->pluck('badge');
 
@@ -211,10 +220,9 @@ it('says nothing about a month the roadmap marked paused', function (): void {
     // Bulan yang dijeda dengan sengaja bukan kegagalan.
     $divider = Service::where('key', 'divider')->firstOrFail();
 
-    RoadmapCell::create([
-        'service_id' => $divider->id, 'year' => $this->year,
-        'month' => $this->month, 'status' => RoadmapStatus::Paused->value,
-    ]);
+    RoadmapCell::updateOrCreate([
+        'service_id' => $divider->id, 'year' => $this->year, 'month' => $this->month,
+    ], ['status' => RoadmapStatus::Paused->value]);
 
     $items = collect(($this->priorities)())
         ->filter(fn (array $i) => $i['badge'] === __('priority.badge.roadmap'))
@@ -275,4 +283,113 @@ it('has an all-clear message ready for a clean week', function (): void {
     // apa yang telah disemak.
     expect(__('priority.all_clear'))->not->toBe('priority.all_clear')
         ->and(__('priority.all_clear_body'))->toContain('pelan tindakan');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Roadmap memutuskan servis mana yang dilaporkan
+|--------------------------------------------------------------------------
+*/
+
+/** Tetapkan status roadmap bagi setiap servis untuk bulan semasa. */
+function setRoadmap(array $statusMengikutKunci): void
+{
+    foreach ($statusMengikutKunci as $kunci => $status) {
+        $service = Service::where('key', $kunci)->firstOrFail();
+
+        RoadmapCell::updateOrCreate(
+            ['service_id' => $service->id, 'year' => (int) now()->year, 'month' => (int) now()->month],
+            ['status' => $status->value]
+        );
+    }
+}
+
+it('says nothing about a service the roadmap paused', function (): void {
+    // Servis yang dijeda tiada pemasaran berjalan, jadi "tiada lead
+    // direkodkan" bukan kegagalan — ia tepat apa yang dirancang.
+    setRoadmap([
+        'renovation' => RoadmapStatus::ActiveAllYear,
+        'kabinet' => RoadmapStatus::Paused,
+        'bina-rumah' => RoadmapStatus::Paused,
+        'divider' => RoadmapStatus::Paused,
+        'mihrab' => RoadmapStatus::Paused,
+    ]);
+
+    $tajuk = collect(($this->priorities)())->pluck('title')->implode(' | ');
+
+    expect($tajuk)->not->toContain('Kabinet')
+        ->and($tajuk)->not->toContain('Divider')
+        ->and($tajuk)->not->toContain('Mihrab');
+});
+
+it('says nothing about a service with no roadmap entry at all', function (): void {
+    // Tiada catatan bermakna tiada niat direkodkan untuk bulan itu.
+    setRoadmap(['renovation' => RoadmapStatus::ActiveAllYear]);
+
+    $ids = collect(($this->priorities)())->pluck('serviceId')->filter()->unique();
+
+    expect($ids->all())->toBe([$this->renovation->id]);
+});
+
+it('still reports a service the roadmap marks active', function (): void {
+    setRoadmap(['renovation' => RoadmapStatus::Campaign]);
+
+    $items = collect(($this->priorities)())->filter(fn (array $i) => $i['serviceId'] !== null);
+
+    expect($items)->not->toBeEmpty();
+});
+
+it('treats resumed months as running', function (): void {
+    // Sambung Semula bermakna kempen berjalan semula, jadi angka
+    // dijangka sekali lagi.
+    setRoadmap(['divider' => RoadmapStatus::Resumed]);
+
+    $divider = Service::where('key', 'divider')->firstOrFail();
+    $ids = collect(($this->priorities)())->pluck('serviceId')->filter()->unique();
+
+    expect($ids->all())->toBe([$divider->id]);
+});
+
+it('does not raise two items about the same empty service', function (): void {
+    // Semakan roadmap sudah menamakan janji roadmap. Peringkat corong yang
+    // terputus tidak menambah apa-apa apabila TIADA angka langsung.
+    setRoadmap(['divider' => RoadmapStatus::Campaign]);
+
+    $divider = Service::where('key', 'divider')->firstOrFail();
+
+    $bagiDivider = collect(($this->priorities)())
+        ->filter(fn (array $i) => $i['serviceId'] === $divider->id);
+
+    expect($bagiDivider)->toHaveCount(1)
+        ->and($bagiDivider->first()['badge'])->toBe(__('priority.badge.roadmap'));
+});
+
+it('falls back to recorded figures when the roadmap month is empty', function (): void {
+    // Menganggap semuanya aktif menghasilkan tepat bunyi yang cuba
+    // dielakkan; menganggap semuanya tidak aktif mengosongkan panel dan
+    // kelihatan rosak.
+    RoadmapCell::query()->delete();
+
+    $ids = collect(($this->priorities)())->pluck('serviceId')->filter()->unique();
+
+    // Data yang disemai hanya membawa angka bagi sebahagian servis, jadi
+    // senarai tidak boleh mengandungi kesemua lima.
+    expect($ids->count())->toBeLessThan(Service::count());
+});
+
+it('keeps task priorities regardless of the roadmap', function (): void {
+    // Tugasan tidak dimiliki oleh mana-mana servis. Menapisnya mengikut
+    // roadmap bermakna tarikh akhir yang terlepas hilang kerana satu
+    // servis yang tidak berkaitan sedang dijeda.
+    setRoadmap([
+        'renovation' => RoadmapStatus::Paused,
+        'kabinet' => RoadmapStatus::Paused,
+        'bina-rumah' => RoadmapStatus::Paused,
+        'divider' => RoadmapStatus::Paused,
+        'mihrab' => RoadmapStatus::Paused,
+    ]);
+
+    taskWithMarks($this->marketing->id, 'Follow up client Kajang', [(int) now()->day => TaskMark::DueDate]);
+
+    expect(collect(($this->priorities)())->pluck('body'))->toContain('Follow up client Kajang');
 });

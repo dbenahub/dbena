@@ -57,7 +57,17 @@ class WeeklyPriorityService
      */
     public function build(int $year, int $month): array
     {
-        $services = Service::orderBy('sort_order')->get();
+        /*
+         * HANYA servis yang sedang berjalan.
+         *
+         * Roadmap memutuskan yang mana. Servis yang dijeda tiada pemasaran
+         * berjalan, jadi "tiada lead direkodkan" bukan kegagalan — ia
+         * tepat apa yang dirancang. Menyenaraikannya menghasilkan lima
+         * amaran serupa yang setiap satunya betul dan tiada satu pun
+         * boleh ditindaklanjuti, dan senarai yang penuh dengan bunyi
+         * mengajar orang berhenti membacanya.
+         */
+        $services = $this->activeServices($year, $month);
 
         $items = collect()
             ->concat($this->fromTasks($year, $month))
@@ -71,6 +81,41 @@ class WeeklyPriorityService
             ->take(self::MAX_ITEMS)
             ->values()
             ->all();
+    }
+
+    /**
+     * Servis yang sedang berjalan bulan ini.
+     *
+     * Roadmap ialah sumber yang berwibawa: ia menyatakan NIAT, dan niat
+     * itulah yang membezakan "sepatutnya ada lead tetapi tiada" daripada
+     * "tiada lead kerana kami memang tidak berkempen".
+     *
+     * SANDARAN apabila roadmap bulan itu belum ditetapkan langsung:
+     * servis yang mempunyai sebarang angka direkodkan dikira berjalan.
+     * Menganggap semuanya aktif dalam keadaan itu menghasilkan tepat
+     * bunyi yang cuba dielakkan; menganggap semuanya tidak aktif
+     * mengosongkan panel dan kelihatan rosak.
+     *
+     * @return Collection<int, Service>
+     */
+    private function activeServices(int $year, int $month): Collection
+    {
+        $services = Service::orderBy('sort_order')->get();
+
+        $cells = RoadmapCell::where('year', $year)->where('month', $month)
+            ->get()
+            ->keyBy('service_id');
+
+        if ($cells->isNotEmpty()) {
+            return $services->filter(
+                fn (Service $s) => ($cells->get($s->id)?->status ?? RoadmapStatus::None)->countsTowardTarget()
+            )->values();
+        }
+
+        return $services->filter(
+            fn (Service $s) => $this->critical->rowsFor($s, $year, $month)
+                ->contains(fn (array $r) => $r['actual'] !== null)
+        )->values();
     }
 
     /**
@@ -179,10 +224,18 @@ class WeeklyPriorityService
                 continue;
             }
 
+            /*
+             * Servis tanpa SEBARANG angka dikendalikan oleh semakan
+             * roadmap sebagai satu item yang menamakan janji roadmap.
+             * Mengeluarkan kedua-duanya bermakna dua baris tentang servis
+             * yang sama, dan yang kedua tidak menambah apa-apa.
+             */
+            $adaAngka = $rows->contains(fn (array $r) => $r['actual'] !== null);
+
             $journey = $this->journey->build($rows);
             $break = $journey['firstBreak'] ?? null;
 
-            if ($break !== null) {
+            if ($break !== null && $adaAngka) {
                 $seterusnya = $journey['nextStage'] ?? null;
 
                 $keluar[] = $this->item(
@@ -272,19 +325,11 @@ class WeeklyPriorityService
     {
         $cells = RoadmapCell::where('year', $year)->where('month', $month)->get()->keyBy('service_id');
 
-        if ($cells->isEmpty()) {
-            return [];
-        }
-
         $keluar = [];
 
+        // $services sudah ditapis kepada yang berjalan sahaja.
         foreach ($services as $service) {
-            $status = $cells->get($service->id)?->status ?? RoadmapStatus::None;
-
-            if (! $status->countsTowardTarget()) {
-                continue;
-            }
-
+            $status = $cells->get($service->id)?->status;
             $rows = $this->critical->rowsFor($service, $year, $month);
 
             // Roadmap menjanjikan bulan aktif; jadual tiada satu pun angka.
@@ -298,10 +343,14 @@ class WeeklyPriorityService
                     icon: 'ph-road-horizon',
                     accent: 'oklch(0.72 0.16 330)',
                     title: __('priority.roadmap_idle', ['service' => $service->name]),
-                    body: __('priority.roadmap_idle_body', [
-                        'status' => $status->label(),
-                        'month' => Carbon::create($year, $month, 1)->translatedFormat('F'),
-                    ]),
+                    body: $status !== null
+                        ? __('priority.roadmap_idle_body', [
+                            'status' => $status->label(),
+                            'month' => Carbon::create($year, $month, 1)->translatedFormat('F'),
+                        ])
+                        : __('priority.no_figures_body', [
+                            'month' => Carbon::create($year, $month, 1)->translatedFormat('F'),
+                        ]),
                     owner: null,
                     route: route('service.detail', $service->key),
                     badge: __('priority.badge.roadmap'),

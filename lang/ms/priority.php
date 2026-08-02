@@ -17,6 +17,8 @@ return [
     'roadmap_idle' => ':service dijadualkan aktif tetapi kosong',
     'roadmap_idle_body' => 'Roadmap menandakan :status untuk :month, tetapi tiada satu pun angka direkodkan.',
 
+    'no_figures_body' => 'Tiada satu pun angka direkodkan untuk :month.',
+
     'badge' => [
         'overdue' => 'LEWAT',
         'today' => 'HARI INI',

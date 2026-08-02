@@ -17,6 +17,8 @@ return [
     'roadmap_idle' => ':service is scheduled active but empty',
     'roadmap_idle_body' => 'The roadmap marks :status for :month, but not a single figure was recorded.',
 
+    'no_figures_body' => 'Not a single figure was recorded for :month.',
+
     'badge' => [
         'overdue' => 'OVERDUE',
         'today' => 'TODAY',
