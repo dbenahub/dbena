@@ -94,6 +94,18 @@
         <x-trend-chart :chart="$serviceChart" height="300px" />
     </div>
 
+    {{-- ══ Strategic Planning & KPI Alignment ══
+         Diletak di ATAS peta perjalanan dengan sengaja. Papan ini
+         menyatakan sasaran yang dipersetujui dan siapa memilikinya; peta
+         di bawahnya menunjukkan prestasi berbanding sasaran itu. Membaca
+         prestasi sebelum sasaran bermakna membaca nombor tanpa rujukan.
+
+         Paparan SAHAJA untuk semua peranan, termasuk Admin. Sheet ialah
+         satu-satunya penulis — dua penulis kepada data yang sama bermakna
+         suntingan hilang secara senyap pada sync berikutnya. --}}
+    <x-strategy-board :service="$service" :plan="$strategyPlan"
+                      :tiles="$strategyTiles" :rows="$strategyRows" />
+
     {{-- ══ Peta Perjalanan Sales ══
          Diletak SEBELUM carta trend dengan sengaja. Carta menunjukkan
          pergerakan setiap metrik; peta menunjukkan metrik mana yang

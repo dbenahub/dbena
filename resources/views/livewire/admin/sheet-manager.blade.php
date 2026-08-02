@@ -767,4 +767,65 @@
             </span>
         </div>
     </div>
+    {{-- ══ Strategic Planning & KPI Alignment ══
+         SATU fail, satu tab setiap servis. Pautan ditaip sekali; nama tab
+         setiap servis di bawahnya. Menyimpan pautan lima kali bermakna
+         lima peluang untuk ia menyimpang. --}}
+    <div class="dbena-card p-5 sm:p-6">
+        <div class="mb-1 flex flex-wrap items-center gap-2">
+            <i class="ph-duotone ph-strategy text-lg" style="color: oklch(0.82 0.14 85)" aria-hidden="true"></i>
+            <h2 class="text-base font-bold">{{ __('strategy.admin.title') }}</h2>
+        </div>
+        <p class="mb-4 text-[12px] leading-relaxed text-t55">{{ __('strategy.admin.note') }}</p>
+
+        <div>
+            <label for="str-url" class="mb-1.5 block text-[11.5px] text-t55">{{ __('strategy.admin.url') }}</label>
+            <input id="str-url" type="url" wire:model="strategyUrl" class="dbena-input"
+                   placeholder="https://docs.google.com/spreadsheets/d/...">
+        </div>
+
+        <div class="mt-4 overflow-hidden rounded-xl" style="border: 1px solid var(--border2)">
+            @foreach ($services as $service)
+                @php $si = $strategySheets[$service->id] ?? null; @endphp
+
+                <div class="flex flex-wrap items-center gap-3 px-4 py-3"
+                     @style(['border-top: 1px solid var(--border3)' => ! $loop->first])>
+                    <span class="flex w-40 shrink-0 items-center gap-2 text-[12.5px] font-bold text-t85">
+                        <i class="ph-duotone {{ $service->icon_class }} text-base"
+                           style="color: {{ $service->chart_color }}" aria-hidden="true"></i>
+                        {{ $service->name }}
+                    </span>
+
+                    <input type="text" wire:model="strategyTabs.{{ $service->id }}"
+                           class="dbena-input min-w-0 flex-1"
+                           aria-label="{{ __('strategy.admin.tab') }} — {{ $service->name }}"
+                           placeholder="{{ __('strategy.admin.tab_placeholder') }}">
+
+                    <span class="w-44 shrink-0 text-[11px] text-t50">
+                        @if ($si?->last_synced_at)
+                            {{ __('strategy.synced_at', ['time' => $si->last_synced_at->translatedFormat('d M, H:i')]) }}
+                            · {{ (int) ($strategyCounts[$service->id] ?? 0) }}
+                        @else
+                            {{ __('strategy.admin.never') }}
+                        @endif
+                    </span>
+
+                    <button type="button" wire:click="syncStrategy({{ $service->id }})"
+                            class="flex shrink-0 items-center gap-1.5 rounded-[9px] px-3 py-2 text-[12px] font-semibold text-t80"
+                            style="border: 1px solid var(--border2)">
+                        <i class="ph-duotone ph-arrows-clockwise text-sm" aria-hidden="true"></i>
+                        {{ __('strategy.admin.sync') }}
+                    </button>
+                </div>
+            @endforeach
+        </div>
+
+        <div class="mt-4 flex flex-wrap items-center gap-2.5">
+            <button type="button" wire:click="saveStrategySheets"
+                    class="dbena-btn-gold flex items-center gap-2 px-4 py-2.5 text-[12.5px]">
+                <i class="ph-duotone ph-floppy-disk text-base" aria-hidden="true"></i>
+                {{ __('strategy.admin.save') }}
+            </button>
+        </div>
+    </div>
 </div>

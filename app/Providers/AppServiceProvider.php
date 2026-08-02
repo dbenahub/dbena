@@ -76,5 +76,9 @@ class AppServiceProvider extends ServiceProvider
          */
         Gate::define('export-projects', fn ($user) => $user->isAdmin());
         Gate::define('sync-projects', fn ($user) => $user->isAdmin());
+
+        // Strategic Planning & KPI Alignment ialah dokumen tadbir urus.
+        // Pengguna membacanya; hanya Admin menyambung dan menyegerak.
+        Gate::define('manage-strategy', fn ($user) => $user->isAdmin());
     }
 }

@@ -11,6 +11,9 @@ use App\Models\CriticalWeeklyEntry;
 use App\Models\Owner;
 use App\Models\Service;
 use App\Models\SheetIntegration;
+use App\Models\StrategyPlan;
+use App\Models\StrategyRow;
+use App\Models\StrategyTile;
 use App\Services\AuditLogger;
 use App\Services\CriticalDataService;
 use App\Services\DashboardMetricsService;
@@ -379,6 +382,17 @@ class ServiceDetail extends Component
                 'siteVisit' => $this->weeklyTargetLabel($siteVisitRow, $metrics),
             ],
             'journey' => app(SalesJourneyService::class)->build($rows),
+
+            /*
+             * Papan strategik. Dibaca terus daripada jadual salinan sheet;
+             * tiada tindakan pada skrin ini menulis kepadanya, termasuk
+             * untuk Admin.
+             */
+            'strategyPlan' => StrategyPlan::where('service_id', $service->id)->first(),
+            'strategyTiles' => StrategyTile::where('service_id', $service->id)
+                ->orderBy('position')->get(),
+            'strategyRows' => StrategyRow::where('service_id', $service->id)
+                ->orderBy('position')->get(),
             'serviceChart' => $metrics->buildChart($monthLabels, $chartActuals, $chartTargets),
             'weekHeaders' => $metrics->getCriticalWeekLabels($this->month, $this->year),
             'monthLabels' => $monthLabels,

@@ -12,6 +12,7 @@ use App\Models\SheetSyncLog;
 use App\Services\AuditLogger;
 use App\Services\Sheets\ProjectSyncService;
 use App\Services\Sheets\SheetSyncService;
+use App\Services\Sheets\StrategySyncService;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -65,6 +66,15 @@ class SheetManager extends Component
     public string $projectTab = '';
     public int $projectHeaderRow = 0;
 
+    // ── Tab Strategic Planning ────────────────────────────────────────
+    // SATU fail, satu tab setiap servis. Pautan disimpan sekali pada baris
+    // global; nama tab disimpan pada baris setiap servis. Menyimpan pautan
+    // lima kali bermakna lima peluang untuk ia menyimpang.
+    public string $strategyUrl = '';
+
+    /** @var array<int, string> service_id => nama tab */
+    public array $strategyTabs = [];
+
     public ?string $previewError = null;
     public bool $showAppsScript = false;
 
@@ -80,6 +90,7 @@ class SheetManager extends Component
         $this->loadIntegration();
 
         $this->loadProjectSheet();
+        $this->loadStrategySheets();
     }
 
     /** Simpan serta-merta apabila suis sync ditukar, supaya UI tidak menipu. */
@@ -187,6 +198,119 @@ class SheetManager extends Component
 
         $this->dispatch('dbena-toast',
             message: $mesej,
+            variant: $result['status'] === 'failed' ? 'error' : 'success');
+    }
+
+    /**
+     * Baris global memegang pautan fail; baris setiap servis memegang tab.
+     */
+    private function strategyGlobal(): SheetIntegration
+    {
+        return SheetIntegration::firstOrCreate(
+            ['kind' => 'strategy', 'service_id' => null],
+            ['connected' => false]
+        );
+    }
+
+    private function strategyFor(Service $service): SheetIntegration
+    {
+        return SheetIntegration::firstOrCreate(
+            ['kind' => 'strategy', 'service_id' => $service->id],
+            ['connected' => false]
+        );
+    }
+
+    private function loadStrategySheets(): void
+    {
+        $this->strategyUrl = (string) ($this->strategyGlobal()->url ?? '');
+
+        foreach (Service::orderBy('sort_order')->get() as $service) {
+            $this->strategyTabs[$service->id] = (string) ($this->strategyFor($service)->tab_name ?? '');
+        }
+    }
+
+    /**
+     * Simpan pautan sekali, dan salin ke setiap baris servis.
+     *
+     * Baris servis membawa salinan pautan kerana penyegerak menerima satu
+     * integrasi dan mesti dapat membacanya sendiri. Menjadikannya mencari
+     * baris global bermakna setiap pemanggil perlu tahu tentang susunan
+     * dua peringkat ini.
+     */
+    public function saveStrategySheets(AuditLogger $audit): void
+    {
+        $this->authorize('manage-strategy');
+
+        $url = trim($this->strategyUrl) ?: null;
+
+        $this->strategyGlobal()->fill([
+            'url' => $url,
+            'spreadsheet_id' => SheetIntegration::extractSpreadsheetId($url),
+            'connected' => filled($url),
+            'updated_by' => auth()->id(),
+        ])->save();
+
+        foreach (Service::orderBy('sort_order')->get() as $service) {
+            $tab = trim($this->strategyTabs[$service->id] ?? '') ?: null;
+
+            $this->strategyFor($service)->fill([
+                'url' => $url,
+                'spreadsheet_id' => SheetIntegration::extractSpreadsheetId($url),
+                'tab_name' => $tab,
+                'header_row' => 0,
+                'connected' => filled($url) && filled($tab),
+                'updated_by' => auth()->id(),
+            ])->save();
+        }
+
+        $audit->log('strategy_sheet.saved', $this->strategyGlobal(), $url ?? '—');
+
+        $this->dispatch('dbena-toast', message: __('strategy.admin.saved'));
+    }
+
+    /** Tarik tab strategic planning bagi SATU servis. */
+    public function syncStrategy(int $serviceId, AuditLogger $audit, StrategySyncService $sync): void
+    {
+        $this->authorize('manage-strategy');
+
+        $this->saveStrategySheets($audit);
+
+        $service = Service::findOrFail($serviceId);
+        $integration = $this->strategyFor($service);
+
+        if (blank($integration->url)) {
+            $this->dispatch('dbena-toast', message: __('sheets.not_ready.no_link'), variant: 'error');
+
+            return;
+        }
+
+        if (blank($integration->tab_name)) {
+            // Tanpa nama tab, Google memulangkan helaian PERTAMA fail —
+            // yang untuk lima servis dalam satu fail bermakna empat servis
+            // menyegerak data servis yang salah tanpa sebarang ralat.
+            $this->dispatch('dbena-toast',
+                message: __('strategy.admin.no_tab', ['service' => $service->name]),
+                variant: 'error');
+
+            return;
+        }
+
+        $result = $sync->sync($integration);
+
+        $integration->forceFill([
+            'last_synced_at' => now(),
+            'last_sync_status' => $result['status'],
+            'last_sync_message' => $result['message'],
+            'last_sync_rows' => $result['rows'],
+        ])->save();
+
+        $audit->log('strategy_sheet.synced', $integration, $service->name, [
+            'rows' => $result['rows'],
+            'tiles' => $result['tiles'],
+        ]);
+
+        $this->dispatch('dbena-toast',
+            message: $service->name.' — '.$result['message'],
             variant: $result['status'] === 'failed' ? 'error' : 'success');
     }
 
@@ -455,6 +579,13 @@ class SheetManager extends Component
             'driverLabel' => app(\App\Contracts\SheetReader::class)->label(),
             'projectSheet' => $this->projectIntegration(),
             'projectCount' => \App\Models\Project::count(),
+            'strategySheets' => SheetIntegration::where('kind', 'strategy')
+                ->whereNotNull('service_id')
+                ->get()
+                ->keyBy('service_id'),
+            'strategyCounts' => \App\Models\StrategyRow::selectRaw('service_id, count(*) as jumlah')
+                ->groupBy('service_id')
+                ->pluck('jumlah', 'service_id'),
         ])->layoutData([
             'pageTitle' => __('sheets.page_title'),
             'pageSubtitle' => __('sheets.page_subtitle'),
