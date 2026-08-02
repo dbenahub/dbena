@@ -110,9 +110,20 @@ class GoogleCalendarReader
              * masalahnya bukan perkongsian langsung, dan menyuruh admin
              * mengongsi semula ialah membuang masa mereka.
              */
+            $probe = $this->probe();
+
+            /*
+             * Kedua-dua siasatan boleh mengesan API yang dimatikan — satu
+             * daripada panggilan acara, satu daripada calendarList. Tanpa
+             * semakan ini admin membaca arahan yang SAMA dua kali
+             * berturut-turut, yang kelihatan seperti sistem tersekat dan
+             * bukan seperti satu masalah yang jelas.
+             */
             return [
                 'ok' => false,
-                'message' => $this->probe().' '.$e->getMessage(),
+                'message' => $probe['state'] === 'api_disabled'
+                    ? $probe['message']
+                    : trim($probe['message'].' '.$e->getMessage()),
                 'count' => 0,
             ];
         }
@@ -130,25 +141,39 @@ class GoogleCalendarReader
      * Mengembalikan satu ayat awalan yang menamakan lapisan mana yang
      * gagal, supaya admin tahu tetapan mana perlu disentuh.
      */
-    private function probe(): string
+    /**
+     * @return array{state: string, message: string}
+     */
+    private function probe(): array
     {
         try {
             $response = Http::withToken($this->accessToken())
                 ->timeout((int) config('dbena.sheets.timeout_seconds'))
                 ->get('https://www.googleapis.com/calendar/v3/users/me/calendarList', ['maxResults' => 10]);
         } catch (Throwable $e) {
-            return __('roadmap.calendar.probe_network', ['message' => $e->getMessage()]);
+            return [
+                'state' => 'network',
+                'message' => __('roadmap.calendar.probe_network', ['message' => $e->getMessage()]),
+            ];
         }
 
         $reason = (string) ($response->json('error.errors.0.reason') ?? '');
         $message = (string) ($response->json('error.message') ?? '');
 
         if ($reason === 'accessNotConfigured' || str_contains($message, 'has not been used in project')) {
-            return __('roadmap.calendar.api_disabled', ['url' => $this->enableApiUrl() ?? '—']);
+            return [
+                'state' => 'api_disabled',
+                'message' => __('roadmap.calendar.api_disabled', ['url' => $this->enableApiUrl() ?? '—']),
+            ];
         }
 
         if (! $response->successful()) {
-            return __('roadmap.calendar.probe_failed', ['message' => $message ?: (string) $response->status()]);
+            return [
+                'state' => 'failed',
+                'message' => __('roadmap.calendar.probe_failed', [
+                    'message' => $message ?: (string) $response->status(),
+                ]),
+            ];
         }
 
         // API aktif dan token sah. Senaraikan kalendar yang ROBOT nampak —
@@ -160,7 +185,12 @@ class GoogleCalendarReader
             ->take(5)
             ->implode(', ');
 
-        return __('roadmap.calendar.probe_ok', ['list' => $ids !== '' ? $ids : __('roadmap.calendar.probe_none')]);
+        return [
+            'state' => 'ok',
+            'message' => __('roadmap.calendar.probe_ok', [
+                'list' => $ids !== '' ? $ids : __('roadmap.calendar.probe_none'),
+            ]),
+        ];
     }
 
     /**

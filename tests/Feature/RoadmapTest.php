@@ -469,3 +469,13 @@ it('passes Google’s own words through', function (): void {
 
     expect($e->getMessage())->toContain('The service account does not have permission');
 });
+
+it('says the API is disabled once, not twice', function (): void {
+    // Kedua-dua siasatan mengesan perkara yang sama. Membaca arahan yang
+    // SAMA dua kali berturut-turut kelihatan seperti sistem tersekat dan
+    // bukan seperti satu masalah yang jelas.
+    $mesej = __('roadmap.calendar.api_disabled', ['url' => 'https://console.cloud.google.com/x']);
+
+    expect(substr_count($mesej.' '.$mesej, 'press ENABLE'))->toBe(2)
+        ->and(substr_count($mesej, 'press ENABLE'))->toBe(1);
+});
