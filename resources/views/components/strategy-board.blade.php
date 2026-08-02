@@ -1,4 +1,4 @@
-@props(['service', 'plan' => null, 'tiles' => null, 'rows' => null])
+@props(['service', 'plan' => null, 'tiles' => null, 'rows' => null, 'mismatch' => []])
 
 @php
     $tiles = collect($tiles ?? []);
@@ -194,6 +194,49 @@
                         </div>
                     @endforeach
                 </div>
+
+                {{-- ══ Sasaran yang tidak sepadan ══
+                     Disenaraikan di sini DAN ditandakan pada jadual Data
+                     Kritikal. Penanda pada jadual memberitahu nombor mana
+                     yang dipertikaikan; senarai ini memberitahu sheet mana
+                     yang perlu disunting, kerana kedua-dua nombor dimiliki
+                     oleh Google Sheet dan bukan oleh dashboard. --}}
+                @if (count($mismatch) > 0)
+                    <div class="overflow-hidden rounded-xl"
+                         style="background: oklch(0.79 0.15 85/0.08); border: 1px solid oklch(0.79 0.15 85/0.4)">
+                        <div class="flex gap-2.5 px-4 pb-2 pt-3">
+                            <i class="ph-duotone ph-warning-diamond mt-px shrink-0 text-[17px]"
+                               style="color: oklch(0.82 0.14 85)" aria-hidden="true"></i>
+                            <div class="min-w-0">
+                                <div class="text-[12.5px] font-extrabold" style="color: oklch(0.85 0.13 85)">
+                                    {{ __('align.title', ['count' => count($mismatch)]) }}
+                                </div>
+                                <p class="mt-0.5 text-[11.5px] leading-relaxed text-t65">
+                                    {{ auth()->user()?->can('manage-strategy')
+                                        ? __('align.body_admin')
+                                        : __('align.body') }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col gap-1 px-4 pb-3 pt-1">
+                            @foreach ($mismatch as $m)
+                                <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[11.5px]">
+                                    <span class="font-bold text-t85">{{ $m['label'] }}</span>
+                                    <span class="text-t55">{{ __('align.critical') }}</span>
+                                    <span class="font-bold" style="color: oklch(0.72 0.15 145)">{{ $m['criticalLabel'] }}</span>
+                                    <span class="text-t45">·</span>
+                                    <span class="text-t55">{{ __('align.plan') }}</span>
+                                    <span class="font-bold" style="color: oklch(0.82 0.14 85)">{{ $m['plannedLabel'] }}</span>
+                                    <span class="text-t45">({{ $m['planTargetText'] }})</span>
+                                    @if (filled($m['planPic']))
+                                        <span class="text-t50">— {{ $m['planPic'] }}</span>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
 
                 {{-- Jalur kaki: menyatakan sheet ialah penulisnya. Tanpa
                      ini pengguna mencari butang edit yang sengaja tiada. --}}

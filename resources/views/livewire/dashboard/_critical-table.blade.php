@@ -137,6 +137,23 @@
                             <span class="font-semibold" style="color: oklch(0.72 0.15 145)"
                                   title="{{ __('service.target_admin_only') }}">{{ $row['targetLabel'] }}</span>
                         @endif
+
+                        {{-- Penanda percanggahan. Dua nombor rasmi yang tidak
+                             sepadan lebih buruk daripada satu nombor yang salah:
+                             pemilik yang mencapai salah satu daripadanya percaya
+                             dia sudah selamat. --}}
+                        @if ($beza = ($targetMismatch[$row['metricKey']] ?? null))
+                            <span class="mt-1 inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold"
+                                  style="background: oklch(0.79 0.15 85/0.16); color: oklch(0.82 0.14 85)"
+                                  title="{{ __('align.tooltip', [
+                                      'plan' => $beza['plannedLabel'],
+                                      'raw' => $beza['planTargetText'],
+                                      'kra' => $beza['planKra'],
+                                  ]) }}">
+                                <i class="ph-duotone ph-warning-diamond text-[11px]" aria-hidden="true"></i>
+                                {{ __('align.badge', ['plan' => $beza['plannedLabel']]) }}
+                            </span>
+                        @endif
                     </div>
 
                     <x-status-dot :color="$row['statusColor']" :label="$row['statusLabel']" size="7px" />
@@ -200,6 +217,13 @@
                             <span class="text-t60">{{ __('service.col_target') }}:
                                 <b style="color: oklch(0.72 0.15 145)">{{ $row['targetLabel'] }}</b>
                             </span>
+                            @if ($beza = ($targetMismatch[$row['metricKey']] ?? null))
+                                <span class="inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold"
+                                      style="background: oklch(0.79 0.15 85/0.16); color: oklch(0.82 0.14 85)">
+                                    <i class="ph-duotone ph-warning-diamond text-[11px]" aria-hidden="true"></i>
+                                    {{ __('align.badge', ['plan' => $beza['plannedLabel']]) }}
+                                </span>
+                            @endif
                         </div>
                     </div>
                     <i class="ph-duotone ph-caret-down shrink-0 text-t55 transition-transform"

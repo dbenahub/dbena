@@ -18,6 +18,7 @@ use App\Services\AuditLogger;
 use App\Services\CriticalDataService;
 use App\Services\DashboardMetricsService;
 use App\Services\SalesJourneyService;
+use App\Services\TargetAlignmentService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -393,6 +394,18 @@ class ServiceDetail extends Component
                 ->orderBy('position')->get(),
             'strategyRows' => StrategyRow::where('service_id', $service->id)
                 ->orderBy('position')->get(),
+
+            /*
+             * Percanggahan sasaran antara dua sheet.
+             *
+             * Kedua-dua nombor kelihatan rasmi pada skrinnya sendiri,
+             * jadi tanpa penunjuk ini pemilik yang mencapai satu
+             * daripadanya percaya dia sudah selamat.
+             */
+            'targetMismatch' => app(TargetAlignmentService::class)->compare(
+                $rows,
+                StrategyRow::where('service_id', $service->id)->orderBy('position')->get()
+            ),
             'serviceChart' => $metrics->buildChart($monthLabels, $chartActuals, $chartTargets),
             'weekHeaders' => $metrics->getCriticalWeekLabels($this->month, $this->year),
             'monthLabels' => $monthLabels,

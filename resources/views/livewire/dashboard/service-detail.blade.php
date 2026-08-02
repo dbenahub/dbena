@@ -104,7 +104,8 @@
          satu-satunya penulis — dua penulis kepada data yang sama bermakna
          suntingan hilang secara senyap pada sync berikutnya. --}}
     <x-strategy-board :service="$service" :plan="$strategyPlan"
-                      :tiles="$strategyTiles" :rows="$strategyRows" />
+                      :tiles="$strategyTiles" :rows="$strategyRows"
+                      :mismatch="$targetMismatch" />
 
     {{-- ══ Peta Perjalanan Sales ══
          Diletak SEBELUM carta trend dengan sengaja. Carta menunjukkan

@@ -165,3 +165,49 @@ it('does not sweep strategy rows into the critical data sync', function (): void
 
     expect($diambil->where('kind', 'strategy'))->toBeEmpty();
 });
+
+/*
+|--------------------------------------------------------------------------
+| Penjajaran sasaran antara dua sheet
+|--------------------------------------------------------------------------
+*/
+
+it('marks a target the two sheets disagree on', function (): void {
+    // Kedua-dua nombor kelihatan rasmi pada skrinnya sendiri, jadi tanpa
+    // penanda ini pemilik yang mencapai satu daripadanya percaya dia
+    // sudah selamat.
+    StrategyRow::create([
+        'service_id' => $this->renovation->id, 'position' => 2,
+        'kra' => 'Closing Sales', 'kpi' => 'Sales Collection',
+        'target' => 'RM999,000 / bulan', 'pic' => 'Zikri',
+    ]);
+
+    Livewire::actingAs($this->user)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertSee(__('align.critical'))
+        ->assertSee('RM999,000');
+});
+
+it('stays quiet when the two sheets agree', function (): void {
+    // Amaran palsu mengajar orang mengabaikan penunjuk ini sepenuhnya.
+    Livewire::actingAs($this->user)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertDontSee(__('align.critical'));
+});
+
+it('tells an admin which sheet to edit', function (): void {
+    // Kedua-dua nombor dimiliki oleh Google Sheet, bukan oleh dashboard.
+    StrategyRow::create([
+        'service_id' => $this->renovation->id, 'position' => 2,
+        'kra' => 'Closing Sales', 'kpi' => 'Sales Collection',
+        'target' => 'RM999,000 / bulan', 'pic' => 'Zikri',
+    ]);
+
+    Livewire::actingAs($this->admin)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertSee(__('align.body_admin'));
+
+    Livewire::actingAs($this->user)
+        ->test(ServiceDetail::class, ['key' => 'renovation'])
+        ->assertSee(__('align.body'));
+});
