@@ -54,6 +54,11 @@ Route::middleware('auth')->prefix('dashboard')->group(function (): void {
     Route::get('/tetapan', Tetapan::class)->name('tetapan');
 
     // Carta Organisasi — paparan untuk semua; eksport dilindungi gate.
+    // Monthly Task Planning — boleh disunting oleh semua pengguna;
+    // memadam dan urus jabatan dilindungi gate.
+    Route::get('/task-planning', \App\Livewire\Dashboard\TaskPlanner::class)->name('task-planning');
+    Route::get('/task-planning/pdf', \App\Http\Controllers\TaskPlannerPdfController::class)->name('task-planning.pdf');
+
     Route::get('/carta-organisasi', \App\Livewire\Dashboard\OrgChart::class)->name('carta');
     Route::get('/carta-organisasi/pdf', \App\Http\Controllers\OrgChartPdfController::class)->name('carta.pdf');
 
@@ -67,4 +72,5 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function (): v
     Route::get('/sheets', \App\Livewire\Admin\SheetManager::class)->name('admin.sheets');
     Route::get('/roadmap', \App\Livewire\Admin\RoadmapEditor::class)->name('admin.roadmap');
     Route::get('/carta-organisasi', \App\Livewire\Admin\OrgChartEditor::class)->name('admin.carta');
+    Route::get('/task-departments', \App\Livewire\Admin\TaskDepartmentManager::class)->name('admin.task-departments');
 });

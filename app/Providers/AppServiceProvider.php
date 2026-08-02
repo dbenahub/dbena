@@ -89,5 +89,19 @@ class AppServiceProvider extends ServiceProvider
         // Carta organisasi membawa nama penuh setiap kakitangan. Pengguna
         // membacanya; hanya Admin menyunting dan mengeksport.
         Gate::define('manage-org-chart', fn ($user) => $user->isAdmin());
+
+        /*
+         * Papan tugasan bulanan boleh disunting oleh SEMUA pengguna.
+         *
+         * Ia dikemas kini secara langsung semasa mesyuarat mingguan —
+         * seorang menaip sambil semua melihat. Mengehadkannya kepada Admin
+         * bermakna mesyuarat berhenti setiap kali orang yang salah sedang
+         * memegang papan kekunci.
+         *
+         * Memadam dan mengurus jabatan kekal Admin: memadam ialah
+         * satu-satunya tindakan di sini yang tidak boleh dibuat asal.
+         */
+        Gate::define('manage-task-departments', fn ($user) => $user->isAdmin());
+        Gate::define('delete-monthly-task', fn ($user) => $user->isAdmin());
     }
 }

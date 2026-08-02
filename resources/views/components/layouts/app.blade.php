@@ -102,6 +102,12 @@
 
                 if ($user?->isAdmin()) {
                     $lain->push([
+                        'label' => __('task.admin.title'), 'icon' => 'ph-list-checks',
+                        'route' => route('admin.task-departments'),
+                        'active' => request()->routeIs('admin.task-departments'),
+                    ]);
+
+                    $lain->push([
                         'label' => __('app.nav.roadmap'), 'icon' => 'ph-road-horizon',
                         'route' => route('admin.roadmap'), 'active' => request()->routeIs('admin.roadmap'),
                     ]);
@@ -179,6 +185,30 @@
                     @endforeach
                 </div>
             </div>
+
+            {{-- ── Monthly Task Planning ──
+                 Antara Dashboard Utama dan Projek dengan sengaja. Ia
+                 perkara pertama yang dibuka dalam mesyuarat mingguan, dan
+                 senarai yang disusun mengikut kekerapan penggunaan lebih
+                 pantas daripada senarai yang disusun mengikut abjad.
+
+                 Diletak di sini dan bukan dalam kumpulan $lain kerana
+                 kumpulan itu dipaparkan SELEPAS Projek. --}}
+            @php $diTask = request()->routeIs('task-planning'); @endphp
+
+            <a href="{{ route('task-planning') }}" wire:navigate
+               class="mb-0.5 flex items-center gap-2.5 rounded-[10px] px-3 py-2.5 transition-colors"
+               @style([
+                   'background: var(--hover-bg2); border-left: 3px solid oklch(0.78 0.12 85)' => $diTask,
+               ])>
+                <i class="ph-duotone ph-calendar-check shrink-0 text-lg"
+                   style="color: {{ $diTask ? 'oklch(0.82 0.12 85)' : 'var(--t60)' }}"
+                   aria-hidden="true"></i>
+                <span class="truncate text-[13px] font-semibold"
+                      style="color: {{ $diTask ? 'var(--t96)' : 'var(--t75)' }}">
+                    {{ __('task.nav') }}
+                </span>
+            </a>
 
             {{-- ── Projek + kategori ──
                  Corak yang sama seperti Dashboard Utama: satu item peringkat
