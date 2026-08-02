@@ -503,3 +503,51 @@ it('summarises the August board the way the sheet does', function (): void {
         ->and($summary['pending'])->toBe(1)
         ->and($summary['inProgress'])->toBe(2);
 });
+
+/*
+|--------------------------------------------------------------------------
+| Penyemaian tidak boleh bergantung pada langkah manual
+|--------------------------------------------------------------------------
+*/
+
+it('seeds the board from a migration, not a manual command', function (): void {
+    // Menyuruh seseorang menjalankan seeder selepas setiap deploy menambah
+    // langkah yang mesti diingat, dijalankan di tempat yang betul, dan
+    // dilaporkan dengan betul oleh UI hos. Kesemua tiga boleh gagal.
+    $migrasi = glob(database_path('migrations/*seed_task_planning_data.php'));
+
+    expect($migrasi)->not->toBeEmpty();
+
+    $isi = file_get_contents($migrasi[0]);
+
+    expect($isi)->toContain('TaskDepartmentSeeder')
+        ->and($isi)->toContain('TaskPlanningExampleSeeder');
+});
+
+it('does not delete real meeting records on rollback', function (): void {
+    // Papan ini disunting oleh manusia sebaik ia muncul. Membuangnya pada
+    // rollback bermakna satu migrate:rollback memadam rekod mesyuarat
+    // sebenar yang tiada salinan di tempat lain.
+    $migrasi = glob(database_path('migrations/*seed_task_planning_data.php'));
+    $isi = file_get_contents($migrasi[0]);
+
+    // Bahagian down() tidak boleh mengandungi sebarang pemadaman.
+    $down = substr($isi, strpos($isi, 'public function down'));
+
+    expect($down)->not->toContain('delete')
+        ->and($down)->not->toContain('truncate')
+        ->and($down)->not->toContain('dropIfExists');
+});
+
+it('stays safe when the seeder already ran by hand', function (): void {
+    // Migrasi ini selamat walaupun seseorang sudah menjalankan seeder
+    // secara manual sebelum ini.
+    $sebelumDept = TaskDepartment::count();
+    $sebelumTask = MonthlyTask::where('year', 2026)->where('month', 8)->count();
+
+    $this->seed(Database\Seeders\TaskDepartmentSeeder::class);
+    $this->seed(Database\Seeders\TaskPlanningExampleSeeder::class);
+
+    expect(TaskDepartment::count())->toBe($sebelumDept)
+        ->and(MonthlyTask::where('year', 2026)->where('month', 8)->count())->toBe($sebelumTask);
+});
