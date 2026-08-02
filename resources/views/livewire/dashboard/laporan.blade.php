@@ -64,11 +64,49 @@
             </div>
         </div>
 
-        {{-- Eksport CSV sebenar --}}
-        <a href="{{ route('laporan.export', ['tahun' => $year, 'bulan' => $month, 'servis' => $serviceKey]) }}"
-           class="dbena-btn-gold ml-auto flex items-center gap-2 px-4 py-2.5 text-[13px]">
-            <i class="ph-duotone ph-download-simple" aria-hidden="true"></i> {{ __('laporan.export') }}
-        </a>
+        {{-- Pemilih tempoh. Mingguan, bulanan dan tahunan menjawab soalan
+             yang berbeza: mingguan untuk mesyuarat, bulanan untuk prestasi,
+             tahunan untuk arah. Satu tempoh tetap memaksa pembaca mengira
+             sendiri dua yang lain. --}}
+        <div class="flex items-center gap-1 rounded-[10px] p-1" style="background: var(--hover-bg2)">
+            @foreach (\App\Enums\ReportPeriod::cases() as $p)
+                <button type="button" wire:click="selectPeriod('{{ $p->value }}')"
+                        class="rounded-[7px] px-3 py-1.5 text-[12px] font-bold transition-colors"
+                        style="{{ $period === $p->value
+                            ? 'background: oklch(0.30 0.13 350); color: #fff'
+                            : 'color: var(--t65)' }}">
+                    {{ $p->label() }}
+                </button>
+            @endforeach
+        </div>
+
+        @if ($period === 'weekly')
+            <select wire:model.live="week" class="dbena-input w-[110px] text-[12.5px]"
+                    aria-label="{{ __('report.week_label') }}">
+                @foreach (range(1, 4) as $w)
+                    <option value="{{ $w }}">{{ __('report.week_label') }} {{ $w }}</option>
+                @endforeach
+            </select>
+        @endif
+
+        <div class="ml-auto flex flex-wrap items-center gap-2">
+            {{-- PDF ialah butang utama. CSV kekal kerana data mentah masih
+                 diperlukan untuk kerja lanjutan, tetapi ia bukan lagi
+                 satu-satunya pilihan — dan ia bukan laporan. --}}
+            <a href="{{ route('laporan.pdf', [
+                    'tempoh' => $period, 'tahun' => $year, 'bulan' => $month,
+                    'minggu' => $week, 'servis' => $serviceKey,
+               ]) }}"
+               class="dbena-btn-gold flex items-center gap-2 px-4 py-2.5 text-[13px]">
+                <i class="ph-duotone ph-file-pdf" aria-hidden="true"></i> {{ __('report.export_pdf') }}
+            </a>
+
+            <a href="{{ route('laporan.export', ['tahun' => $year, 'bulan' => $month, 'servis' => $serviceKey]) }}"
+               class="flex items-center gap-2 rounded-[10px] px-3.5 py-2.5 text-[12.5px] font-semibold text-t80"
+               style="border: 1px solid var(--border2)">
+                <i class="ph-duotone ph-file-csv" aria-hidden="true"></i> {{ __('report.export_csv') }}
+            </a>
+        </div>
     </div>
 
     {{-- ══ 4 kad KPI ══ --}}

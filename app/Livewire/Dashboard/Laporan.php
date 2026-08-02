@@ -23,6 +23,29 @@ class Laporan extends Component
     #[Url(as: 'servis')]
     public ?string $serviceKey = null;
 
+    /*
+     * Tempoh laporan. Mingguan, bulanan dan tahunan menjawab soalan yang
+     * berbeza: mingguan untuk mesyuarat, bulanan untuk prestasi, tahunan
+     * untuk arah. Satu tempoh tetap memaksa pembaca mengira sendiri dua
+     * yang lain.
+     */
+    #[Url(as: 'tempoh')]
+    public string $period = 'monthly';
+
+    #[Url(as: 'minggu')]
+    public int $week = 1;
+
+    public function selectPeriod(string $period): void
+    {
+        $this->period = \App\Enums\ReportPeriod::tryFrom($period)?->value
+            ?? \App\Enums\ReportPeriod::Monthly->value;
+    }
+
+    public function selectWeek(int $week): void
+    {
+        $this->week = max(1, min(4, $week));
+    }
+
     public function mount(): void
     {
         $this->year = (int) now()->year;

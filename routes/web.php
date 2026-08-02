@@ -49,6 +49,7 @@ Route::middleware('auth')->prefix('dashboard')->group(function (): void {
     Route::get('/servis/{key}', ServiceDetail::class)->name('service.detail');
     Route::get('/laporan', Laporan::class)->name('laporan');
     Route::get('/laporan/eksport', ReportExportController::class)->name('laporan.export');
+    Route::get('/laporan/pdf', \App\Http\Controllers\ComprehensiveReportPdfController::class)->name('laporan.pdf');
     Route::get('/laporan/pemilik', \App\Livewire\Dashboard\OwnerReport::class)->name('laporan.owner');
     Route::get('/laporan/pemilik/pdf', OwnerReportPdfController::class)->name('laporan.owner.pdf');
     Route::get('/tetapan', Tetapan::class)->name('tetapan');
