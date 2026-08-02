@@ -10,6 +10,7 @@ use App\Models\IndexTier;
 use App\Models\Priority;
 use App\Models\Service;
 use App\Services\DashboardMetricsService;
+use App\Services\RoadmapService;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -38,6 +39,31 @@ class Overview extends Component
 
     #[Url(as: 'period')]
     public string $period = 'monthly';
+
+    /*
+     * Tahun roadmap TERPISAH daripada tahun dashboard.
+     *
+     * Roadmap ialah dokumen perancangan — melihat rancangan tahun hadapan
+     * pada bulan Ogos ialah perkara biasa. Mengikatnya kepada penapis
+     * tahun dashboard bermakna menukar rancangan turut menukar setiap
+     * nombor prestasi di halaman, dan pengguna kehilangan tempatnya.
+     */
+    #[Url(as: 'roadmap')]
+    public ?int $roadmapYear = null;
+
+    /**
+     * Kaedah dinamakan berbeza daripada sifat dengan sengaja.
+     *
+     * Livewire menyelesaikan wire:click terhadap kaedah DAN sifat. Kaedah
+     * bernama sama dengan sifatnya ialah kekaburan yang gagal secara
+     * senyap dan bukan dengan ralat.
+     */
+    public function showRoadmapYear(int $year): void
+    {
+        // Julat dihadkan supaya URL yang dikarang tangan tidak menghasilkan
+        // tahun 9999 dan dua belas sel kosong yang kelihatan seperti bug.
+        $this->roadmapYear = max(2023, min(2035, $year));
+    }
 
     public function mount(): void
     {
@@ -232,7 +258,10 @@ class Overview extends Component
         }
         $stackBars = $metrics->buildStackedBars($services, $stackedInput, $monthLabels);
 
+        $roadmap = app(RoadmapService::class)->build($this->roadmapYear ?? $this->year);
+
         return view('livewire.dashboard.overview', [
+            'roadmap' => $roadmap,
             'services' => $services,
             'serviceRows' => $serviceRows,
             'tiersView' => $tiersView,

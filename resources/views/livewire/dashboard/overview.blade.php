@@ -328,6 +328,16 @@
         </div>
     </div>
 
+    {{-- ══ Roadmap Tahunan Servis ══
+         Diletak di ATAS carta trend dengan sengaja. Carta menjawab "apa
+         yang berlaku"; roadmap menjawab "apa yang kita rancang". Membaca
+         prestasi sebelum rancangan bermakna menilai nombor tanpa mengetahui
+         sama ada bulan itu sepatutnya aktif atau sengaja dijeda.
+
+         Paparan sahaja di sini untuk SEMUA peranan. Suntingan hidup dalam
+         Panel Admin. --}}
+    <x-annual-roadmap :roadmap="$roadmap" />
+
     {{-- ══ BLOK 4: Trend + Keutamaan ══ --}}
     <div class="flex flex-col items-start gap-5 xl:flex-row xl:gap-6">
         <div class="dbena-card w-full p-5 sm:p-6 xl:flex-[2]">

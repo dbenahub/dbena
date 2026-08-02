@@ -38,6 +38,7 @@ return [
         'dashboard' => 'Main Dashboard',
         'laporan' => 'Reports',
         'owner_report' => 'Owner Report',
+        'roadmap' => 'Annual Roadmap',
         'sheets' => 'Google Sheet',
         'tetapan' => 'Settings',
     ],

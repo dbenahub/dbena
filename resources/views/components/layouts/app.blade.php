@@ -88,6 +88,11 @@
 
                 if ($user?->isAdmin()) {
                     $lain->push([
+                        'label' => __('app.nav.roadmap'), 'icon' => 'ph-road-horizon',
+                        'route' => route('admin.roadmap'), 'active' => request()->routeIs('admin.roadmap'),
+                    ]);
+
+                    $lain->push([
                         'label' => __('app.nav.sheets'), 'icon' => 'ph-plugs-connected',
                         'route' => route('admin.sheets'), 'active' => request()->routeIs('admin.sheets'),
                     ]);

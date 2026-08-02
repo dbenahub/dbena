@@ -80,5 +80,10 @@ class AppServiceProvider extends ServiceProvider
         // Strategic Planning & KPI Alignment ialah dokumen tadbir urus.
         // Pengguna membacanya; hanya Admin menyambung dan menyegerak.
         Gate::define('manage-strategy', fn ($user) => $user->isAdmin());
+
+        // Roadmap DITULIS oleh aplikasi, bukan disegerak daripada sheet.
+        // Kerana itu setiap kaedah penulis mesti menyemak gate ini sendiri
+        // — menyorok grid tidak menghalang panggilan Livewire terus.
+        Gate::define('manage-roadmap', fn ($user) => $user->isAdmin());
     }
 }

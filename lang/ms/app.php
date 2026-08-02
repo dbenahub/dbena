@@ -38,6 +38,7 @@ return [
         'dashboard' => 'Dashboard Utama',
         'laporan' => 'Laporan',
         'owner_report' => 'Laporan Pemilik',
+        'roadmap' => 'Roadmap Tahunan',
         'sheets' => 'Google Sheet',
         'tetapan' => 'Tetapan',
     ],

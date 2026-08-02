@@ -61,4 +61,5 @@ Route::middleware('auth')->prefix('dashboard')->group(function (): void {
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->group(function (): void {
     Route::get('/', ConfigPanel::class)->name('admin.panel');
     Route::get('/sheets', \App\Livewire\Admin\SheetManager::class)->name('admin.sheets');
+    Route::get('/roadmap', \App\Livewire\Admin\RoadmapEditor::class)->name('admin.roadmap');
 });
