@@ -33,13 +33,20 @@ class StrategySyncService
 {
     /** Tajuk lajur jadual utama yang dikenali. */
     private const HEADERS = [
+        // Visi ialah LAJUR dalam sheet DBENA, bukan sel bertanda sendiri.
+        // Satu sel bergabung menegak merentasi setiap baris KRA, jadi
+        // Google memulangkan teksnya pada baris data PERTAMA sahaja.
+        'vision' => ['vision', 'visi'],
         'kra' => ['kra', 'key result area', 'bidang'],
         'kpi' => ['kpi', 'petunjuk', 'indicator'],
         'target' => ['target', 'sasaran'],
         'tactics' => ['tactics', 'tactic', 'taktik', 'strategi'],
         'initiatives' => ['initiatives', 'initiative', 'inisiatif', 'tindakan'],
         'timeline' => ['timeline', 'tempoh', 'masa', 'jadual'],
-        'pic' => ['pic/ci', 'pic / ci', 'pic', 'ci', 'pemilik', 'owner', 'hod'],
+
+        // 'ci' sendiri dibuang dengan sengaja: sebagai subrentetan ia
+        // memadankan perkataan biasa dan boleh merampas lajur yang salah.
+        'pic' => ['pic/ci', 'pic / ci', 'pic', 'pemilik', 'owner', 'hod'],
     ];
 
     /** Tajuk jalur petak ringkasan yang dikenali. */
@@ -58,17 +65,18 @@ class StrategySyncService
      * siapa dalam DBENA sepatutnya perlu tahu nama ikon.
      */
     private const ICONS = [
-        'jualan' => 'ph-chart-line-up',
-        'sales' => 'ph-chart-line-up',
-        'revenue' => 'ph-chart-line-up',
-        'harian' => 'ph-calendar-blank',
-        'daily' => 'ph-calendar-blank',
-        'lead' => 'ph-users-three',
-        'site visit' => 'ph-map-pin',
-        'visit' => 'ph-map-pin',
-        'appointment' => 'ph-map-pin',
-        'quotation' => 'ph-file-text',
-        'sebut harga' => 'ph-file-text',
+        /*
+         * URUTAN PENTING — padanan pertama menang.
+         *
+         * "Sales Collection" mengandungi kedua-dua 'collection' dan
+         * 'sales'. Letakkan 'sales' dahulu dan petak kutipan mendapat
+         * ikon carta jualan, yang menjadikan dua petak berbeza kelihatan
+         * seperti mengukur perkara yang sama.
+         *
+         * Begitu juga 'hari' mesti mendahului 'lead': sasaran harian dan
+         * mingguan berkongsi KPI yang sama, jadi hanya perkataan tempoh
+         * itu yang membezakannya.
+         */
         'collection' => 'ph-hand-coins',
         'kutipan' => 'ph-hand-coins',
         'claim' => 'ph-clipboard-text',
@@ -76,6 +84,18 @@ class StrategySyncService
         'testimoni' => 'ph-star',
         'testimonial' => 'ph-star',
         'review' => 'ph-star',
+        'quotation' => 'ph-file-text',
+        'sebut harga' => 'ph-file-text',
+        'site visit' => 'ph-map-pin',
+        'visit' => 'ph-map-pin',
+        'appointment' => 'ph-map-pin',
+        'harian' => 'ph-calendar-blank',
+        'hari' => 'ph-calendar-blank',
+        'daily' => 'ph-calendar-blank',
+        'lead' => 'ph-users-three',
+        'jualan' => 'ph-chart-line-up',
+        'sales' => 'ph-chart-line-up',
+        'revenue' => 'ph-chart-line-up',
     ];
 
     public function __construct(private readonly SheetReader $reader) {}
@@ -111,10 +131,13 @@ class StrategySyncService
             return $this->failure(__('strategy.sync.no_rows'));
         }
 
-        $tiles = $this->readTiles($grid, $headerRow);
+        // Jalur ringkasan eksplisit menang jika ada. Sheet DBENA tiada
+        // satu pun, jadi petak diterbitkan daripada lajur Target — sumber
+        // yang sama yang digunakan oleh reka bentuk asal.
+        $tiles = $this->readTiles($grid, $headerRow) ?: $this->tilesFromTargets($rows);
         $serviceId = $integration->service_id;
 
-        DB::transaction(function () use ($serviceId, $grid, $headerRow, $rows, $tiles): void {
+        DB::transaction(function () use ($serviceId, $grid, $headerRow, $map, $rows, $tiles): void {
             /*
              * Padam dahulu, tulis kemudian.
              *
@@ -139,7 +162,8 @@ class StrategySyncService
                 ['service_id' => $serviceId],
                 [
                     'heading' => $this->findHeading($grid, $headerRow),
-                    'vision' => $this->findVision($grid, $headerRow),
+                    'vision' => $this->columnVision($grid, $headerRow, $map)
+                        ?? $this->findVision($grid, $headerRow),
                     'synced_at' => now(),
                 ]
             );
@@ -225,10 +249,47 @@ class StrategySyncService
         $rows = [];
         $kosongBerturut = 0;
 
+        $medan = ['kpi', 'target', 'tactics', 'initiatives', 'timeline', 'pic'];
+
         foreach (array_slice($grid, $headerRow + 1, null, true) as $i => $row) {
             $kra = $this->text($row, $map['kra'] ?? null);
 
             if ($kra === null) {
+                /*
+                 * SEL BERGABUNG.
+                 *
+                 * Lead Management memegang dua sasaran — 150 seminggu dan
+                 * 25 sehari — dengan KRA, KPI dan PIC digabung menegak
+                 * merentasi kedua-dua baris. Google memulangkan sel
+                 * bergabung hanya pada baris pertamanya, jadi baris kedua
+                 * tiba dengan KRA kosong dan hanya sasaran diisi.
+                 *
+                 * Melangkaunya sebagai baris kosong akan membuang sasaran
+                 * itu secara senyap, dan "25 lead / hari" ialah antara
+                 * nombor yang paling kerap disebut dalam pelan ini.
+                 */
+                $sambungan = [];
+
+                foreach ($medan as $field) {
+                    $nilai = $this->text($row, $map[$field] ?? null);
+
+                    if ($nilai !== null) {
+                        $sambungan[$field] = $nilai;
+                    }
+                }
+
+                if ($sambungan !== [] && $rows !== []) {
+                    $akhir = array_key_last($rows);
+
+                    foreach ($sambungan as $field => $nilai) {
+                        $rows[$akhir][$field] = trim(($rows[$akhir][$field] ?? '')."\n".$nilai);
+                    }
+
+                    $kosongBerturut = 0;
+
+                    continue;
+                }
+
                 /*
                  * Satu baris kosong di tengah jadual biasanya jarak visual,
                  * bukan penghujung. Dua berturut-turut bermakna jadual
@@ -299,6 +360,105 @@ class StrategySyncService
         }
 
         return [];
+    }
+
+    /**
+     * Visi daripada lajur Vision.
+     *
+     * Sel itu bergabung menegak merentasi setiap baris KRA, jadi Google
+     * memulangkan teksnya pada baris data PERTAMA sahaja dan setiap baris
+     * selepasnya tiba kosong.
+     *
+     * @param  array<int, array<int, mixed>>  $grid
+     * @param  array<string, int>  $map
+     */
+    private function columnVision(array $grid, int $headerRow, array $map): ?string
+    {
+        if (! isset($map['vision'])) {
+            return null;
+        }
+
+        foreach (array_slice($grid, $headerRow + 1, 15) as $row) {
+            $nilai = $this->text($row, $map['vision']);
+
+            if ($nilai !== null) {
+                return $nilai;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Petak ringkasan diterbitkan daripada lajur Target.
+     *
+     * Reka bentuk asal membina lapan petaknya daripada sasaran yang sama
+     * yang tersenarai dalam jadual. Menyalin nombor itu ke jalur berasingan
+     * dalam sheet akan mencipta sumber kedua yang mesti dikemas kini dua
+     * kali — dan yang akan menyimpang pada kali pertama seseorang lupa.
+     *
+     * Hanya sasaran dengan nilai boleh ukur menjadi petak. "Project siap
+     * awal dari jadual" ialah komitmen, bukan nombor untuk dipaparkan
+     * besar-besar, dan reka bentuk asal turut meninggalkannya.
+     *
+     * @param  array<int, array<string, mixed>>  $rows
+     * @return array<int, array<string, mixed>>
+     */
+    private function tilesFromTargets(array $rows): array
+    {
+        $tiles = [];
+
+        foreach ($rows as $row) {
+            $label = $row['kpi'] ?? $row['kra'];
+
+            // Sel bergabung menghasilkan beberapa sasaran dalam satu sel.
+            // Lead Management membawa 150 seminggu DAN 25 sehari.
+            foreach (preg_split('/\r?\n/', (string) ($row['target'] ?? '')) as $baris) {
+                $baris = trim($baris);
+
+                if ($baris === '') {
+                    continue;
+                }
+
+                $pecah = $this->splitTarget($baris);
+
+                if ($pecah === null) {
+                    continue;
+                }
+
+                $tiles[] = [
+                    'label' => $label,
+                    'value' => $pecah['value'],
+                    'unit' => $pecah['unit'],
+                    'icon' => $this->icon($label.' '.$baris),
+                ];
+            }
+        }
+
+        return $tiles;
+    }
+
+    /**
+     * Pisahkan "RM500,000 / bulan" kepada nilai dan unit.
+     *
+     * Nilai kekal sebagai teks. "> RM600,000" kehilangan maksudnya sebaik
+     * sahaja ia menjadi 600000, dan tiada satu pun nombor ini pernah
+     * dikira — ia dipaparkan.
+     *
+     * @return array{value: string, unit: ?string}|null
+     */
+    private function splitTarget(string $text): ?array
+    {
+        $pola = '/^\s*([<>≥≤]?\s*(?:RM\s*)?\d[\d,.]*\s*%?)\s*(.*)$/iu';
+
+        if (! preg_match($pola, $text, $m)) {
+            return null;
+        }
+
+        $value = trim(preg_replace('/\s+/', ' ', $m[1]));
+        $unit = trim($m[2]);
+
+        return ['value' => $value, 'unit' => $unit === '' ? null : $unit];
     }
 
     /**

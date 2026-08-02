@@ -93,7 +93,10 @@
                                        style="color: {{ $emas }}" aria-hidden="true"></i>
                                 </span>
 
-                                <div class="text-[9.5px] font-bold uppercase leading-tight tracking-wide text-t60">
+                                {{-- line-clamp-2: label datang daripada lajur KPI, yang
+                                     ditulis sebagai ayat penuh. Membiarkannya membalut
+                                     bebas menjadikan lapan petak berbeza tinggi. --}}
+                                <div class="line-clamp-2 text-[9.5px] font-bold uppercase leading-tight tracking-wide text-t60">
                                     {{ $tile->position }}. {{ $tile->label }}
                                 </div>
 
@@ -125,12 +128,16 @@
                             <div class="grid gap-px text-[11.5px] leading-relaxed"
                                  style="{{ $grid }} background: {{ $loop->even ? 'var(--hover-bg3)' : 'transparent' }};
                                         border-top: 1px solid var(--border3)">
-                                <div class="px-3 py-2.5 font-bold text-t90">{{ $row->kra }}</div>
-                                <div class="px-3 py-2.5 text-t75">{{ $row->kpi ?? '—' }}</div>
-                                <div class="px-3 py-2.5 font-bold text-t90">{{ $row->target ?? '—' }}</div>
-                                <div class="px-3 py-2.5 text-t70">{{ $row->tactics ?? '—' }}</div>
-                                <div class="px-3 py-2.5 text-t70">{{ $row->initiatives ?? '—' }}</div>
-                                <div class="px-3 py-2.5 text-t70">{{ $row->timeline ?? '—' }}</div>
+                                {{-- whitespace-pre-line: satu sel boleh membawa beberapa
+                                     baris. Lead Management memegang 150 seminggu DAN 25
+                                     sehari dalam sel Target yang bergabung. Tanpa ini
+                                     kedua-duanya bercantum menjadi satu ayat. --}}
+                                <div class="whitespace-pre-line px-3 py-2.5 font-bold text-t90">{{ $row->kra }}</div>
+                                <div class="whitespace-pre-line px-3 py-2.5 text-t75">{{ $row->kpi ?? '—' }}</div>
+                                <div class="whitespace-pre-line px-3 py-2.5 font-bold text-t90">{{ $row->target ?? '—' }}</div>
+                                <div class="whitespace-pre-line px-3 py-2.5 text-t70">{{ $row->tactics ?? '—' }}</div>
+                                <div class="whitespace-pre-line px-3 py-2.5 text-t70">{{ $row->initiatives ?? '—' }}</div>
+                                <div class="whitespace-pre-line px-3 py-2.5 text-t70">{{ $row->timeline ?? '—' }}</div>
                                 <div class="px-3 py-2.5">
                                     @if (filled($row->pic))
                                         <span class="inline-flex w-full items-center justify-center rounded-md px-2 py-1.5 text-[10.5px] font-extrabold text-white"
@@ -179,7 +186,7 @@
                                             <div class="text-[9.5px] font-extrabold uppercase tracking-wide text-t50">
                                                 {{ __('strategy.col.'.$key) }}
                                             </div>
-                                            <div class="mt-0.5 text-[12px] leading-relaxed text-t80">{{ $value }}</div>
+                                            <div class="mt-0.5 whitespace-pre-line text-[12px] leading-relaxed text-t80">{{ $value }}</div>
                                         </div>
                                     @endif
                                 @endforeach

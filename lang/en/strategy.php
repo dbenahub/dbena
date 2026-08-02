@@ -28,7 +28,7 @@ return [
         'note' => 'One Google Sheet file, one tab per service. Paste the file link once, then name the tab for each service.',
         'url' => 'Google Sheet file link',
         'tab' => 'Tab name',
-        'tab_placeholder' => 'e.g. STRATEGIC_RENOVATION',
+        'tab_placeholder' => 'e.g. RENOVATION',
         'save' => 'Save',
         'sync' => 'Sync',
         'sync_all' => 'Sync all services',

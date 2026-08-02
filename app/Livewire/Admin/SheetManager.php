@@ -225,7 +225,17 @@ class SheetManager extends Component
         $this->strategyUrl = (string) ($this->strategyGlobal()->url ?? '');
 
         foreach (Service::orderBy('sort_order')->get() as $service) {
-            $this->strategyTabs[$service->id] = (string) ($this->strategyFor($service)->tab_name ?? '');
+            /*
+             * Tab dalam fail DBENA dinamakan tepat seperti servis dalam
+             * huruf besar: RENOVATION, KABINET, BINA RUMAH, DIVIDER,
+             * MIHRAB. Mengisinya terlebih dahulu bermakna admin menampal
+             * pautan dan terus menekan Sync.
+             *
+             * Hanya cadangan — nilai yang disimpan sentiasa menang, jadi
+             * tab yang dinamakan semula tidak akan ditulis ganti.
+             */
+            $this->strategyTabs[$service->id] = (string) ($this->strategyFor($service)->tab_name
+                ?? mb_strtoupper($service->name_ms));
         }
     }
 

@@ -28,7 +28,7 @@ return [
         'note' => 'Satu fail Google Sheet, satu tab setiap servis. Tampal pautan fail sekali, kemudian namakan tab bagi setiap servis.',
         'url' => 'Pautan fail Google Sheet',
         'tab' => 'Nama tab',
-        'tab_placeholder' => 'contoh: STRATEGIC_RENOVATION',
+        'tab_placeholder' => 'contoh: RENOVATION',
         'save' => 'Simpan',
         'sync' => 'Sync',
         'sync_all' => 'Sync semua servis',
