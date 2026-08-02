@@ -71,7 +71,7 @@
         <div class="flex flex-col items-center gap-2 px-6 py-10 text-center">
             <i class="ph-duotone ph-clipboard-text text-[30px] text-t50" aria-hidden="true"></i>
             <div class="text-[13px] font-bold text-t80">{{ __('strategy.empty_title') }}</div>
-            <p class="max-w-md text-[12px] leading-relaxed text-t55">
+            <p class="max-w-md text-[12.5px] leading-relaxed text-t70">
                 {{ auth()->user()?->can('manage-strategy')
                     ? __('strategy.empty_body_admin')
                     : __('strategy.empty_body') }}
@@ -94,7 +94,7 @@
 
                     <div class="h-px w-10" style="background: {{ $emas }}"></div>
 
-                    <p class="text-[12px] leading-relaxed text-white/85">
+                    <p class="text-[12.5px] leading-relaxed text-white/95">
                         <span class="mr-0.5 text-[18px] font-black leading-none" style="color: {{ $emas }}">&ldquo;</span>{{ $plan->vision }}<span class="ml-0.5 text-[18px] font-black leading-none" style="color: {{ $emas }}">&rdquo;</span>
                     </p>
                 </div>
@@ -117,14 +117,14 @@
                                 {{-- line-clamp-2: label datang daripada lajur KPI, yang
                                      ditulis sebagai ayat penuh. Membiarkannya membalut
                                      bebas menjadikan lapan petak berbeza tinggi. --}}
-                                <div class="line-clamp-2 text-[9.5px] font-bold uppercase leading-tight tracking-wide text-t60">
+                                <div class="line-clamp-2 text-[10px] font-bold uppercase leading-tight tracking-wide text-t70">
                                     {{ $tile->position }}. {{ $tile->label }}
                                 </div>
 
                                 <div class="text-[15px] font-extrabold leading-none text-t94">{{ $tile->value }}</div>
 
                                 @if (filled($tile->unit))
-                                    <div class="text-[9.5px] leading-tight text-t50">{{ $tile->unit }}</div>
+                                    <div class="text-[10px] leading-tight text-t60">{{ $tile->unit }}</div>
                                 @endif
                             </div>
                         @endforeach
@@ -133,12 +133,12 @@
 
                 {{-- ══ Jadual — desktop ══ --}}
                 @php
-                    $grid = 'grid-template-columns: 190px 170px 165px minmax(210px,1.2fr) minmax(210px,1.2fr) 105px 135px;';
+                    $grid = 'grid-template-columns: 195px 175px 170px minmax(215px,1.2fr) minmax(215px,1.2fr) 110px 140px;';
                 @endphp
 
                 <div class="hidden overflow-x-auto lg:block">
-                    <div class="min-w-[1180px] overflow-hidden rounded-xl" style="border: 1px solid var(--border2)">
-                        <div class="grid gap-px px-0 py-0 text-[10.5px] font-extrabold uppercase tracking-wide text-white"
+                    <div class="min-w-[1220px] overflow-hidden rounded-xl" style="border: 1px solid var(--border2)">
+                        <div class="grid gap-px px-0 py-0 text-[11px] font-extrabold uppercase tracking-wide text-white"
                              style="{{ $grid }} background: linear-gradient(180deg, oklch(0.30 0.07 250), oklch(0.24 0.06 250))">
                             @foreach (['kra', 'kpi', 'target', 'tactics', 'initiatives', 'timeline', 'pic'] as $c)
                                 <div class="flex items-center gap-1.5 px-3 py-2.5">{{ __('strategy.col.'.$c) }}</div>
@@ -146,19 +146,25 @@
                         </div>
 
                         @foreach ($rows as $row)
-                            <div class="grid gap-px text-[11.5px] leading-relaxed"
+                            {{-- 12.5px, bukan 11.5px, dan berat 500 pada setiap sel.
+                                 Token t70 lulus WCAG AA di sini (6.8:1), jadi
+                                 masalahnya bukan warna — pada 11.5px berat biasa,
+                                 lejang huruf menjadi terlalu halus untuk dibaca
+                                 pada latar gelap walaupun nisbah kontrasnya cukup.
+                                 Nisbah tidak mengukur ketebalan lejang. --}}
+                            <div class="grid gap-px text-[12.5px] leading-relaxed"
                                  style="{{ $grid }} background: {{ $loop->even ? 'var(--hover-bg3)' : 'transparent' }};
                                         border-top: 1px solid var(--border3)">
                                 {{-- whitespace-pre-line: satu sel boleh membawa beberapa
                                      baris. Lead Management memegang 150 seminggu DAN 25
                                      sehari dalam sel Target yang bergabung. Tanpa ini
                                      kedua-duanya bercantum menjadi satu ayat. --}}
-                                <div class="whitespace-pre-line px-3 py-2.5 font-bold text-t90">{{ $row->kra }}</div>
-                                <div class="whitespace-pre-line px-3 py-2.5 text-t75">{{ $row->kpi ?? '—' }}</div>
-                                <div class="whitespace-pre-line px-3 py-2.5 font-bold text-t90">{{ $row->target ?? '—' }}</div>
-                                <div class="whitespace-pre-line px-3 py-2.5 text-t70">{{ $row->tactics ?? '—' }}</div>
-                                <div class="whitespace-pre-line px-3 py-2.5 text-t70">{{ $row->initiatives ?? '—' }}</div>
-                                <div class="whitespace-pre-line px-3 py-2.5 text-t70">{{ $row->timeline ?? '—' }}</div>
+                                <div class="whitespace-pre-line px-3 py-3 font-bold text-t94">{{ $row->kra }}</div>
+                                <div class="whitespace-pre-line px-3 py-3 font-medium text-t85">{{ $row->kpi ?? '—' }}</div>
+                                <div class="whitespace-pre-line px-3 py-3 font-bold text-t94">{{ $row->target ?? '—' }}</div>
+                                <div class="whitespace-pre-line px-3 py-3 font-medium text-t85">{{ $row->tactics ?? '—' }}</div>
+                                <div class="whitespace-pre-line px-3 py-3 font-medium text-t85">{{ $row->initiatives ?? '—' }}</div>
+                                <div class="whitespace-pre-line px-3 py-3 font-medium text-t80">{{ $row->timeline ?? '—' }}</div>
                                 <div class="px-3 py-2.5">
                                     @if (filled($row->pic))
                                         <span class="inline-flex w-full items-center justify-center rounded-md px-2 py-1.5 text-[10.5px] font-extrabold text-white"
@@ -204,10 +210,10 @@
                                 ] as $key => $value)
                                     @if (filled($value))
                                         <div>
-                                            <div class="text-[9.5px] font-extrabold uppercase tracking-wide text-t50">
+                                            <div class="text-[10px] font-extrabold uppercase tracking-wide text-t60">
                                                 {{ __('strategy.col.'.$key) }}
                                             </div>
-                                            <div class="mt-0.5 whitespace-pre-line text-[12px] leading-relaxed text-t80">{{ $value }}</div>
+                                            <div class="mt-0.5 whitespace-pre-line text-[12.5px] font-medium leading-relaxed text-t85">{{ $value }}</div>
                                         </div>
                                     @endif
                                 @endforeach
@@ -232,7 +238,7 @@
                                 <div class="text-[12.5px] font-extrabold" style="color: oklch(0.85 0.13 85)">
                                     {{ __('align.title', ['count' => count($mismatch)]) }}
                                 </div>
-                                <p class="mt-0.5 text-[11.5px] leading-relaxed text-t65">
+                                <p class="mt-0.5 text-[12px] leading-relaxed text-t75">
                                     {{ auth()->user()?->can('manage-strategy')
                                         ? __('align.body_admin')
                                         : __('align.body') }}
@@ -242,16 +248,16 @@
 
                         <div class="flex flex-col gap-1 px-4 pb-3 pt-1">
                             @foreach ($mismatch as $m)
-                                <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[11.5px]">
+                                <div class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-[12px]">
                                     <span class="font-bold text-t85">{{ $m['label'] }}</span>
-                                    <span class="text-t55">{{ __('align.critical') }}</span>
+                                    <span class="text-t65">{{ __('align.critical') }}</span>
                                     <span class="font-bold" style="color: oklch(0.72 0.15 145)">{{ $m['criticalLabel'] }}</span>
-                                    <span class="text-t45">·</span>
-                                    <span class="text-t55">{{ __('align.plan') }}</span>
+                                    <span class="text-t55">·</span>
+                                    <span class="text-t65">{{ __('align.plan') }}</span>
                                     <span class="font-bold" style="color: oklch(0.82 0.14 85)">{{ $m['plannedLabel'] }}</span>
-                                    <span class="text-t45">({{ $m['planTargetText'] }})</span>
+                                    <span class="text-t60">({{ $m['planTargetText'] }})</span>
                                     @if (filled($m['planPic']))
-                                        <span class="text-t50">— {{ $m['planPic'] }}</span>
+                                        <span class="text-t60">— {{ $m['planPic'] }}</span>
                                     @endif
                                 </div>
                             @endforeach
@@ -261,7 +267,7 @@
 
                 {{-- Jalur kaki: menyatakan sheet ialah penulisnya. Tanpa
                      ini pengguna mencari butang edit yang sengaja tiada. --}}
-                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[10.5px] text-t50">
+                <div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-t60">
                     <span class="inline-flex items-center gap-1.5">
                         <i class="ph-duotone ph-lock-simple text-[13px]" aria-hidden="true"></i>
                         {{ __('strategy.view_only') }}
