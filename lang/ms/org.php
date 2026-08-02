@@ -24,6 +24,16 @@ return [
     'edit' => 'Mod susun',
     'done' => 'Selesai susun',
 
+    'pdf' => [
+        'title' => 'ORGANIZATIONAL CHART',
+        'subtitle' => 'STRUKTUR ORGANISASI | DBENA SDN BHD',
+        'governance' => 'CORPORATE GOVERNANCE',
+        'registration' => 'Registration No. :no',
+        'effective' => 'Effective: :date',
+        'footer_left' => 'DBENA SDN BHD | Struktur Organisasi',
+        'footer_right' => 'Sulit — Dokumen Dalaman Syarikat',
+    ],
+
     'editor' => [
         'add' => 'Tambah kotak',
         'added' => 'Kotak baharu ditambah di tengah kanvas.',

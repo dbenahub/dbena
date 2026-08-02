@@ -24,6 +24,16 @@ return [
     'edit' => 'Arrange mode',
     'done' => 'Done arranging',
 
+    'pdf' => [
+        'title' => 'ORGANIZATIONAL CHART',
+        'subtitle' => 'STRUKTUR ORGANISASI | DBENA SDN BHD',
+        'governance' => 'CORPORATE GOVERNANCE',
+        'registration' => 'Registration No. :no',
+        'effective' => 'Effective: :date',
+        'footer_left' => 'DBENA SDN BHD | Organizational Structure',
+        'footer_right' => 'Confidential — Internal Corporate Document',
+    ],
+
     'editor' => [
         'add' => 'Add box',
         'added' => 'A new box was added in the middle of the canvas.',

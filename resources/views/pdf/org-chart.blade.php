@@ -1,130 +1,190 @@
+@php
+    /*
+     * Sengaja TIADA pernyataan "use" di sini — lihat tools/check-blade-use.py.
+     *
+     * DomPDF: tiada flexbox, tiada CSS grid, tiada <svg> sebaris, tiada
+     * transform. Setiap kedudukan mutlak dan dikira dahulu dalam
+     * OrgChartPdfLayout.
+     */
+    $marun = '#6B1F47';
+    $marunGelap = '#4A1236';
+@endphp
 <!DOCTYPE html>
-<html lang="{{ app()->getLocale() }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <title>{{ __('org.title') }} — DBENA SDN BHD</title>
     <style>
-        /*
-         * Warna PDF ditulis sebagai hex, bukan token tema.
-         *
-         * DomPDF tidak menyelesaikan pembolehubah CSS atau oklch(). Token
-         * tema akan menjadi hitam pekat pada setiap elemen, dan carta itu
-         * dicetak sebagai kotak hitam di atas putih.
-         */
+        /* A3 landskap. Saiz halaman TETAP, dan carta diskalakan untuk muat.
+           Versi pertama menetapkan halaman kepada saiz kanvas, yang
+           menghasilkan PDF bersaiz pelik yang setiap pencetak tafsir
+           berbeza — sesetengahnya memotong tepi tanpa amaran. */
         @page { margin: 0; }
+
         body {
             margin: 0;
-            font-family: DejaVu Sans, sans-serif;
+            padding: 0;
+            font-family: "DejaVu Sans", sans-serif;
             background: #ffffff;
-            color: #1a1420;
+            color: #1A1420;
         }
-        .kepala {
-            padding: 14px 20px 10px;
-            border-bottom: 2px solid #8e2a5f;
-        }
-        .tajuk {
-            font-size: 15px;
-            font-weight: bold;
-            letter-spacing: 3px;
-            color: #6b1f47;
-            text-transform: uppercase;
-        }
-        .sub { font-size: 9px; color: #6b6570; margin-top: 2px; }
-        .kanvas { position: relative; }
-        .kotak {
+
+        .bingkai {
             position: absolute;
-            border-radius: 7px;
-            padding: 6px 8px;
-            overflow: hidden;
+            left: 14pt; top: 14pt;
+            width: 1162pt; height: 813pt;
+            border: 1.6pt solid {{ $marun }};
+            border-radius: 10pt;
         }
-        .eksekutif { background: #5d1c40; border: 1px solid #8e2a5f; }
-        .jabatan   { background: #f6f2f6; border: 1px solid #d3c7d2; }
-        .sokongan  { background: #ffffff; border: 1px dashed #b9adba; }
-        .jawatan { font-size: 7.5px; line-height: 1.25; }
-        .nama { font-size: 8px; font-weight: bold; line-height: 1.25; }
-        .sub-baris { font-size: 6.5px; line-height: 1.2; }
-        .terang .sub-baris { color: #e6d5e2; }
-        .gelap .sub-baris { color: #857b8c; }
-        .terang .jawatan, .terang .nama { color: #ffffff; }
-        .gelap .jawatan { color: #5c5364; }
-        .gelap .nama { color: #1a1420; }
+
+        .kepala-garis {
+            position: absolute;
+            left: 40pt; top: 96pt;
+            width: 1110pt; height: 0.7pt;
+            background: #DED6DE;
+        }
+
+        .tajuk {
+            position: absolute;
+            left: 190pt; top: 34pt;
+            font-size: 20pt; font-weight: bold;
+            letter-spacing: 1.6pt;
+            color: #241826;
+        }
+        .subtajuk {
+            position: absolute;
+            left: 192pt; top: 60pt;
+            font-size: 9pt; color: #6E6473;
+            letter-spacing: 0.6pt;
+        }
+        .garis-tajuk {
+            position: absolute;
+            left: 192pt; top: 79pt;
+            width: 200pt; height: 2.6pt;
+            background: {{ $marun }};
+        }
+
+        .meta {
+            position: absolute;
+            right: 40pt; top: 36pt;
+            width: 300pt;
+            text-align: right;
+        }
+        .meta-tajuk { font-size: 8.5pt; font-weight: bold; color: #3A2C3E; letter-spacing: 0.8pt; }
+        .meta-baris { font-size: 7.5pt; color: #776E7C; margin-top: 3pt; }
+
+        .kaki {
+            position: absolute;
+            left: 40pt; bottom: 26pt;
+            font-size: 7.5pt; color: #8A8090;
+        }
+        .kaki-kanan {
+            position: absolute;
+            right: 40pt; bottom: 26pt;
+            font-size: 7.5pt; color: #8A8090;
+        }
+        .kaki-garis {
+            position: absolute;
+            left: 40pt; bottom: 42pt;
+            width: 1110pt; height: 0.7pt;
+            background: #DED6DE;
+        }
+        .kaki-blok {
+            position: absolute;
+            right: 14pt; bottom: 14pt;
+            width: 200pt; height: 7pt;
+            background: {{ $marun }};
+            border-radius: 0 0 9pt 0;
+        }
+
+        .kotak { position: absolute; overflow: hidden; }
+        .isi   { display: block; text-align: center; }
+        .lencana { position: absolute; border-radius: 50%; }
+        .garis { position: absolute; }
     </style>
 </head>
 <body>
-    <div class="kepala">
-        <div class="tajuk">{{ __('org.title') }}</div>
-        <div class="sub">DBENA SDN BHD (1518035-A) · {{ now()->translatedFormat('d F Y') }}</div>
+
+    <div class="bingkai"></div>
+
+    {{-- ══ Kepala ══ --}}
+    @if ($logo)
+        {{-- Logo dibenamkan sebagai data-URI, bukan laluan fail. DomPDF
+             menolak laluan di luar chroot dan gagal SENYAP: imej hilang,
+             tiada ralat, dan PDF kelihatan hampir betul. --}}
+        <img src="{{ $logo }}" alt="DBENA"
+             style="position: absolute; left: 40pt; top: 30pt; width: 128pt;">
+    @endif
+
+    <div class="tajuk">{{ __('org.pdf.title') }}</div>
+    <div class="subtajuk">{{ __('org.pdf.subtitle') }}</div>
+    <div class="garis-tajuk"></div>
+
+    <div class="meta">
+        <div class="meta-tajuk">{{ __('org.pdf.governance') }}</div>
+        <div class="meta-baris">{{ __('org.pdf.registration', ['no' => '1518035-A']) }}</div>
+        <div class="meta-baris">{{ __('org.pdf.effective', ['date' => $effective]) }}</div>
     </div>
 
-    <div class="kanvas" style="width: {{ $canvasWidth }}px; height: {{ $canvasHeight }}px">
-        @php
-            $byId = $nodes->keyBy('id');
-        @endphp
+    <div class="kepala-garis"></div>
 
-        <svg width="{{ $canvasWidth }}" height="{{ $canvasHeight }}"
-             style="position: absolute; left: 0; top: 0">
-            @foreach ($links as $link)
-                @php
-                    $a = $byId->get($link->from_node_id);
-                    $b = $byId->get($link->to_node_id);
-                @endphp
-                @continue (! $a || ! $b)
+    {{-- ══ Garisan penyambung ══
+         Dilukis SEBELUM kotak supaya hujungnya tersembunyi di belakang
+         kotak dan bukan terkeluar di atasnya. --}}
+    @foreach ($layout['segments'] as $seg)
+        <div class="garis"
+             style="left: {{ $seg['left'] }}pt; top: {{ $seg['top'] }}pt;
+                    width: {{ $seg['width'] }}pt; height: {{ $seg['height'] }}pt;
+                    background: {{ $seg['dashed'] ? '#A79BAB' : $marun }}"></div>
+    @endforeach
 
-                @php
-                    $x1 = $a->centerX(); $y1 = $a->bottomY();
-                    $x2 = $b->centerX(); $y2 = $b->y;
-                    $mid = $y2 > $y1 ? $y1 + (int) round(($y2 - $y1) / 2) : $y1 + 20;
-                    $putus = $link->style->dashArray() !== null;
-                @endphp
+    {{-- ══ Kotak ══ --}}
+    @foreach ($layout['boxes'] as $box)
+        <div class="kotak"
+             style="left: {{ $box['left'] }}pt; top: {{ $box['top'] }}pt;
+                    width: {{ $box['width'] }}pt; height: {{ $box['height'] }}pt;
+                    background: {{ $box['background'] }};
+                    border: 0.7pt solid {{ $box['border'] }};
+                    border-radius: {{ $box['radius'] }}pt;">
 
-                <path d="M {{ $x1 }},{{ $y1 }} L {{ $x1 }},{{ $mid }} L {{ $x2 }},{{ $mid }} L {{ $x2 }},{{ $y2 }}"
-                      fill="none" stroke="{{ $putus ? '#9b93a3' : '#8e2a5f' }}"
-                      stroke-width="{{ $putus ? 1 : 1.4 }}"
-                      @if ($putus) stroke-dasharray="4 3" @endif></path>
-            @endforeach
-        </svg>
-
-        @foreach ($nodes as $node)
-            @php
-                /*
-                 * Warna per-kotak dihormati dalam cetakan juga.
-                 *
-                 * PDF yang mengabaikan warna pilihan bermakna carta di
-                 * skrin dan carta yang diedarkan ialah dua dokumen
-                 * berbeza, dan yang diedarkan itulah yang orang simpan.
-                 */
-                $hex = \App\Support\OrgPalette::clean($node->color);
-
-                $kelas = $hex !== null ? 'kotak' : match ($node->style->value) {
-                    'executive' => 'kotak eksekutif terang',
-                    'support' => 'kotak sokongan gelap',
-                    default => 'kotak jabatan gelap',
-                };
-
-                $gayaWarna = $hex === null ? '' : sprintf(
-                    'background: %s; border: 1px solid %s; color: %s;',
-                    $hex,
-                    \App\Support\OrgPalette::borderOn($hex),
-                    \App\Support\OrgPalette::textOn($hex),
-                );
-            @endphp
-
-            <div class="{{ $kelas }}"
-                 style="left: {{ $node->x }}px; top: {{ $node->y }}px;
-                        width: {{ $node->width - 18 }}px; height: {{ $node->boxHeight() - 14 }}px;
-                        {{ $gayaWarna }}">
-                @if (filled($node->title))
-                    <div class="jawatan" @if ($hex) style="color: inherit" @endif>{{ $node->title }}</div>
+            <div class="isi" style="padding-top: {{ $box['padTop'] }}pt">
+                @if (filled($box['title']))
+                    <span style="display: block; font-size: {{ $box['titleSize'] }}pt;
+                                 font-weight: bold; color: {{ $box['titleColor'] }};
+                                 line-height: 1.18">{{ $box['title'] }}</span>
                 @endif
-                @if (filled($node->subtitle))
-                    <div class="sub-baris"
-                         @if ($hex) style="color: {{ \App\Support\OrgPalette::mutedTextOn($hex) }}" @endif>{{ $node->subtitle }}</div>
+
+                @if (filled($box['subtitle']))
+                    <span style="display: block; font-size: {{ $box['subtitleSize'] }}pt;
+                                 color: {{ $box['subtitleColor'] }};
+                                 line-height: 1.18">{{ $box['subtitle'] }}</span>
                 @endif
-                @if (filled($node->name))
-                    <div class="nama" @if ($hex) style="color: inherit" @endif>{{ $node->name }}</div>
+
+                @if (filled($box['name']))
+                    <span style="display: block; font-size: {{ $box['nameSize'] }}pt;
+                                 font-weight: bold; color: {{ $box['nameColor'] }};
+                                 line-height: 1.24">{{ $box['name'] }}</span>
                 @endif
             </div>
-        @endforeach
-    </div>
+        </div>
+
+        {{-- Lencana dilukis SELEPAS kotak dan di luar aliran kotak: ia
+             menonjol melepasi tepi atas, dan overflow:hidden pada kotak
+             akan memotongnya separuh. --}}
+        @if ($box['hasBadge'])
+            <div class="lencana"
+                 style="left: {{ round($box['left'] + $box['width'] / 2 - $box['badgeSize'] / 2, 2) }}pt;
+                        top: {{ round($box['top'] - $box['badgeSize'] / 2, 2) }}pt;
+                        width: {{ $box['badgeSize'] }}pt; height: {{ $box['badgeSize'] }}pt;
+                        background: {{ $box['badge'] }};
+                        border: 1pt solid {{ $box['border'] }};"></div>
+        @endif
+    @endforeach
+
+    {{-- ══ Kaki ══ --}}
+    <div class="kaki-garis"></div>
+    <div class="kaki">{{ __('org.pdf.footer_left') }}</div>
+    <div class="kaki-kanan">{{ __('org.pdf.footer_right') }}</div>
+    <div class="kaki-blok"></div>
 </body>
 </html>
