@@ -7,10 +7,10 @@ namespace App\Livewire\Dashboard;
 use App\Enums\PeriodMode;
 use App\Enums\ViewMode;
 use App\Models\IndexTier;
-use App\Models\Priority;
 use App\Models\Service;
 use App\Services\DashboardMetricsService;
 use App\Services\RoadmapService;
+use App\Services\WeeklyPriorityService;
 use Illuminate\View\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
@@ -282,7 +282,14 @@ class Overview extends Component
             'yearlyChart' => $yearlyChart,
             'stackBars' => $stackBars,
             'stackLegend' => $services->map(fn (Service $s) => ['name' => $s->name, 'color' => $s->chart_color])->all(),
-            'priorities' => Priority::active()->with('service')->orderBy('sort_order')->get(),
+            /*
+             * Dikira daripada data sebenar, bukan daripada jadual yang
+             * disemai. Senarai statik kekal betul selama seminggu dan
+             * salah selepas itu — dan senarai keutamaan yang salah lebih
+             * teruk daripada tiada senarai, kerana orang bertindak
+             * mengikutnya.
+             */
+            'priorities' => app(WeeklyPriorityService::class)->build($this->year, $this->month),
             'mode' => $mode,
             'periodMode' => $periodMode,
             'metrics' => $metrics,

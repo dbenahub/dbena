@@ -359,27 +359,50 @@
         <div class="dbena-card flex w-full flex-col p-5 sm:p-6 xl:flex-1">
             <h2 class="mb-4 text-base font-bold">{{ __('dashboard.weekly_priorities') }}</h2>
 
-            <div class="flex flex-1 flex-col gap-3.5">
+            <div class="flex flex-1 flex-col gap-2.5">
                 @forelse ($priorities as $priority)
-                    <a href="{{ $priority->service ? route('service.detail', $priority->service->key) : '#' }}" wire:navigate
-                       class="flex gap-3 rounded-[10px] p-2.5 transition-colors hover:bg-hover">
+                    {{-- Setiap item membawa pautan ke tempat ia boleh
+                         DIBETULKAN, bukan ke tempat ia dilaporkan. Senarai
+                         keutamaan yang menghantar orang ke halaman ringkasan
+                         menambah satu langkah antara membaca masalah dan
+                         menyentuhnya. --}}
+                    <a href="{{ $priority['route'] }}" wire:navigate
+                       class="flex gap-3 rounded-[10px] p-2.5 transition-colors hover:bg-hover"
+                       wire:key="pri-{{ $priority['key'] }}">
                         <div class="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[9px]"
-                             style="background: oklch(0.55 0.22 350/0.16)">
-                            <i class="ph-duotone {{ $priority->icon_class ?? 'ph-target' }} text-[19px]"
-                               style="color: oklch(0.78 0.12 85)" aria-hidden="true"></i>
+                             style="background: color-mix(in oklch, {{ $priority['accent'] }} 18%, transparent)">
+                            <i class="ph-duotone {{ $priority['icon'] }} text-[19px]"
+                               style="color: {{ $priority['accent'] }}" aria-hidden="true"></i>
                         </div>
+
                         <div class="min-w-0 flex-1">
-                            <div class="text-[13px] font-semibold">{{ $priority->title }}</div>
-                            <p class="mt-0.5 text-[12px] leading-snug text-t65">{{ $priority->description }}</p>
+                            <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                                <span class="shrink-0 rounded px-1.5 py-0.5 text-[9.5px] font-extrabold tracking-wide"
+                                      style="background: color-mix(in oklch, {{ $priority['accent'] }} 22%, transparent);
+                                             color: {{ $priority['accent'] }}">{{ $priority['badge'] }}</span>
+                                <span class="min-w-0 text-[12.5px] font-semibold text-t90">{{ $priority['title'] }}</span>
+                            </div>
+                            <p class="mt-0.5 text-[11.5px] leading-snug text-t65">{{ $priority['body'] }}</p>
                         </div>
-                        <x-avatar :initials="$priority->ownerInitials()" :size="30" />
+
+                        @if ($priority['owner'])
+                            <x-avatar :initials="$priority['initials']" :size="30" />
+                        @endif
                     </a>
                 @empty
-                    <p class="py-6 text-center text-[12.5px] text-t55">{{ __('app.no_data') }}</p>
+                    {{-- Keadaan kosong yang menyatakan apa yang disemak.
+                         "Tiada data" pada senarai yang dikira daripada data
+                         sebenar kelihatan seperti kegagalan memuat. --}}
+                    <div class="flex flex-col items-center gap-2 py-8 text-center">
+                        <i class="ph-duotone ph-check-circle text-[28px]"
+                           style="color: oklch(0.62 0.16 150)" aria-hidden="true"></i>
+                        <div class="text-[12.5px] font-bold text-t85">{{ __('priority.all_clear') }}</div>
+                        <p class="max-w-xs text-[11.5px] leading-relaxed text-t55">{{ __('priority.all_clear_body') }}</p>
+                    </div>
                 @endforelse
             </div>
 
-            <a href="{{ route('laporan') }}" wire:navigate
+            <a href="{{ route('task-planning') }}" wire:navigate
                class="mt-3.5 flex items-center gap-1.5 border-t pt-3.5 text-[13px] font-semibold"
                style="border-color: var(--border); color: oklch(0.78 0.12 85)">
                 {{ __('dashboard.view_all_actions') }} <i class="ph-duotone ph-caret-right" aria-hidden="true"></i>
