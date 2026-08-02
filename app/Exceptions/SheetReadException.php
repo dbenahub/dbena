@@ -29,6 +29,21 @@ class SheetReadException extends RuntimeException
             : __('sheets.error.not_shared'));
     }
 
+    /**
+     * Kalendar yang tidak dikongsi.
+     *
+     * BERASINGAN daripada notShared(). Mesej itu menyuruh admin membuka
+     * fail dalam Google Sheets dan menetapkan General access — arahan yang
+     * tiada makna untuk kalendar, dan yang menghantar mereka ke aplikasi
+     * yang salah sepenuhnya untuk mencari tetapan yang tidak wujud di sana.
+     */
+    public static function calendarNotShared(?string $serviceAccount = null): self
+    {
+        return new self(filled($serviceAccount)
+            ? __('roadmap.calendar.not_shared_service', ['email' => $serviceAccount])
+            : __('roadmap.calendar.not_shared'));
+    }
+
     public static function notFound(): self
     {
         return new self(__('sheets.error.not_found'));

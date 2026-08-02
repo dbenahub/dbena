@@ -56,6 +56,10 @@ return [
         'untitled' => 'Untitled event',
         'failed' => 'Could not read the calendar: :message',
         'all_day' => 'All day',
+        'not_shared' => 'Google refused the request. This calendar has not been shared with the service account.',
+        'not_shared_service' => 'Google refused the request. Open calendar.google.com → hover the calendar name → three dots → Settings and sharing → Share with specific people → Add people → :email → choose "See all event details" → Send. Google will warn that the address looks odd; carry on. The calendar stays Private.',
+        'id_from_url' => 'Calendar ID taken from the pasted link: :id',
+        'bad_id' => 'That is not a Calendar ID. Copy it from Settings and sharing → Integrate calendar → Calendar ID (for example name@gmail.com or c_xxxx@group.calendar.google.com).',
     ],
 
     'empty_title' => 'The :year roadmap is not set up yet',

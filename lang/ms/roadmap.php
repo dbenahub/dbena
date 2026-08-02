@@ -56,6 +56,10 @@ return [
         'untitled' => 'Acara tanpa tajuk',
         'failed' => 'Kalendar tidak dapat dibaca: :message',
         'all_day' => 'Sepanjang hari',
+        'not_shared' => 'Google menolak permintaan. Kalendar ini belum dikongsi dengan service account.',
+        'not_shared_service' => 'Google menolak permintaan. Buka calendar.google.com → hover nama kalendar → tiga titik → Settings and sharing → Share with specific people → Add people → :email → pilih "See all event details" → Send. Google akan beri amaran emel itu kelihatan pelik; teruskan sahaja. Kalendar kekal Private.',
+        'id_from_url' => 'Calendar ID diambil daripada pautan yang ditampal: :id',
+        'bad_id' => 'Itu bukan Calendar ID. Salin dari Settings and sharing → Integrate calendar → Calendar ID (contoh: nama@gmail.com atau c_xxxx@group.calendar.google.com).',
     ],
 
     'empty_title' => 'Roadmap :year belum ditetapkan',

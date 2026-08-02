@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Enums\RoadmapStatus;
+use App\Models\RoadmapPlan;
 
 it('counts active, campaign and resumed months toward target', function (): void {
     expect(RoadmapStatus::ActiveAllYear->countsTowardTarget())->toBeTrue()
@@ -39,4 +40,59 @@ it('keeps text readable on every cell colour', function (): void {
     foreach (RoadmapStatus::cases() as $status) {
         expect($status->textColor())->not->toBe($status->color());
     }
+});
+
+/*
+|--------------------------------------------------------------------------
+| Calendar ID daripada apa sahaja yang ditampal
+|--------------------------------------------------------------------------
+*/
+
+it('pulls the id out of the embed link', function (): void {
+    // Ini yang orang sebenarnya salin. "Calendar ID" ialah istilah Google,
+    // bukan istilah manusia — apa yang mereka jumpa ialah pautan, dan
+    // pautan itu MENGANDUNGI ID.
+    expect(RoadmapPlan::extractCalendarId(
+        'https://calendar.google.com/calendar/embed?src=dbenagroup%40gmail.com&ctz=Asia%2FKuala_Lumpur'
+    ))->toBe('dbenagroup@gmail.com');
+});
+
+it('pulls the id out of a group calendar embed link', function (): void {
+    expect(RoadmapPlan::extractCalendarId(
+        'https://calendar.google.com/calendar/embed?src=c_abc123%40group.calendar.google.com'
+    ))->toBe('c_abc123@group.calendar.google.com');
+});
+
+it('pulls the id out of a cid link', function (): void {
+    expect(RoadmapPlan::extractCalendarId(
+        'https://calendar.google.com/calendar/u/0?cid=dbenagroup%40gmail.com'
+    ))->toBe('dbenagroup@gmail.com');
+});
+
+it('pulls the id out of an iCal link', function (): void {
+    expect(RoadmapPlan::extractCalendarId(
+        'https://calendar.google.com/calendar/ical/dbenagroup%40gmail.com/private/basic.ics'
+    ))->toBe('dbenagroup@gmail.com');
+});
+
+it('leaves a plain calendar id alone', function (): void {
+    expect(RoadmapPlan::extractCalendarId('dbenagroup@gmail.com'))->toBe('dbenagroup@gmail.com')
+        ->and(RoadmapPlan::extractCalendarId('  c_x@group.calendar.google.com  '))
+        ->toBe('c_x@group.calendar.google.com');
+});
+
+it('returns nothing for a link with no id in it', function (): void {
+    // Tekaan yang salah lebih teruk daripada tiada tekaan: ia menghasilkan
+    // 403 yang bermaksud "belum dikongsi", dan admin dihantar membetulkan
+    // perkongsian yang sudah betul.
+    expect(RoadmapPlan::extractCalendarId('https://calendar.google.com/'))->toBeNull()
+        ->and(RoadmapPlan::extractCalendarId(''))->toBeNull()
+        ->and(RoadmapPlan::extractCalendarId(null))->toBeNull();
+});
+
+it('rejects a pasted url as a usable id', function (): void {
+    expect(RoadmapPlan::looksLikeCalendarId('https://calendar.google.com/calendar/embed?src=a%40b.com'))
+        ->toBeFalse()
+        ->and(RoadmapPlan::looksLikeCalendarId('dbenagroup@gmail.com'))->toBeTrue()
+        ->and(RoadmapPlan::looksLikeCalendarId('bukan id'))->toBeFalse();
 });

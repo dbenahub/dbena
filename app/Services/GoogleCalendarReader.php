@@ -135,9 +135,13 @@ class GoogleCalendarReader
         }
 
         if ($response->status() === 403 || $response->status() === 404) {
-            // Sertakan emel robot. Tanpa itu, pemilik kalendar tidak tahu
-            // alamat mana untuk ditambah pada senarai perkongsian.
-            throw SheetReadException::notShared(ServiceAccountSheetReader::serviceAccountEmail());
+            // Mesej khusus KALENDAR. Yang untuk sheet menyuruh admin
+            // membuka fail dalam Google Sheets dan menetapkan General
+            // access — arahan yang menghantar mereka ke aplikasi yang
+            // salah untuk mencari tetapan yang tidak wujud di sana.
+            throw SheetReadException::calendarNotShared(
+                ServiceAccountSheetReader::serviceAccountEmail()
+            );
         }
 
         if (! $response->successful()) {

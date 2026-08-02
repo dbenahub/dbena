@@ -153,7 +153,7 @@ class RoadmapEditor extends Component
         $plan->fill([
             'title' => trim($this->title) ?: null,
             'subtitle' => trim($this->subtitle) ?: null,
-            'calendar_id' => trim($this->calendarId) ?: null,
+            'calendar_id' => RoadmapPlan::extractCalendarId($this->calendarId),
             'summary' => collect(preg_split('/\r?\n/', $this->summaryText))
                 ->map(fn (string $line) => trim($line))
                 ->filter()
@@ -177,20 +177,50 @@ class RoadmapEditor extends Component
     {
         $this->authorize('manage-roadmap');
 
-        $id = trim($this->calendarId);
+        $ditampal = trim($this->calendarId);
 
-        if ($id === '') {
+        if ($ditampal === '') {
             $this->calendarOk = false;
             $this->calendarResult = __('roadmap.calendar.not_connected');
 
             return;
         }
 
+        $id = RoadmapPlan::extractCalendarId($ditampal);
+
+        /*
+         * Bentuk disemak SEBELUM memanggil Google.
+         *
+         * ID yang salah bentuk menghasilkan 403, dan 403 bermaksud "belum
+         * dikongsi" — jadi admin dihantar membetulkan perkongsian yang
+         * sudah betul sementara masalah sebenar ialah teks dalam kotak.
+         */
+        if (! RoadmapPlan::looksLikeCalendarId($id)) {
+            $this->calendarOk = false;
+            $this->calendarResult = __('roadmap.calendar.bad_id');
+
+            return;
+        }
+
+        // Medan dikemas kini supaya admin NAMPAK apa yang diambil daripada
+        // pautan mereka, dan bukan sekadar diberitahu ia berjaya.
+        $dariPautan = $id !== $ditampal;
+        $this->calendarId = $id;
+
         $calendar->forget($id, $this->year);
         $result = $calendar->test($id, $this->year);
 
         $this->calendarOk = $result['ok'];
-        $this->calendarResult = $result['message'];
+        $this->calendarResult = $dariPautan
+            ? __('roadmap.calendar.id_from_url', ['id' => $id]).' '.$result['message']
+            : $result['message'];
+
+        if ($result['ok']) {
+            // Sambungan yang berjaya disimpan serta-merta. Meminta admin
+            // menekan Simpan selepas ujian lulus menjemput mereka menutup
+            // tab sambil menyangka kerja sudah selesai.
+            $this->plan()->update(['calendar_id' => $id]);
+        }
     }
 
     public function render(): View

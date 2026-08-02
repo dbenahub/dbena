@@ -345,3 +345,81 @@ it('does not blow up when the embedded preview has no year nav', function (): vo
         ->assertOk()
         ->assertDontSee('showRoadmapYear');
 });
+
+it('accepts a pasted embed link and says what it took from it', function (): void {
+    $this->mock(GoogleCalendarReader::class)
+        ->shouldReceive('forget')->andReturnNull()
+        ->shouldReceive('test')
+        ->with('dbenagroup@gmail.com', $this->tahun)
+        ->andReturn(['ok' => true, 'message' => '12 acara', 'count' => 12])
+        ->shouldReceive('eventsByMonth')->andReturn([]);
+
+    $component = Livewire::actingAs($this->admin)
+        ->test(RoadmapEditor::class)
+        ->set('calendarId', 'https://calendar.google.com/calendar/embed?src=dbenagroup%40gmail.com&ctz=Asia%2FKuala_Lumpur')
+        ->call('testCalendar');
+
+    // Medan dikemas kini supaya admin NAMPAK apa yang diambil.
+    expect($component->get('calendarId'))->toBe('dbenagroup@gmail.com')
+        ->and($component->get('calendarOk'))->toBeTrue()
+        ->and($component->get('calendarResult'))->toContain('dbenagroup@gmail.com');
+});
+
+it('saves a successful connection without a second click', function (): void {
+    // Meminta admin menekan Simpan selepas ujian lulus menjemput mereka
+    // menutup tab sambil menyangka kerja sudah selesai.
+    $this->mock(GoogleCalendarReader::class)
+        ->shouldReceive('forget')->andReturnNull()
+        ->shouldReceive('test')->andReturn(['ok' => true, 'message' => 'ok', 'count' => 3])
+        ->shouldReceive('eventsByMonth')->andReturn([]);
+
+    Livewire::actingAs($this->admin)
+        ->test(RoadmapEditor::class)
+        ->set('calendarId', 'dbenagroup@gmail.com')
+        ->call('testCalendar');
+
+    expect(RoadmapPlan::where('year', $this->tahun)->firstOrFail()->calendar_id)
+        ->toBe('dbenagroup@gmail.com');
+});
+
+it('does not call Google for something that is not an id', function (): void {
+    // ID yang salah bentuk menghasilkan 403, dan 403 bermaksud "belum
+    // dikongsi" — masalah sebenar ialah teks dalam kotak.
+    $this->mock(GoogleCalendarReader::class)
+        ->shouldNotReceive('test')
+        ->shouldReceive('eventsByMonth')->andReturn([]);
+
+    $component = Livewire::actingAs($this->admin)
+        ->test(RoadmapEditor::class)
+        ->set('calendarId', 'https://calendar.google.com/')
+        ->call('testCalendar');
+
+    expect($component->get('calendarOk'))->toBeFalse()
+        ->and($component->get('calendarResult'))->toBe(__('roadmap.calendar.bad_id'));
+});
+
+it('normalises the pasted link on save too', function (): void {
+    $this->mock(GoogleCalendarReader::class)
+        ->shouldReceive('forget')->andReturnNull()
+        ->shouldReceive('eventsByMonth')->andReturn([]);
+
+    Livewire::actingAs($this->admin)
+        ->test(RoadmapEditor::class)
+        ->set('calendarId', 'https://calendar.google.com/calendar/embed?src=c_x%40group.calendar.google.com')
+        ->call('save');
+
+    expect(RoadmapPlan::where('year', $this->tahun)->firstOrFail()->calendar_id)
+        ->toBe('c_x@group.calendar.google.com');
+});
+
+it('sends the admin to Calendar, not to Sheets, when sharing is missing', function (): void {
+    // Mesej sheet menyuruh admin membuka fail dalam Google Sheets dan
+    // menetapkan General access — arahan yang menghantar mereka ke
+    // aplikasi yang salah untuk mencari tetapan yang tidak wujud di sana.
+    $mesej = __('roadmap.calendar.not_shared_service', ['email' => 'robot@x.iam.gserviceaccount.com']);
+
+    expect($mesej)->toContain('calendar.google.com')
+        ->and($mesej)->toContain('Settings and sharing')
+        ->and($mesej)->not->toContain('Google Sheets')
+        ->and($mesej)->not->toContain('General access');
+});
