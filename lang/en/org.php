@@ -44,6 +44,8 @@ return [
         'panel' => 'Box details',
         'panel_none' => 'Click any box to edit its details.',
         'field_title' => 'Role / Department',
+        'field_subtitle' => 'Middle line (e.g. Head of Dept.)',
+        'field_height' => 'Height (px)',
         'field_name' => 'Name',
         'field_icon' => 'Icon',
         'field_style' => 'Box style',

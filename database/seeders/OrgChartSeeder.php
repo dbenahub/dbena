@@ -11,165 +11,181 @@ use App\Models\OrgNode;
 use Illuminate\Database\Seeder;
 
 /**
- * Carta organisasi DBENA sebenar sebagai titik permulaan.
+ * Carta organisasi DBENA — susunan sebenar daripada carta rasmi.
+ *
+ * Koordinat diukur daripada carta itu dan bukan dikira. Setiap pengarah
+ * duduk TEPAT di tengah antara anak-anaknya, dan Managing Director di
+ * tengah antara empat pengarah. Susunan itu yang menjadikan carta boleh
+ * diimbas: mata mengikut garisan menegak ke bawah tanpa perlu mencari.
  *
  * Kanvas kosong ialah cara paling pasti untuk memastikan ciri ini tidak
  * pernah digunakan. Bermula daripada carta yang betul bermakna kerja
  * pertama ialah pindaan kecil, bukan membina semula sesuatu yang sudah
  * wujud di atas kertas.
  *
- * Dijalankan sekali sahaja. Selepas ada nod, seeder ini berundur — sync
- * semula tidak sepatutnya membuang kedudukan yang telah diseret dengan
- * tangan.
+ * Berundur sebaik ada nod — sync semula tidak sepatutnya membuang
+ * kedudukan yang telah diseret dengan tangan. Untuk membina semula dengan
+ * sengaja: php artisan dbena:carta-reset
  */
 class OrgChartSeeder extends Seeder
 {
+    /** Tinggi mengikut gaya — bilangan baris berbeza. */
+    private const H_EXEC = 66;
+
+    private const H_DEPT = 80;
+
+    private const H_SUPPORT = 58;
+
     public function run(): void
     {
         if (OrgNode::exists()) {
             return;
         }
 
-        $node = function (array $data): OrgNode {
-            return OrgNode::create($data);
+        $n = 0;
+
+        $buat = function (array $data) use (&$n): OrgNode {
+            return OrgNode::create($data + ['sort_order' => ++$n]);
         };
 
-        // ── Baris 1: Managing Director ────────────────────────────────
-        $md = $node([
-            'title' => 'Managing Director', 'name' => 'AHMAD NIZAMUDDIN BIN ROSNAN',
+        // ══ BARIS 1 — Managing Director ═══════════════════════════════
+        // Tengah pada x=705, iaitu titik tengah empat pengarah di bawah.
+        $md = $buat([
+            'title' => 'Managing Director',
+            'name' => 'AHMAD NIZAMUDDIN BIN ROSNAN',
             'icon' => 'ph-user-circle', 'style' => OrgNodeStyle::Executive->value,
-            'x' => 460, 'y' => 40, 'width' => 300, 'sort_order' => 1,
+            'x' => 500, 'y' => 180, 'width' => 410, 'height' => 76,
         ]);
 
-        // ── Baris 2: Empat pengarah ───────────────────────────────────
-        $eksekutif = $node([
+        // ══ BARIS 2 — Empat pengarah ══════════════════════════════════
+        // Setiap satu berpusat di tengah anak-anaknya.
+        $eksekutif = $buat([
             'title' => 'Executive Director', 'name' => 'AHMAD ZIKRI BIN ZAINAL',
             'icon' => 'ph-user', 'style' => OrgNodeStyle::Executive->value,
-            'x' => 40, 'y' => 190, 'width' => 250, 'sort_order' => 2,
+            'x' => 60, 'y' => 330, 'width' => 300, 'height' => self::H_EXEC,
         ]);
 
-        $pengurusan = $node([
-            'title' => 'Management Department', 'name' => 'AHMAD NIZAMUDDIN BIN ROSNAN',
+        $pengurusan = $buat([
+            'title' => 'Management Department', 'subtitle' => 'Head of Dept.',
+            'name' => 'AHMAD NIZAMUDDIN BIN ROSNAN',
             'icon' => 'ph-chart-bar', 'style' => OrgNodeStyle::Executive->value,
-            'x' => 320, 'y' => 190, 'width' => 250, 'sort_order' => 3,
+            'x' => 425, 'y' => 330, 'width' => 290, 'height' => 74,
         ]);
 
-        $kontrak = $node([
+        $kontrak = $buat([
             'title' => 'Contract & Project Director', 'name' => 'MOHD HAFIZAN BIN ABDUL MAJID',
             'icon' => 'ph-briefcase', 'style' => OrgNodeStyle::Executive->value,
-            'x' => 600, 'y' => 190, 'width' => 250, 'sort_order' => 4,
+            'x' => 725, 'y' => 330, 'width' => 300, 'height' => self::H_EXEC,
         ]);
 
-        $operasi = $node([
+        $operasi = $buat([
             'title' => 'Operation Director', 'name' => 'AZHARI BIN PUTEH',
             'icon' => 'ph-hard-hat', 'style' => OrgNodeStyle::Executive->value,
-            'x' => 880, 'y' => 190, 'width' => 250, 'sort_order' => 5,
+            'x' => 1044, 'y' => 330, 'width' => 300, 'height' => self::H_EXEC,
         ]);
 
-        // ── Baris 3: Jabatan ──────────────────────────────────────────
-        $pemasaran = $node([
-            'title' => 'MARKETING DEPARTMENT', 'name' => 'AHMAD ZIKRI BIN ZAINAL',
+        // ══ BARIS 3 — Jabatan ═════════════════════════════════════════
+        $pemasaran = $buat([
+            'title' => 'MARKETING DEPARTMENT', 'subtitle' => 'Head of Dept.',
+            'name' => 'AHMAD ZIKRI BIN ZAINAL',
             'icon' => 'ph-megaphone', 'style' => OrgNodeStyle::Department->value,
-            'x' => 20, 'y' => 330, 'width' => 200, 'sort_order' => 6,
+            'x' => 20, 'y' => 480, 'width' => 190, 'height' => self::H_DEPT,
         ]);
 
-        $id = $node([
-            'title' => 'ID DEPARTMENT', 'name' => 'AHMAD ZIKRI BIN ZAINAL',
+        $id = $buat([
+            'title' => 'ID DEPARTMENT', 'subtitle' => 'Head of Dept.',
+            'name' => 'AHMAD ZIKRI BIN ZAINAL',
             'icon' => 'ph-identification-card', 'style' => OrgNodeStyle::Department->value,
-            'x' => 240, 'y' => 330, 'width' => 200, 'sort_order' => 7,
+            'x' => 225, 'y' => 480, 'width' => 170, 'height' => self::H_DEPT,
         ]);
 
-        $hr = $node([
+        $hr = $buat([
             'title' => 'HR Manager', 'name' => 'Maznizar Izzatul Rizan Mohd Sedi',
             'icon' => 'ph-users-three', 'style' => OrgNodeStyle::Department->value,
-            'x' => 460, 'y' => 330, 'width' => 170, 'sort_order' => 8,
+            'x' => 420, 'y' => 480, 'width' => 140, 'height' => self::H_DEPT,
         ]);
 
-        $akaun = $node([
-            'title' => 'Freelancer Account', 'name' => null,
+        $akaun = $buat([
+            'title' => 'Freelancer Account',
             'icon' => 'ph-calculator', 'style' => OrgNodeStyle::Department->value,
-            'x' => 650, 'y' => 330, 'width' => 150, 'sort_order' => 9,
+            'x' => 575, 'y' => 480, 'width' => 150, 'height' => self::H_DEPT,
         ]);
 
-        $jabKontrak = $node([
-            'title' => 'CONTRACT DEPARTMENT', 'name' => 'MOHD HAFIZAN BIN ABDUL MAJID',
+        $jabKontrak = $buat([
+            'title' => 'CONTRACT DEPARTMENT', 'subtitle' => 'Head of Dept.',
+            'name' => 'MOHD HAFIZAN BIN ABDUL MAJID',
             'icon' => 'ph-file-text', 'style' => OrgNodeStyle::Department->value,
-            'x' => 820, 'y' => 330, 'width' => 210, 'sort_order' => 10,
+            'x' => 770, 'y' => 480, 'width' => 210, 'height' => self::H_DEPT,
         ]);
 
-        $projek = $node([
-            'title' => 'PROJECT DEPARTMENT', 'name' => 'AZHARI BIN PUTEH',
+        $projek = $buat([
+            'title' => 'PROJECT DEPARTMENT', 'subtitle' => 'Head of Dept.',
+            'name' => 'AZHARI BIN PUTEH',
             'icon' => 'ph-folder', 'style' => OrgNodeStyle::Department->value,
-            'x' => 1050, 'y' => 330, 'width' => 200, 'sort_order' => 11,
+            'x' => 1000, 'y' => 480, 'width' => 180, 'height' => self::H_DEPT,
         ]);
 
-        $produksi = $node([
+        $produksi = $buat([
             'title' => 'PRODUCTION DEPARTMENT', 'name' => '-DBENA INDUSTRIES SDN BHD-',
             'icon' => 'ph-buildings', 'style' => OrgNodeStyle::Department->value,
-            'x' => 1270, 'y' => 330, 'width' => 210, 'sort_order' => 12,
+            'x' => 1195, 'y' => 480, 'width' => 205, 'height' => self::H_DEPT,
         ]);
 
-        // ── Baris 4: Sokongan & freelancer ────────────────────────────
-        $freelanceMarketing = $node([
-            'title' => 'Freelancer Marketing', 'name' => null,
+        // ══ BARIS 4 — Sokongan ════════════════════════════════════════
+        $freelanceMarketing = $buat([
+            'title' => 'Freelancer Marketing',
             'icon' => 'ph-user', 'style' => OrgNodeStyle::Support->value,
-            'x' => 20, 'y' => 500, 'width' => 190, 'sort_order' => 13,
+            'x' => 25, 'y' => 640, 'width' => 180, 'height' => self::H_SUPPORT,
         ]);
 
-        $pengurusOperasi = $node([
+        $pengurusOperasi = $buat([
             'title' => 'Operation Manager', 'name' => 'AZMAN BIN ALIAS',
             'icon' => 'ph-gear', 'style' => OrgNodeStyle::Executive->value,
-            'x' => 240, 'y' => 460, 'width' => 200, 'sort_order' => 14,
+            'x' => 210, 'y' => 610, 'width' => 200, 'height' => self::H_EXEC,
         ]);
 
-        $konsultan = $node([
+        $konsultan = $buat([
             'title' => 'Design Consultant', 'name' => 'NOR FATIN SYAMIMI MAKHTAR',
             'icon' => 'ph-pencil-simple', 'style' => OrgNodeStyle::Support->value,
-            'x' => 250, 'y' => 560, 'width' => 200, 'sort_order' => 15,
+            'x' => 215, 'y' => 720, 'width' => 210, 'height' => self::H_SUPPORT,
         ]);
 
-        $qs = $node([
+        $qs = $buat([
             'title' => 'Quantity Surveyor', 'name' => '-Kosong-',
             'icon' => 'ph-chart-bar', 'style' => OrgNodeStyle::Department->value,
-            'x' => 850, 'y' => 490, 'width' => 180, 'sort_order' => 16,
+            'x' => 790, 'y' => 640, 'width' => 170, 'height' => 70,
         ]);
 
-        $koordinator = $node([
+        $koordinator = $buat([
             'title' => 'Project Coordinator', 'name' => 'Affiful Najmi Mohd Masri',
             'icon' => 'ph-users-three', 'style' => OrgNodeStyle::Department->value,
-            'x' => 1060, 'y' => 490, 'width' => 190, 'sort_order' => 17,
+            'x' => 1005, 'y' => 640, 'width' => 170, 'height' => 70,
         ]);
 
-        // ── Garisan ───────────────────────────────────────────────────
-        $pepejal = [
+        // ══ Garisan pepejal — pelaporan langsung ══════════════════════
+        foreach ([
             [$md, $eksekutif], [$md, $pengurusan], [$md, $kontrak], [$md, $operasi],
             [$eksekutif, $pemasaran], [$eksekutif, $id],
             [$pengurusan, $hr], [$pengurusan, $akaun],
             [$kontrak, $jabKontrak], [$jabKontrak, $qs],
             [$operasi, $projek], [$operasi, $produksi], [$projek, $koordinator],
             [$id, $pengurusOperasi],
-        ];
-
-        foreach ($pepejal as [$dari, $ke]) {
+        ] as [$dari, $ke]) {
             OrgLink::create([
-                'from_node_id' => $dari->id,
-                'to_node_id' => $ke->id,
+                'from_node_id' => $dari->id, 'to_node_id' => $ke->id,
                 'style' => OrgLinkStyle::Solid->value,
             ]);
         }
 
-        // Freelancer dan konsultan disambung dengan garisan putus-putus.
+        // ══ Garisan putus-putus — sokongan / kontrak ══════════════════
         // Melukisnya pepejal bermakna carta mendakwa mereka melapor secara
         // langsung, yang mengubah maksud carta.
-        $putus = [
+        foreach ([
             [$pemasaran, $freelanceMarketing],
             [$pengurusOperasi, $konsultan],
-        ];
-
-        foreach ($putus as [$dari, $ke]) {
+        ] as [$dari, $ke]) {
             OrgLink::create([
-                'from_node_id' => $dari->id,
-                'to_node_id' => $ke->id,
+                'from_node_id' => $dari->id, 'to_node_id' => $ke->id,
                 'style' => OrgLinkStyle::Dashed->value,
             ]);
         }

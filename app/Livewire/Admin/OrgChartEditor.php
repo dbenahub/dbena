@@ -36,6 +36,8 @@ class OrgChartEditor extends Component
     // Medan borang bagi kotak yang dipilih.
     public string $title = '';
 
+    public string $subtitle = '';
+
     public string $name = '';
 
     public string $icon = '';
@@ -43,6 +45,8 @@ class OrgChartEditor extends Component
     public string $style = 'department';
 
     public int $width = 200;
+
+    public int $height = 66;
 
     public function mount(): void
     {
@@ -76,10 +80,12 @@ class OrgChartEditor extends Component
 
         $this->selectedId = $node->id;
         $this->title = (string) $node->title;
+        $this->subtitle = (string) $node->subtitle;
         $this->name = (string) $node->name;
         $this->icon = (string) $node->icon;
         $this->style = $node->style->value;
         $this->width = $node->width;
+        $this->height = $node->boxHeight();
     }
 
     /**
@@ -119,8 +125,9 @@ class OrgChartEditor extends Component
             'icon' => 'ph-user',
             'style' => OrgNodeStyle::Department->value,
             'x' => 40,
-            'y' => $bawah + 120,
+            'y' => $bawah + 140,
             'width' => 200,
+            'height' => 66,
             'sort_order' => (int) (OrgNode::max('sort_order') ?? 0) + 1,
         ]);
 
@@ -142,12 +149,16 @@ class OrgChartEditor extends Component
 
         $node->fill([
             'title' => trim($this->title) ?: null,
+            'subtitle' => trim($this->subtitle) ?: null,
             'name' => trim($this->name) ?: null,
             'icon' => trim($this->icon) ?: 'ph-user',
             'style' => OrgNodeStyle::tryFrom($this->style)?->value ?? OrgNodeStyle::Department->value,
             // Had lebar menghalang kotak selebar 9000px yang menolak setiap
             // kotak lain keluar dari skrin.
             'width' => max(120, min(420, $this->width)),
+            // Had tinggi atas sebab yang sama seperti lebar: satu kotak
+            // setinggi halaman menolak segala-galanya keluar dari skrin.
+            'height' => max(48, min(180, $this->height)),
         ])->save();
 
         $audit->log('org_chart.node_saved', $node, (string) $node->title);

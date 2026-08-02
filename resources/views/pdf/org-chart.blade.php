@@ -42,6 +42,9 @@
         .sokongan  { background: #ffffff; border: 1px dashed #b9adba; }
         .jawatan { font-size: 7.5px; line-height: 1.25; }
         .nama { font-size: 8px; font-weight: bold; line-height: 1.25; }
+        .sub-baris { font-size: 6.5px; line-height: 1.2; }
+        .terang .sub-baris { color: #e6d5e2; }
+        .gelap .sub-baris { color: #857b8c; }
         .terang .jawatan, .terang .nama { color: #ffffff; }
         .gelap .jawatan { color: #5c5364; }
         .gelap .nama { color: #1a1420; }
@@ -56,7 +59,6 @@
     <div class="kanvas" style="width: {{ $canvasWidth }}px; height: {{ $canvasHeight }}px">
         @php
             $byId = $nodes->keyBy('id');
-            $H = \App\Models\OrgNode::HEIGHT;
         @endphp
 
         <svg width="{{ $canvasWidth }}" height="{{ $canvasHeight }}"
@@ -69,7 +71,7 @@
                 @continue (! $a || ! $b)
 
                 @php
-                    $x1 = $a->centerX(); $y1 = $a->y + $H;
+                    $x1 = $a->centerX(); $y1 = $a->bottomY();
                     $x2 = $b->centerX(); $y2 = $b->y;
                     $mid = $y2 > $y1 ? $y1 + (int) round(($y2 - $y1) / 2) : $y1 + 20;
                     $putus = $link->style->dashArray() !== null;
@@ -93,9 +95,12 @@
 
             <div class="kotak {{ $kelas }}"
                  style="left: {{ $node->x }}px; top: {{ $node->y }}px;
-                        width: {{ $node->width - 18 }}px; height: {{ $H - 14 }}px">
+                        width: {{ $node->width - 18 }}px; height: {{ $node->boxHeight() - 14 }}px">
                 @if (filled($node->title))
                     <div class="jawatan">{{ $node->title }}</div>
+                @endif
+                @if (filled($node->subtitle))
+                    <div class="sub-baris">{{ $node->subtitle }}</div>
                 @endif
                 @if (filled($node->name))
                     <div class="nama">{{ $node->name }}</div>

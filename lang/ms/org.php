@@ -44,6 +44,8 @@ return [
         'panel' => 'Butiran kotak',
         'panel_none' => 'Klik mana-mana kotak untuk menyunting butirannya.',
         'field_title' => 'Jawatan / Jabatan',
+        'field_subtitle' => 'Baris tengah (cth: Head of Dept.)',
+        'field_height' => 'Tinggi (px)',
         'field_name' => 'Nama',
         'field_icon' => 'Ikon',
         'field_style' => 'Gaya kotak',

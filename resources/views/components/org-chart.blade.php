@@ -14,7 +14,7 @@
      * yang berkembang mengikut kandungan tidak boleh kehilangan apa-apa.
      */
     $lebar = max(1200, (int) $nodes->max(fn ($n) => $n->x + $n->width) + 80);
-    $tinggi = max(560, (int) $nodes->max(fn ($n) => $n->y + OrgNode::HEIGHT) + 80);
+    $tinggi = max(560, (int) $nodes->max(fn ($n) => $n->bottomY()) + 90);
 
     $byId = $nodes->keyBy('id');
 @endphp
@@ -113,11 +113,11 @@
                          kedua secara senyap — kursor seret hilang tanpa
                          sebarang ralat untuk dikesan. --}}
                     <div @class([
-                            'absolute select-none rounded-xl px-3 py-2',
+                            'absolute select-none rounded-xl px-2.5 py-2',
                             'cursor-grab active:cursor-grabbing' => $editable,
                          ])
                          style="left: {{ $node->x }}px; top: {{ $node->y }}px;
-                                width: {{ $node->width }}px; height: {{ OrgNode::HEIGHT }}px;
+                                width: {{ $node->width }}px; height: {{ $node->boxHeight() }}px;
                                 background: {{ $gaya->background() }};
                                 border: {{ $sumber ? '2px solid oklch(0.82 0.15 85)' : ($dipilih ? '2px solid oklch(0.72 0.16 340)' : $gaya->border()) }};
                                 box-shadow: 0 4px 14px -8px oklch(0.1 0 0 / 0.8);
@@ -128,23 +128,37 @@
                              x-on:pointerdown="mula($event, {{ $node->id }}, {{ $node->x }}, {{ $node->y }})"
                          @endif>
 
-                        <div class="flex h-full items-center gap-2">
-                            <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
-                                  style="background: color-mix(in oklch, {{ $gaya->accent() }} 22%, transparent)">
-                                <i class="ph-duotone {{ $node->icon ?: 'ph-user' }} text-[15px]"
-                                   style="color: {{ $gaya->accent() }}" aria-hidden="true"></i>
-                            </span>
+                        {{-- Lencana ikon duduk DI ATAS tepi kotak, seperti
+                             carta rasmi. Ia juga melindungi tempat garisan
+                             bertemu kotak, jadi hujung garisan tidak kelihatan
+                             menusuk masuk. --}}
+                        <span class="absolute left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full"
+                              style="top: -16px; background: {{ $gaya->badge() }};
+                                     border: 2px solid {{ $gaya->badgeRing() }}">
+                            <i class="ph-duotone {{ $node->icon ?: 'ph-user' }} text-[16px]"
+                               style="color: {{ $gaya->badgeIcon() }}" aria-hidden="true"></i>
+                        </span>
 
-                            <span class="min-w-0 flex-1">
-                                @if (filled($node->title))
-                                    <span class="block truncate text-[10.5px] font-semibold leading-tight"
-                                          style="color: {{ $gaya->titleColor() }}">{{ $node->title }}</span>
-                                @endif
-                                @if (filled($node->name))
-                                    <span class="block truncate text-[11px] font-extrabold leading-tight"
-                                          style="color: {{ $gaya->nameColor() }}">{{ $node->name }}</span>
-                                @endif
-                            </span>
+                        <div class="flex h-full flex-col items-center justify-center gap-px pt-2 text-center">
+                            @if (filled($node->title))
+                                <span class="line-clamp-2 w-full text-[11px] font-bold leading-tight"
+                                      style="color: {{ $gaya->titleColor() }}">{{ $node->title }}</span>
+                            @endif
+
+                            {{-- "Head of Dept." — baris tengah yang lebih kecil
+                                 dan lebih pudar. Memampatkannya ke dalam tajuk
+                                 menghasilkan satu baris panjang yang membalut
+                                 dengan hodoh dan kehilangan hierarki yang
+                                 menjadikan carta boleh diimbas. --}}
+                            @if (filled($node->subtitle))
+                                <span class="w-full truncate text-[9.5px] leading-tight"
+                                      style="color: {{ $gaya->subtitleColor() }}">{{ $node->subtitle }}</span>
+                            @endif
+
+                            @if (filled($node->name))
+                                <span class="line-clamp-2 w-full text-[10.5px] font-extrabold leading-tight"
+                                      style="color: {{ $gaya->nameColor() }}">{{ $node->name }}</span>
+                            @endif
                         </div>
                     </div>
                 @endforeach

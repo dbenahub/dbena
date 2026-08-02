@@ -61,6 +61,41 @@ enum OrgNodeStyle: string
         };
     }
 
+    /** Warna baris tengah kecil ("Head of Dept."). */
+    public function subtitleColor(): string
+    {
+        return match ($this) {
+            self::Executive => 'oklch(0.99 0 0 / 0.72)',
+            default => 'var(--t60)',
+        };
+    }
+
+    /** Latar lencana ikon yang duduk di atas tepi kotak. */
+    public function badge(): string
+    {
+        return match ($this) {
+            self::Executive => 'oklch(0.42 0.15 340)',
+            self::Department => 'oklch(0.36 0.13 335)',
+            self::Support => 'var(--hover-bg2)',
+        };
+    }
+
+    public function badgeRing(): string
+    {
+        return match ($this) {
+            self::Support => 'var(--border2)',
+            default => 'oklch(0.62 0.15 340)',
+        };
+    }
+
+    public function badgeIcon(): string
+    {
+        return match ($this) {
+            self::Support => 'var(--t70)',
+            default => 'oklch(0.99 0 0)',
+        };
+    }
+
     public function accent(): string
     {
         return match ($this) {

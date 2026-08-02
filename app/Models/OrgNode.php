@@ -10,10 +10,19 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OrgNode extends Model
 {
-    /** Tinggi tetap satu kotak — garisan dikira daripadanya. */
-    public const HEIGHT = 62;
+    /**
+     * Tinggi lalai apabila kotak tidak menyatakan sendiri.
+     *
+     * Bukan lagi tetap: tiga gaya mempunyai bilangan baris yang berbeza,
+     * dan tinggi tetap bermakna kotak dua baris membawa ruang kosong
+     * sebanyak baris ketiga yang tidak pernah wujud.
+     */
+    public const HEIGHT = 66;
 
-    protected $fillable = ['title', 'name', 'icon', 'style', 'x', 'y', 'width', 'sort_order'];
+    protected $fillable = [
+        'title', 'subtitle', 'name', 'icon', 'style',
+        'x', 'y', 'width', 'height', 'sort_order',
+    ];
 
     protected function casts(): array
     {
@@ -22,6 +31,7 @@ class OrgNode extends Model
             'x' => 'integer',
             'y' => 'integer',
             'width' => 'integer',
+            'height' => 'integer',
             'sort_order' => 'integer',
         ];
     }
@@ -41,8 +51,13 @@ class OrgNode extends Model
         return $this->x + (int) round($this->width / 2);
     }
 
+    public function boxHeight(): int
+    {
+        return $this->height > 0 ? $this->height : self::HEIGHT;
+    }
+
     public function bottomY(): int
     {
-        return $this->y + self::HEIGHT;
+        return $this->y + $this->boxHeight();
     }
 }

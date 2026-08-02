@@ -71,6 +71,12 @@
                 </div>
 
                 <div>
+                    <label for="org-sub" class="mb-1.5 block text-[11.5px] text-t60">{{ __('org.editor.field_subtitle') }}</label>
+                    <input id="org-sub" type="text" wire:model="subtitle" class="dbena-input"
+                           placeholder="Head of Dept.">
+                </div>
+
+                <div>
                     <label for="org-name" class="mb-1.5 block text-[11.5px] text-t60">{{ __('org.editor.field_name') }}</label>
                     <input id="org-name" type="text" wire:model="name" class="dbena-input">
                 </div>
@@ -90,6 +96,12 @@
                         <input id="org-width" type="number" min="120" max="420" step="10"
                                wire:model="width" class="dbena-input">
                     </div>
+                </div>
+
+                <div>
+                    <label for="org-height" class="mb-1.5 block text-[11.5px] text-t60">{{ __('org.editor.field_height') }}</label>
+                    <input id="org-height" type="number" min="48" max="180" step="2"
+                           wire:model="height" class="dbena-input">
                 </div>
 
                 <div>

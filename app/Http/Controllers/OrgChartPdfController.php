@@ -30,7 +30,7 @@ class OrgChartPdfController extends Controller
          * orang yang tiada dalam cetakan akan perasan.
          */
         $lebar = max(1200, (int) $nodes->max(fn (OrgNode $n) => $n->x + $n->width) + 80);
-        $tinggi = max(560, (int) $nodes->max(fn (OrgNode $n) => $n->y + OrgNode::HEIGHT) + 120);
+        $tinggi = max(560, (int) $nodes->max(fn (OrgNode $n) => $n->bottomY()) + 120);
 
         $pdf = Pdf::loadView('pdf.org-chart', [
             'nodes' => $nodes,

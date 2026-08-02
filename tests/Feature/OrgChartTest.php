@@ -308,3 +308,111 @@ it('lets an admin download the PDF', function (): void {
 
     expect($response->headers->get('content-type'))->toContain('application/pdf');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Susunan mesti sepadan dengan carta rasmi
+|--------------------------------------------------------------------------
+*/
+
+it('centres each director between its own departments', function (): void {
+    // Susunan itu yang menjadikan carta boleh diimbas: mata mengikut
+    // garisan menegak ke bawah tanpa perlu mencari.
+    $tengah = fn (string $title) => OrgNode::where('title', $title)->firstOrFail()->centerX();
+
+    $anak = ($tengah('MARKETING DEPARTMENT') + $tengah('ID DEPARTMENT')) / 2;
+
+    expect(abs($tengah('Executive Director') - $anak))->toBeLessThan(20);
+});
+
+it('centres the managing director over the four directors', function (): void {
+    $tengah = fn (string $title) => OrgNode::where('title', $title)->firstOrFail()->centerX();
+
+    $purata = (
+        $tengah('Executive Director')
+        + $tengah('Management Department')
+        + $tengah('Contract & Project Director')
+        + $tengah('Operation Director')
+    ) / 4;
+
+    expect(abs($tengah('Managing Director') - $purata))->toBeLessThan(30);
+});
+
+it('lays the four directors on one row', function (): void {
+    $y = OrgNode::whereIn('title', [
+        'Executive Director', 'Management Department',
+        'Contract & Project Director', 'Operation Director',
+    ])->pluck('y')->unique();
+
+    expect($y)->toHaveCount(1);
+});
+
+it('lays the seven departments on one row', function (): void {
+    $y = OrgNode::whereIn('title', [
+        'MARKETING DEPARTMENT', 'ID DEPARTMENT', 'HR Manager', 'Freelancer Account',
+        'CONTRACT DEPARTMENT', 'PROJECT DEPARTMENT', 'PRODUCTION DEPARTMENT',
+    ])->pluck('y')->unique();
+
+    expect($y)->toHaveCount(1);
+});
+
+it('keeps the boxes from overlapping each other', function (): void {
+    // Kotak bertindih bermakna satu nama tersembunyi di belakang nama lain,
+    // dan tiada siapa perasan sehingga orang itu bertanya kenapa dia tiada
+    // dalam carta.
+    $nodes = OrgNode::all();
+
+    foreach ($nodes as $a) {
+        foreach ($nodes as $b) {
+            if ($a->id >= $b->id) {
+                continue;
+            }
+
+            $bertindihX = $a->x < $b->x + $b->width && $b->x < $a->x + $a->width;
+            $bertindihY = $a->y < $b->bottomY() && $b->y < $a->bottomY();
+
+            expect($bertindihX && $bertindihY)->toBeFalse(
+                "'{$a->title}' bertindih dengan '{$b->title}'"
+            );
+        }
+    }
+});
+
+it('carries the middle Head of Dept. line', function (): void {
+    // Memampatkannya ke dalam tajuk menghasilkan satu baris panjang yang
+    // membalut dengan hodoh dan kehilangan hierarki tipografi.
+    expect(OrgNode::where('title', 'MARKETING DEPARTMENT')->firstOrFail()->subtitle)
+        ->toBe('Head of Dept.');
+});
+
+it('gives department boxes room for three lines', function (): void {
+    $dept = OrgNode::where('title', 'CONTRACT DEPARTMENT')->firstOrFail();
+    $exec = OrgNode::where('title', 'Operation Director')->firstOrFail();
+
+    expect($dept->boxHeight())->toBeGreaterThan($exec->boxHeight());
+});
+
+it('caps the box height like the width', function (): void {
+    // Satu kotak setinggi halaman menolak segala-galanya keluar dari skrin.
+    $node = OrgNode::first();
+
+    Livewire::actingAs($this->admin)
+        ->test(OrgChartEditor::class)
+        ->call('selectNode', $node->id)
+        ->set('height', 5000)
+        ->call('saveNode');
+
+    expect($node->fresh()->boxHeight())->toBe(180);
+});
+
+it('rebuilds the official layout on demand', function (): void {
+    // Seeder berundur sebaik ada nod. Ini cara sengaja untuk mengatasi
+    // perlindungan itu.
+    OrgNode::first()->update(['x' => 4321]);
+
+    $this->artisan('dbena:carta-reset', ['--force' => true])->assertSuccessful();
+
+    expect(OrgNode::where('x', 4321)->exists())->toBeFalse()
+        ->and(OrgNode::count())->toBeGreaterThan(10)
+        ->and(OrgLink::count())->toBeGreaterThan(10);
+});
