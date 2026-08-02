@@ -47,6 +47,7 @@ return [
         'field_subtitle' => 'Middle line (e.g. Head of Dept.)',
         'field_height' => 'Height (px)',
         'field_name' => 'Name',
+        'icon_none' => 'No icon',
         'field_icon' => 'Icon',
         'field_color' => 'Box colour',
         'color_default' => 'Follow style',

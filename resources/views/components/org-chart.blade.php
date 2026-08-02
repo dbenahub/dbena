@@ -115,7 +115,7 @@
                          kedua secara senyap — kursor seret hilang tanpa
                          sebarang ralat untuk dikesan. --}}
                     <div @class([
-                            'absolute select-none rounded-xl px-2.5 py-2',
+                            'absolute select-none rounded-md px-2.5 py-2',
                             'cursor-grab active:cursor-grabbing' => $editable,
                          ])
                          style="left: {{ $node->x }}px; top: {{ $node->y }}px;
@@ -139,18 +139,24 @@
                              x-on:pointerdown="mula($event)"
                          @endif>
 
-                        {{-- Lencana ikon duduk DI ATAS tepi kotak, seperti
-                             carta rasmi. Ia juga melindungi tempat garisan
-                             bertemu kotak, jadi hujung garisan tidak kelihatan
-                             menusuk masuk. --}}
-                        <span class="absolute left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full"
-                              style="top: -16px; background: {{ $warna['badge'] }};
-                                     border: 2px solid {{ $warna['badgeRing'] }}">
-                            <i class="ph-duotone {{ $node->icon ?: 'ph-user' }} text-[16px]"
-                               style="color: {{ $warna['badgeIcon'] }}" aria-hidden="true"></i>
-                        </span>
+                        {{-- Lencana hanya apabila kotak MEMPUNYAI ikon.
+                             Ia duduk di atas tepi kotak, jadi memaksa lencana
+                             pada setiap kotak akan menolak semua teks ke bawah
+                             16px dan memusnahkan penjajaran baris yang diukur
+                             dengan teliti dalam seeder. --}}
+                        @if (filled($node->icon))
+                            <span class="absolute left-1/2 flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-full"
+                                  style="top: -16px; background: {{ $warna['badge'] }};
+                                         border: 2px solid {{ $warna['badgeRing'] }}">
+                                <i class="ph-duotone {{ $node->icon }} text-[16px]"
+                                   style="color: {{ $warna['badgeIcon'] }}" aria-hidden="true"></i>
+                            </span>
+                        @endif
 
-                        <div class="flex h-full flex-col items-center justify-center gap-px pt-2 text-center">
+                        <div @class([
+                                'flex h-full flex-col items-center justify-center gap-px text-center',
+                                'pt-2' => filled($node->icon),
+                             ])>
                             @if (filled($node->title))
                                 <span class="line-clamp-2 w-full text-[11px] font-bold leading-tight"
                                       style="color: {{ $warna['title'] }}">{{ $node->title }}</span>

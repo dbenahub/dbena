@@ -47,6 +47,7 @@ return [
         'field_subtitle' => 'Baris tengah (cth: Head of Dept.)',
         'field_height' => 'Tinggi (px)',
         'field_name' => 'Nama',
+        'icon_none' => 'Tiada ikon',
         'field_icon' => 'Ikon',
         'field_color' => 'Warna kotak',
         'color_default' => 'Ikut gaya',

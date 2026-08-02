@@ -33,10 +33,15 @@ it('seeds the real DBENA chart rather than an empty canvas', function (): void {
         ->and(OrgLink::count())->toBeGreaterThan(10);
 });
 
-it('draws freelancers with a dashed line', function (): void {
-    // Melukisnya pepejal bermakna carta mendakwa freelancer melapor secara
-    // langsung, yang mengubah maksud carta.
-    expect(OrgLink::where('style', OrgLinkStyle::Dashed->value)->count())->toBeGreaterThan(0);
+it('still supports dashed lines even though the seed uses none', function (): void {
+    // Carta rasmi terkini menggunakan garisan pepejal sepenuhnya, tetapi
+    // keupayaan itu mesti kekal: menghapuskannya bermakna hubungan
+    // kontrak tidak boleh dibezakan daripada pelaporan langsung apabila
+    // DBENA memerlukannya semula.
+    $link = OrgLink::first();
+    $link->update(['style' => OrgLinkStyle::Dashed->value]);
+
+    expect($link->fresh()->style->dashArray())->not->toBeNull();
 });
 
 it('does not overwrite hand-dragged positions when seeded again', function (): void {
@@ -325,35 +330,70 @@ it('centres each director between its own departments', function (): void {
     expect(abs($tengah('Executive Director') - $anak))->toBeLessThan(20);
 });
 
-it('centres the managing director over the four directors', function (): void {
+it('sits the managing director directly above the management department', function (): void {
     $tengah = fn (string $title) => OrgNode::where('title', $title)->firstOrFail()->centerX();
 
-    $purata = (
-        $tengah('Executive Director')
-        + $tengah('Management Department')
-        + $tengah('Contract & Project Director')
-        + $tengah('Operation Director')
-    ) / 4;
-
-    expect(abs($tengah('Managing Director') - $purata))->toBeLessThan(30);
+    expect($tengah('Managing Director'))->toBe($tengah('MANAGEMENT DEPARTMENT'));
 });
 
-it('lays the four directors on one row', function (): void {
+it('lays the three directors on one row', function (): void {
     $y = OrgNode::whereIn('title', [
-        'Executive Director', 'Management Department',
-        'Contract & Project Director', 'Operation Director',
+        'Executive Director', 'Contract & Project Director', 'Operation Director',
     ])->pluck('y')->unique();
 
     expect($y)->toHaveCount(1);
 });
 
-it('lays the seven departments on one row', function (): void {
+it('lays the five departments on one row', function (): void {
     $y = OrgNode::whereIn('title', [
-        'MARKETING DEPARTMENT', 'ID DEPARTMENT', 'HR Manager', 'Freelancer Account',
-        'CONTRACT DEPARTMENT', 'PROJECT DEPARTMENT', 'PRODUCTION DEPARTMENT',
+        'MARKETING DEPARTMENT', 'ID DEPARTMENT', 'MANAGEMENT DEPARTMENT',
+        'CONTRACT DEPARTMENT', 'PROJECT DEPARTMENT',
     ])->pluck('y')->unique();
 
     expect($y)->toHaveCount(1);
+});
+
+it('reports the management department to the managing director, not a director', function (): void {
+    // Ia turun ke baris jabatan tetapi rantaian pelaporannya tidak berubah.
+    $md = OrgNode::where('title', 'Managing Director')->firstOrFail();
+    $mgmt = OrgNode::where('title', 'MANAGEMENT DEPARTMENT')->firstOrFail();
+
+    expect(OrgLink::where('from_node_id', $md->id)->where('to_node_id', $mgmt->id)->exists())
+        ->toBeTrue();
+});
+
+it('has no production department', function (): void {
+    expect(OrgNode::where('title', 'PRODUCTION DEPARTMENT')->exists())->toBeFalse();
+});
+
+it('leaves the icon empty so rows stay aligned', function (): void {
+    // Lencana duduk di ATAS tepi kotak. Memaksa satu pada setiap kotak
+    // menolak semua teks ke bawah 16px dan memusnahkan penjajaran baris
+    // yang diukur dengan teliti dalam seeder.
+    expect(OrgNode::whereNotNull('icon')->where('icon', '!=', '')->count())->toBe(0);
+});
+
+it('colours the boxes by level', function (): void {
+    // Warna membawa maksud: marun ialah pengarah, ungu ialah jabatan.
+    // Membaca carta ini bergantung pada kumpulan warna itu.
+    $warna = fn (string $title) => OrgNode::where('title', $title)->firstOrFail()->color;
+
+    expect($warna('MARKETING DEPARTMENT'))->toBe($warna('CONTRACT DEPARTMENT'))
+        ->and($warna('MARKETING DEPARTMENT'))->not->toBe($warna('Executive Director'));
+});
+
+it('keeps every seeded colour readable', function (): void {
+    foreach (OrgNode::whereNotNull('color')->get() as $node) {
+        $hex = $node->color;
+        $teks = App\Support\OrgPalette::textOn($hex);
+
+        $a = App\Support\OrgPalette::luminance($hex);
+        $b = App\Support\OrgPalette::luminance($teks);
+
+        $nisbah = (max($a, $b) + 0.05) / (min($a, $b) + 0.05);
+
+        expect($nisbah)->toBeGreaterThan(4.5, "{$node->title} ({$hex}) gagal WCAG AA");
+    }
 });
 
 it('keeps the boxes from overlapping each other', function (): void {

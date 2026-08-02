@@ -224,7 +224,7 @@ class OrgChartEditor extends Component
         $node = OrgNode::create([
             'title' => __('org.editor.add'),
             'name' => null,
-            'icon' => 'ph-user',
+            'icon' => null,
             'style' => OrgNodeStyle::Department->value,
             'x' => 40,
             'y' => $bawah + 140,
@@ -253,7 +253,7 @@ class OrgChartEditor extends Component
             'title' => trim($this->title) ?: null,
             'subtitle' => trim($this->subtitle) ?: null,
             'name' => trim($this->name) ?: null,
-            'icon' => trim($this->icon) ?: 'ph-user',
+            'icon' => trim($this->icon) ?: null,
             'style' => OrgNodeStyle::tryFrom($this->style)?->value ?? OrgNodeStyle::Department->value,
             // Had lebar menghalang kotak selebar 9000px yang menolak setiap
             // kotak lain keluar dari skrin.

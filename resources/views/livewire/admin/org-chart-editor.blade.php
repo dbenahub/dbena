@@ -220,6 +220,9 @@
                 <div>
                     <label for="org-icon" class="mb-1.5 block text-[11.5px] text-t60">{{ __('org.editor.field_icon') }}</label>
                     <select id="org-icon" wire:model="icon" class="dbena-input">
+                        {{-- Kosong ialah pilihan pertama: carta rasmi tiada
+                             ikon, dan itu susunan yang paling kerap dipilih. --}}
+                        <option value="">{{ __('org.editor.icon_none') }}</option>
                         @foreach ([
                             'ph-user' => 'Orang', 'ph-user-circle' => 'Orang (bulat)',
                             'ph-users-three' => 'Pasukan', 'ph-briefcase' => 'Beg kerja',
