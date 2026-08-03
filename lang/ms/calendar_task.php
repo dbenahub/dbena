@@ -40,6 +40,20 @@ return [
     'no_events' => 'Tiada tugasan pada hari ini.',
     'all_day' => 'Sepanjang hari',
 
+    'google' => [
+        'title' => 'Google Calendar',
+        'sync' => 'Hantar ke Google Calendar',
+        'syncing' => 'Menghantar…',
+        'not_connected' => 'Calendar ID belum ditetapkan. Admin boleh menetapkannya di Panel Admin → Roadmap.',
+        'done' => ':created acara baharu, :updated dikemas kini, :deleted dipadam.',
+        'needs_write' => 'Google menolak penulisan. Kalendar dikongsi untuk BACA sahaja. Buka calendar.google.com → Settings and sharing → Share with specific people → :email → tukar kepada "Make changes to events" → Save. (:message)',
+        'api_disabled' => 'Google Calendar API belum diaktifkan dalam projek Google Cloud anda. Buka pautan ini, tekan ENABLE, tunggu seminit, kemudian cuba semula: :url',
+        'source' => 'Dihantar automatik daripada DBENA Dashboard — Task Planning.',
+        'last_synced' => 'Terakhir dihantar :time',
+        'never' => 'Belum pernah dihantar',
+        'calendar_id' => 'Calendar ID untuk tugasan',
+    ],
+
     'form' => [
         'title' => 'Tambah Tugasan',
         'task' => 'Tugasan',

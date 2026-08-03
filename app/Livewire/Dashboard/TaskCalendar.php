@@ -10,6 +10,7 @@ use App\Models\Owner;
 use App\Models\TaskDayMark;
 use App\Models\TaskDepartment;
 use App\Services\AuditLogger;
+use App\Services\GoogleCalendarWriter;
 use App\Services\TaskCalendarService;
 use Illuminate\Support\Carbon;
 use Illuminate\View\View;
@@ -185,7 +186,36 @@ class TaskCalendar extends Component
 
         $this->showAdd = false;
         $this->newTitle = '';
-        $this->dispatch('dbena-toast', message: __('calendar.added'));
+        $this->dispatch('dbena-toast', message: __('calendar_task.added'));
+    }
+
+    /**
+     * Hantar tugasan bulan ini ke Google Calendar.
+     *
+     * Manual, bukan automatik pada setiap klik petak. Panggilan Google
+     * mengambil satu hingga tiga saat; melakukannya pada setiap tanda hari
+     * bermakna papan terasa rosak semasa mesyuarat, dan gagal sepenuhnya
+     * apabila Google tidak dapat dihubungi.
+     */
+    public function pushToGoogle(GoogleCalendarWriter $writer, AuditLogger $audit): void
+    {
+        $calendarId = (string) (\App\Models\RoadmapPlan::where('year', $this->year)->value('calendar_id')
+            ?? \App\Models\RoadmapPlan::whereNotNull('calendar_id')->value('calendar_id')
+            ?? '');
+
+        $hasil = $writer->syncMonth($calendarId, $this->year, $this->month);
+
+        if ($hasil['ok']) {
+            $audit->log('task_calendar.pushed', null, sprintf('%04d-%02d', $this->year, $this->month), [
+                'created' => $hasil['created'],
+                'updated' => $hasil['updated'],
+                'deleted' => $hasil['deleted'],
+            ]);
+        }
+
+        $this->dispatch('dbena-toast',
+            message: $hasil['message'],
+            variant: $hasil['ok'] ? 'success' : 'error');
     }
 
     public function render(TaskCalendarService $calendar): View
@@ -203,8 +233,12 @@ class TaskCalendar extends Component
             'weekDays' => $this->weekRange($fokus),
             'miniGrid' => $data['grid'],
         ])->layoutData([
-            'pageTitle' => __('calendar.title'),
-            'pageSubtitle' => __('calendar.subtitle'),
+            // Fail bahasa ialah calendar_task, bukan calendar. Kunci yang
+            // salah tidak menghempaskan apa-apa — Laravel memaparkan kunci
+            // itu sendiri, jadi tajuk halaman berbunyi "calendar.title"
+            // dan hanya kelihatan kepada orang yang membuka halaman itu.
+            'pageTitle' => __('calendar_task.title'),
+            'pageSubtitle' => __('calendar_task.subtitle'),
         ]);
     }
 

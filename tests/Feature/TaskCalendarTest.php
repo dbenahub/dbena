@@ -325,3 +325,184 @@ it('turns a guest away', function (): void {
     $this->get(route('task-calendar'))->assertRedirect(route('login'));
     $this->get(route('task-calendar.pdf'))->assertRedirect(route('login'));
 });
+
+/*
+|--------------------------------------------------------------------------
+| Hantar ke Google Calendar
+|--------------------------------------------------------------------------
+*/
+
+it('shows the page title from the right language file', function (): void {
+    // Kunci yang salah tidak menghempaskan apa-apa — Laravel memaparkan
+    // kunci itu sendiri, jadi tajuk halaman berbunyi "calendar.title" dan
+    // hanya kelihatan kepada orang yang membuka halaman itu.
+    expect(__('calendar_task.title'))->not->toBe('calendar_task.title')
+        ->and(__('calendar_task.subtitle'))->not->toBe('calendar_task.subtitle');
+});
+
+it('refuses to push with no calendar id', function (): void {
+    App\Models\RoadmapPlan::query()->update(['calendar_id' => null]);
+
+    Livewire\Livewire::actingAs($this->user)
+        ->test(TaskCalendar::class)
+        ->call('pushToGoogle')
+        ->assertDispatched('dbena-toast');
+});
+
+it('creates an event and remembers its id', function (): void {
+    // Tanpa menyimpan ID, setiap sync mencipta acara BAHARU dan kalendar
+    // dipenuhi salinan tugasan yang sama.
+    $task = calTask($this->marketing->id, 'Site visit Klang', [12 => TaskMark::Planning]);
+
+    Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*' => Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']),
+        'www.googleapis.com/calendar/*' => Illuminate\Support\Facades\Http::response(['id' => 'evt_123']),
+    ]);
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)
+        ->syncMonth('dbenagroup@gmail.com', 2026, 8);
+
+    expect($hasil['ok'])->toBeTrue()
+        ->and($task->marks()->first()->google_event_id)->toBe('evt_123');
+});
+
+it('updates instead of duplicating on a second push', function (): void {
+    $task = calTask($this->marketing->id, 'Site visit Klang', [12 => TaskMark::Planning]);
+    $task->marks()->update(['google_event_id' => 'evt_lama']);
+
+    Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*' => Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']),
+        'www.googleapis.com/calendar/*' => Illuminate\Support\Facades\Http::response(['id' => 'evt_lama']),
+    ]);
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)
+        ->syncMonth('dbenagroup@gmail.com', 2026, 8);
+
+    expect($hasil['created'])->toBe(0)
+        ->and($hasil['updated'])->toBeGreaterThan(0);
+});
+
+it('removes a cancelled task from the calendar', function (): void {
+    // Kalendar yang memaparkan acara yang dibatalkan bermakna orang masih
+    // pergi ke mesyuarat yang tidak berlaku.
+    $task = calTask($this->marketing->id, 'Event dibatalkan', [12 => TaskMark::Cancel]);
+    $task->marks()->update(['google_event_id' => 'evt_batal']);
+
+    Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*' => Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']),
+        'www.googleapis.com/calendar/*' => Illuminate\Support\Facades\Http::response([], 204),
+    ]);
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)
+        ->syncMonth('dbenagroup@gmail.com', 2026, 8);
+
+    expect($hasil['deleted'])->toBe(1)
+        ->and($task->marks()->first()->google_event_id)->toBeNull();
+});
+
+it('names the write permission when Google refuses', function (): void {
+    // Kegagalan paling biasa ialah menyangka perkongsian BACA sudah
+    // memadai. Mesej yang hanya berkata "403" menghantar admin membetulkan
+    // perkara yang sudah betul.
+    calTask($this->marketing->id, 'Apa-apa', [12 => TaskMark::Planning]);
+
+    Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*' => Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']),
+        'www.googleapis.com/calendar/*' => Illuminate\Support\Facades\Http::response([
+            'error' => ['message' => 'Forbidden', 'errors' => [['reason' => 'forbidden']]],
+        ], 403),
+    ]);
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)
+        ->syncMonth('dbenagroup@gmail.com', 2026, 8);
+
+    expect($hasil['ok'])->toBeFalse()
+        ->and($hasil['message'])->toContain('Make changes to events');
+});
+
+it('names the disabled API instead of blaming sharing', function (): void {
+    calTask($this->marketing->id, 'Apa-apa', [12 => TaskMark::Planning]);
+
+    Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*' => Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']),
+        'www.googleapis.com/calendar/*' => Illuminate\Support\Facades\Http::response([
+            'error' => [
+                'message' => 'Google Calendar API has not been used in project 1 before or it is disabled.',
+                'errors' => [['reason' => 'accessNotConfigured']],
+            ],
+        ], 403),
+    ]);
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)
+        ->syncMonth('dbenagroup@gmail.com', 2026, 8);
+
+    expect($hasil['message'])->toContain('ENABLE')
+        ->and($hasil['message'])->not->toContain('Make changes to events');
+});
+
+it('sends an all-day event ending the next day', function (): void {
+    // Google menganggap julat sepanjang hari sebagai separa terbuka, jadi
+    // tarikh tamat yang sama menghasilkan acara sifar panjang yang tidak
+    // muncul langsung dalam paparan bulan.
+    calTask($this->marketing->id, 'Sepanjang hari', [12 => TaskMark::Planning], 'Zikri', null);
+
+    Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*' => Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']),
+        'www.googleapis.com/calendar/*' => Illuminate\Support\Facades\Http::response(['id' => 'evt_1']),
+    ]);
+
+    app(App\Services\GoogleCalendarWriter::class)->syncMonth('dbenagroup@gmail.com', 2026, 8);
+
+    Illuminate\Support\Facades\Http::assertSent(function ($request) {
+        if (! str_contains($request->url(), '/events')) {
+            return true;
+        }
+
+        $data = $request->data();
+
+        return ($data['start']['date'] ?? null) !== ($data['end']['date'] ?? null);
+    });
+});
+
+it('carries the status letter into the event title', function (): void {
+    // Kalendar Google tidak memaparkan warna kepada semua peranti, dan
+    // huruf itu berfungsi di mana-mana.
+    calTask($this->marketing->id, 'Site visit', [12 => TaskMark::Complete]);
+
+    Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*' => Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']),
+        'www.googleapis.com/calendar/*' => Illuminate\Support\Facades\Http::response(['id' => 'evt_1']),
+    ]);
+
+    app(App\Services\GoogleCalendarWriter::class)->syncMonth('dbenagroup@gmail.com', 2026, 8);
+
+    Illuminate\Support\Facades\Http::assertSent(function ($request) {
+        if (! str_contains($request->url(), '/events')) {
+            return true;
+        }
+
+        return str_starts_with($request->data()['summary'] ?? '', '[C] ');
+    });
+});
+
+it('asks for the write scope, not the read one', function (): void {
+    // Token Google terikat kepada skop yang dimintanya. Token baca yang
+    // digunakan untuk menulis ditolak dengan 403 yang kelihatan seperti
+    // masalah perkongsian.
+    $sumber = file_get_contents(app_path('Services/GoogleCalendarWriter.php'));
+
+    expect($sumber)->toContain('auth/calendar.events')
+        ->and($sumber)->not->toContain('calendar.readonly');
+});
+
+it('caches the write token apart from the read token', function (): void {
+    // Berkongsi satu kunci cache bermakna token baca digunakan untuk
+    // menulis.
+    $baca = file_get_contents(app_path('Services/GoogleCalendarReader.php'));
+    $tulis = file_get_contents(app_path('Services/GoogleCalendarWriter.php'));
+
+    preg_match("/TOKEN_CACHE_KEY = '([^']+)'/", $baca, $a);
+    preg_match("/TOKEN_CACHE_KEY = '([^']+)'/", $tulis, $b);
+
+    expect($a[1])->not->toBe($b[1]);
+});

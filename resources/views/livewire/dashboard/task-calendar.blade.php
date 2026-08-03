@@ -167,6 +167,18 @@
                     @endforelse
                 </div>
 
+                {{-- Manual, bukan automatik pada setiap klik petak. Panggilan
+                     Google mengambil satu hingga tiga saat; melakukannya pada
+                     setiap tanda hari bermakna papan terasa rosak semasa
+                     mesyuarat. --}}
+                <button type="button" wire:click="pushToGoogle" wire:loading.attr="disabled"
+                        class="mt-3 flex w-full items-center justify-center gap-1.5 rounded-[9px] px-3 py-2 text-[11.5px] font-semibold text-t85"
+                        style="border: 1px solid var(--border2)">
+                    <i class="ph-duotone ph-google-logo text-sm" aria-hidden="true"></i>
+                    <span wire:loading.remove wire:target="pushToGoogle">{{ __('calendar_task.google.sync') }}</span>
+                    <span wire:loading wire:target="pushToGoogle">{{ __('calendar_task.google.syncing') }}</span>
+                </button>
+
                 <a href="{{ route('task-calendar.pdf', ['tahun' => $cal['year'], 'bulan' => $cal['month'], 'pic' => $pic]) }}"
                    class="mt-3 flex items-center justify-center gap-1.5 rounded-[9px] px-3 py-2 text-[11.5px] font-semibold text-t80"
                    style="border: 1px solid var(--border2)">
