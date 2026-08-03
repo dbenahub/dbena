@@ -29,9 +29,15 @@ robot nampak, berserta perananya. Anda akan dapat satu daripada empat jawapan:
 | Yang dipaparkan | Maksudnya | Pergi ke |
 |---|---|---|
 | Calendar ID belum ditetapkan | Tiada ID disimpan | Langkah 4 |
-| ID **TIADA** dalam senarai | ID salah, atau belum dikongsi | Langkah 1 & 4 |
-| Kalendar ada, **baca sahaja** | Kebenaran terlalu rendah | Langkah 2 |
+| Google tidak nampak kalendar itu | ID salah, atau belum dikongsi | Langkah 1, 3 & 4 |
+| Dikongsi, **baca sahaja** | Kebenaran terlalu rendah | Langkah 2 |
 | Kebenaran sudah betul | Sepatutnya berjaya | Langkah 5 |
+
+> **Senarai kalendar yang kosong bukan bukti apa-apa.**
+> Berkongsi kalendar dengan robot TIDAK menambahkannya ke dalam senarai
+> robot — pengguna biasa menerima jemputan e-mel dan menerimanya, tetapi
+> robot tidak pernah menerima e-mel. Semakan menguji kalendar itu secara
+> terus, jadi ikut ayat di baris pertama panel, bukan senarai di bawahnya.
 
 **Jangan langkau ini.** Tiga masalah berbeza semuanya memberi ralat 403 yang sama,
 dan membetulkan yang salah membuang masa berjam-jam.

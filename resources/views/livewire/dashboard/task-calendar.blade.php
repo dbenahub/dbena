@@ -295,8 +295,12 @@
 
             <div class="flex flex-col gap-2.5 px-4 py-3.5">
                 <p class="text-[12.5px] leading-relaxed text-t85">
+                    {{-- ID yang DIKONFIGURASI, bukan ID sasaran. Dalam cabang
+                         "tidak dijumpai", sasaran adalah null secara takrifan —
+                         jadi mesej memaparkan "—" dan bukan ID yang sebenarnya
+                         perlu dibetulkan. --}}
                     {{ __('calendar_task.google.reason.'.($googleCheck['reason'] ?? 'token'), [
-                        'id' => $googleCheck['target']['id'] ?? '—',
+                        'id' => $googleCheck['wanted'] ?? '—',
                         'message' => $googleCheck['message'] ?? '',
                     ]) }}
                 </p>
@@ -308,9 +312,10 @@
                 @endif
 
                 @if (empty($googleCheck['calendars']))
-                    @if (($googleCheck['ok'] ?? false))
-                        <p class="text-[11.5px] text-t65">{{ __('calendar_task.google.check_none') }}</p>
-                    @endif
+                    {{-- Senarai kosong BUKAN bukti. Kalendar yang dikongsi
+                         tidak muncul dalam senarai robot sehingga ia
+                         didaftarkan, jadi ayat lama di sini mendakwa sesuatu
+                         yang tidak benar. --}}
                 @else
                     <div>
                         <div class="mb-1.5 text-[11px] font-bold text-t65">{{ __('calendar_task.google.check_list') }}</div>

@@ -143,37 +143,122 @@ class GoogleCalendarWriter
      */
     public function diagnose(?string $calendarId = null): array
     {
-        try {
-            $response = $this->calendarList();
+        $dicari = trim((string) $calendarId);
+        $email = ServiceAccountSheetReader::serviceAccountEmail();
 
-            /*
-             * "Insufficient authentication scopes" bermakna token yang
-             * dicache diminta dengan skop LAMA. Membuangnya dan mencuba
-             * sekali lagi memulihkan keadaan serta-merta, dan bukan
-             * selepas token tamat tempoh lima puluh minit kemudian.
-             */
-            if ($this->scopeRejected($response)) {
-                $this->forgetToken();
-                $response = $this->calendarList();
-            }
-        } catch (Throwable $e) {
-            return ['ok' => false, 'reason' => 'network', 'message' => $e->getMessage(), 'calendars' => []];
+        if ($dicari === '') {
+            return ['ok' => true, 'reason' => 'no_id', 'message' => '', 'calendars' => [], 'wanted' => '', 'email' => $email];
         }
 
-        if (! $response->successful()) {
-            $message = (string) ($response->json('error.message') ?? $response->status());
-            $reason = (string) ($response->json('error.errors.0.reason') ?? '');
+        /*
+         * Kalendar DIUJI TERUS, bukan dicari dalam calendarList.
+         *
+         * Berkongsi kalendar dengan service account TIDAK menambahkannya
+         * ke dalam senarai kalendar robot. Pengguna biasa menerima
+         * jemputan dan menerimanya; robot tidak pernah menerima e-mel,
+         * jadi senarainya kekal kosong walaupun akses sudah diberikan.
+         *
+         * Diagnosis pertama saya menganggap senarai kosong bermakna "belum
+         * dikongsi". Itu salah, dan ia menghantar seseorang mengongsi
+         * semula kalendar yang sudah dikongsi dengan betul.
+         *
+         * calendarList.insert menjawab kedua-dua soalan sekali gus: ia
+         * memulangkan accessRole SEBENAR, dan ia mendaftarkan kalendar itu
+         * supaya semakan seterusnya lebih pantas. Ia juga tidak mencipta
+         * apa-apa dalam kalendar.
+         */
+        try {
+            $response = $this->registerCalendar($dicari);
 
+            if ($this->scopeRejected($response)) {
+                $this->forgetToken();
+                $response = $this->registerCalendar($dicari);
+            }
+        } catch (Throwable $e) {
+            return ['ok' => false, 'reason' => 'network', 'message' => $e->getMessage(), 'calendars' => [], 'wanted' => $dicari, 'email' => $email];
+        }
+
+        $reason = (string) ($response->json('error.errors.0.reason') ?? '');
+        $message = (string) ($response->json('error.message') ?? '');
+
+        if ($reason === 'accessNotConfigured' || str_contains($message, 'has not been used in project')) {
             return [
-                'ok' => false,
-                'reason' => $reason === 'accessNotConfigured' ? 'api_disabled' : 'token',
-                'message' => $message,
-                'calendars' => [],
+                'ok' => false, 'reason' => 'api_disabled', 'message' => $message,
+                'calendars' => [], 'wanted' => $dicari, 'email' => $email,
                 'enableUrl' => $this->enableApiUrl(),
             ];
         }
 
-        $calendars = collect($response->json('items', []))
+        if ($response->status() === 404) {
+            // Google tidak nampak kalendar ini LANGSUNG untuk robot itu.
+            // Sama ada ID salah, atau ia benar-benar belum dikongsi.
+            return [
+                'ok' => true, 'reason' => 'not_shared', 'message' => $message,
+                'calendars' => $this->visibleCalendars(), 'wanted' => $dicari, 'email' => $email,
+            ];
+        }
+
+        if (! $response->successful()) {
+            return [
+                'ok' => false, 'reason' => 'token', 'message' => $message !== '' ? $message : (string) $response->status(),
+                'calendars' => [], 'wanted' => $dicari, 'email' => $email,
+            ];
+        }
+
+        $role = (string) ($response->json('accessRole') ?? '—');
+        $bolehTulis = in_array($role, ['writer', 'owner'], true);
+
+        return [
+            'ok' => true,
+            'reason' => $bolehTulis ? 'ready' : 'read_only',
+            'message' => '',
+            'wanted' => $dicari,
+            'email' => $email,
+            'target' => [
+                'id' => (string) ($response->json('id') ?? $dicari),
+                'name' => (string) ($response->json('summary') ?? '—'),
+                'role' => $role,
+                'canWrite' => $bolehTulis,
+            ],
+            'calendars' => $this->visibleCalendars(),
+        ];
+    }
+
+    /**
+     * Daftarkan kalendar pada senarai robot dan dapatkan peranannya.
+     *
+     * Idempoten: memanggilnya pada kalendar yang sudah didaftarkan
+     * memulangkan entri yang sama.
+     */
+    private function registerCalendar(string $id): \Illuminate\Http\Client\Response
+    {
+        return Http::withToken($this->accessToken())
+            ->timeout((int) config('dbena.sheets.timeout_seconds'))
+            ->post('https://www.googleapis.com/calendar/v3/users/me/calendarList', ['id' => $id]);
+    }
+
+    /**
+     * Kalendar yang robot nampak — untuk paparan sahaja.
+     *
+     * Senarai KOSONG bukan bukti apa-apa: kalendar yang dikongsi tidak
+     * muncul di sini sehingga ia didaftarkan. Ia ditunjukkan sebagai
+     * konteks, bukan sebagai keputusan.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function visibleCalendars(): array
+    {
+        try {
+            $response = $this->calendarList();
+        } catch (Throwable) {
+            return [];
+        }
+
+        if (! $response->successful()) {
+            return [];
+        }
+
+        return collect($response->json('items', []))
             ->map(fn (array $c) => [
                 'id' => (string) ($c['id'] ?? ''),
                 'name' => (string) ($c['summary'] ?? '—'),
@@ -182,23 +267,6 @@ class GoogleCalendarWriter
             ])
             ->values()
             ->all();
-
-        $dicari = trim((string) $calendarId);
-        $padan = collect($calendars)->firstWhere('id', $dicari);
-
-        return [
-            'ok' => true,
-            'reason' => match (true) {
-                $dicari === '' => 'no_id',
-                $padan === null => 'not_shared',
-                ! $padan['canWrite'] => 'read_only',
-                default => 'ready',
-            },
-            'message' => '',
-            'calendars' => $calendars,
-            'target' => $padan,
-            'email' => ServiceAccountSheetReader::serviceAccountEmail(),
-        ];
     }
 
     private function calendarList(): \Illuminate\Http\Client\Response

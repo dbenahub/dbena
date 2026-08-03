@@ -539,6 +539,10 @@ it('retries once with a fresh token when the scope is rejected', function (): vo
             return Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']);
         }
 
+        if ($request->method() !== 'POST') {
+            return Illuminate\Support\Facades\Http::response(['items' => []]);
+        }
+
         $panggilan++;
 
         // Panggilan pertama menolak skop; kedua berjaya.
@@ -552,7 +556,7 @@ it('retries once with a fresh token when the scope is rejected', function (): vo
         }
 
         return Illuminate\Support\Facades\Http::response([
-            'items' => [['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'writer']],
+            'id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'writer',
         ]);
     });
 
@@ -575,59 +579,28 @@ it('does not blame sharing for a scope problem', function (): void {
 |--------------------------------------------------------------------------
 */
 
-/** Palsukan calendarList dengan peranan yang diberi. */
-function fakeCalendarList(array $items): void
+/**
+ * Palsukan calendarList.insert — panggilan yang menjawab "adakah robot
+ * ini boleh menulis ke kalendar itu".
+ */
+function fakeRegister(array $body, int $status = 200, array $senarai = []): void
 {
-    Illuminate\Support\Facades\Http::fake([
-        'oauth2.googleapis.com/*' => Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']),
-        '*users/me/calendarList*' => Illuminate\Support\Facades\Http::response(['items' => $items]),
-    ]);
+    Illuminate\Support\Facades\Http::fake(function ($request) use ($body, $status, $senarai) {
+        if (str_contains($request->url(), 'oauth2.googleapis.com')) {
+            return Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']);
+        }
+
+        if ($request->method() === 'POST') {
+            return Illuminate\Support\Facades\Http::response($body, $status);
+        }
+
+        return Illuminate\Support\Facades\Http::response(['items' => $senarai]);
+    });
 }
 
-it('says the calendar was never shared when it is not in the list', function (): void {
-    // Tiga kegagalan berbeza semuanya memberi 403. Memetakan setiap satu
-    // kepada "dikongsi untuk baca sahaja" menghantar admin membetulkan
-    // perkara yang sudah betul.
-    fakeCalendarList([
-        ['id' => 'lain@group.calendar.google.com', 'summary' => 'Kalendar Lain', 'accessRole' => 'writer'],
-    ]);
-
-    $hasil = app(App\Services\GoogleCalendarWriter::class)->diagnose('dbenagroup@gmail.com');
-
-    expect($hasil['reason'])->toBe('not_shared');
-});
-
-it('says read only when the role really is reader', function (): void {
-    fakeCalendarList([
-        ['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'reader'],
-    ]);
-
-    $hasil = app(App\Services\GoogleCalendarWriter::class)->diagnose('dbenagroup@gmail.com');
-
-    expect($hasil['reason'])->toBe('read_only')
-        ->and($hasil['target']['canWrite'])->toBeFalse();
-});
-
-it('says ready when the role is writer', function (): void {
-    fakeCalendarList([
-        ['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'writer'],
-    ]);
-
-    expect(app(App\Services\GoogleCalendarWriter::class)->diagnose('dbenagroup@gmail.com')['reason'])
-        ->toBe('ready');
-});
-
-it('treats owner as able to write', function (): void {
-    fakeCalendarList([
-        ['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'owner'],
-    ]);
-
-    expect(app(App\Services\GoogleCalendarWriter::class)->diagnose('dbenagroup@gmail.com')['reason'])
-        ->toBe('ready');
-});
-
 it('says no id when none is configured', function (): void {
-    fakeCalendarList([]);
+    // Tiada panggilan Google langsung — tiada ID untuk diuji.
+    Illuminate\Support\Facades\Http::fake();
 
     expect(app(App\Services\GoogleCalendarWriter::class)->diagnose('')['reason'])->toBe('no_id');
 });
@@ -647,21 +620,6 @@ it('separates a disabled API from a permission problem', function (): void {
         ->toBe('api_disabled');
 });
 
-it('lists every calendar the robot can see, with its role', function (): void {
-    // Senarai itu ialah bukti. Tanpanya, "belum dikongsi" dan "ID salah"
-    // tidak boleh dibezakan.
-    fakeCalendarList([
-        ['id' => 'a@gmail.com', 'summary' => 'A', 'accessRole' => 'reader'],
-        ['id' => 'b@group.calendar.google.com', 'summary' => 'B', 'accessRole' => 'writer'],
-    ]);
-
-    $hasil = app(App\Services\GoogleCalendarWriter::class)->diagnose('a@gmail.com');
-
-    expect($hasil['calendars'])->toHaveCount(2)
-        ->and($hasil['calendars'][0]['canWrite'])->toBeFalse()
-        ->and($hasil['calendars'][1]['canWrite'])->toBeTrue();
-});
-
 it('runs the check automatically when a push fails', function (): void {
     // Mesej yang meneka menghantar admin membetulkan perkara yang sudah
     // betul; jawapan Google disertakan tanpa perlu ditanya.
@@ -670,7 +628,7 @@ it('runs the check automatically when a push fails', function (): void {
     Illuminate\Support\Facades\Http::fake([
         'oauth2.googleapis.com/*' => Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']),
         '*users/me/calendarList*' => Illuminate\Support\Facades\Http::response([
-            'items' => [['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'reader']],
+            'id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'reader',
         ]),
         '*/events*' => Illuminate\Support\Facades\Http::response([
             'error' => ['message' => 'Forbidden', 'errors' => [['reason' => 'forbidden']]],
@@ -685,9 +643,7 @@ it('runs the check automatically when a push fails', function (): void {
 });
 
 it('shows the check panel on the page', function (): void {
-    fakeCalendarList([
-        ['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'reader'],
-    ]);
+    fakeRegister(['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'reader']);
 
     App\Models\RoadmapPlan::forYear(2026)->update(['calendar_id' => 'dbenagroup@gmail.com']);
 
@@ -696,4 +652,71 @@ it('shows the check panel on the page', function (): void {
         ->call('checkGoogle')
         ->assertSee(__('calendar_task.google.check_title'))
         ->assertSee(__('calendar_task.google.role_reader'));
+});
+
+it('tests the calendar directly instead of searching a list', function (): void {
+    // Berkongsi kalendar dengan service account TIDAK menambahkannya ke
+    // dalam senarai robot. Pengguna biasa menerima jemputan dan
+    // menerimanya; robot tidak pernah menerima e-mel, jadi senarainya
+    // kekal kosong walaupun akses sudah diberikan.
+    //
+    // Diagnosis pertama saya menganggap senarai kosong bermakna "belum
+    // dikongsi", dan menghantar seseorang mengongsi semula kalendar yang
+    // sudah dikongsi dengan betul.
+    fakeRegister(['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'writer'], 200, []);
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)->diagnose('dbenagroup@gmail.com');
+
+    expect($hasil['reason'])->toBe('ready')
+        ->and($hasil['calendars'])->toBe([]);
+});
+
+it('says read only when Google reports the reader role', function (): void {
+    fakeRegister(['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'reader']);
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)->diagnose('dbenagroup@gmail.com');
+
+    expect($hasil['reason'])->toBe('read_only')
+        ->and($hasil['target']['canWrite'])->toBeFalse();
+});
+
+it('treats owner as able to write', function (): void {
+    fakeRegister(['id' => 'x@gmail.com', 'summary' => 'X', 'accessRole' => 'owner']);
+
+    expect(app(App\Services\GoogleCalendarWriter::class)->diagnose('x@gmail.com')['reason'])->toBe('ready');
+});
+
+it('reports not shared only when Google returns 404', function (): void {
+    fakeRegister(['error' => ['message' => 'Not Found']], 404);
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)->diagnose('salah@gmail.com');
+
+    expect($hasil['reason'])->toBe('not_shared');
+});
+
+it('names the configured id in the not-shared message', function (): void {
+    // Dalam cabang "tidak dijumpai", sasaran adalah null secara takrifan —
+    // jadi mesej memaparkan "—" dan bukan ID yang sebenarnya perlu
+    // dibetulkan.
+    fakeRegister(['error' => ['message' => 'Not Found']], 404);
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)->diagnose('salah@gmail.com');
+
+    expect($hasil['wanted'])->toBe('salah@gmail.com')
+        ->and(__('calendar_task.google.reason.not_shared', ['id' => $hasil['wanted']]))
+        ->toContain('salah@gmail.com');
+});
+
+it('registers the calendar so later checks are cheaper', function (): void {
+    // calendarList.insert menjawab kedua-dua soalan sekali gus dan tidak
+    // mencipta apa-apa dalam kalendar itu sendiri.
+    fakeRegister(['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'writer']);
+
+    app(App\Services\GoogleCalendarWriter::class)->diagnose('dbenagroup@gmail.com');
+
+    Illuminate\Support\Facades\Http::assertSent(
+        fn ($request) => $request->method() !== 'POST'
+            || ! str_contains($request->url(), 'calendarList')
+            || ($request->data()['id'] ?? null) === 'dbenagroup@gmail.com'
+    );
 });
