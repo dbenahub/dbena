@@ -491,7 +491,10 @@ it('asks for the write scope, not the read one', function (): void {
     // masalah perkongsian.
     $sumber = file_get_contents(app_path('Services/GoogleCalendarWriter.php'));
 
-    expect($sumber)->toContain('auth/calendar.events')
+    // Skop penuh, bukan calendar.events: yang itu membenarkan penulisan
+    // acara tetapi TIDAK membenarkan calendarList, dan tanpa calendarList
+    // kita tidak boleh bertanya kepada Google apa kebenaran sebenar robot.
+    expect($sumber)->toContain("auth/calendar'")
         ->and($sumber)->not->toContain('calendar.readonly');
 });
 
@@ -505,4 +508,133 @@ it('caches the write token apart from the read token', function (): void {
     preg_match("/TOKEN_CACHE_KEY = '([^']+)'/", $tulis, $b);
 
     expect($a[1])->not->toBe($b[1]);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Semakan kebenaran — fakta, bukan tekaan
+|--------------------------------------------------------------------------
+*/
+
+/** Palsukan calendarList dengan peranan yang diberi. */
+function fakeCalendarList(array $items): void
+{
+    Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*' => Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']),
+        '*users/me/calendarList*' => Illuminate\Support\Facades\Http::response(['items' => $items]),
+    ]);
+}
+
+it('says the calendar was never shared when it is not in the list', function (): void {
+    // Tiga kegagalan berbeza semuanya memberi 403. Memetakan setiap satu
+    // kepada "dikongsi untuk baca sahaja" menghantar admin membetulkan
+    // perkara yang sudah betul.
+    fakeCalendarList([
+        ['id' => 'lain@group.calendar.google.com', 'summary' => 'Kalendar Lain', 'accessRole' => 'writer'],
+    ]);
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)->diagnose('dbenagroup@gmail.com');
+
+    expect($hasil['reason'])->toBe('not_shared');
+});
+
+it('says read only when the role really is reader', function (): void {
+    fakeCalendarList([
+        ['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'reader'],
+    ]);
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)->diagnose('dbenagroup@gmail.com');
+
+    expect($hasil['reason'])->toBe('read_only')
+        ->and($hasil['target']['canWrite'])->toBeFalse();
+});
+
+it('says ready when the role is writer', function (): void {
+    fakeCalendarList([
+        ['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'writer'],
+    ]);
+
+    expect(app(App\Services\GoogleCalendarWriter::class)->diagnose('dbenagroup@gmail.com')['reason'])
+        ->toBe('ready');
+});
+
+it('treats owner as able to write', function (): void {
+    fakeCalendarList([
+        ['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'owner'],
+    ]);
+
+    expect(app(App\Services\GoogleCalendarWriter::class)->diagnose('dbenagroup@gmail.com')['reason'])
+        ->toBe('ready');
+});
+
+it('says no id when none is configured', function (): void {
+    fakeCalendarList([]);
+
+    expect(app(App\Services\GoogleCalendarWriter::class)->diagnose('')['reason'])->toBe('no_id');
+});
+
+it('separates a disabled API from a permission problem', function (): void {
+    Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*' => Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']),
+        '*users/me/calendarList*' => Illuminate\Support\Facades\Http::response([
+            'error' => [
+                'message' => 'Google Calendar API has not been used in project 1 before or it is disabled.',
+                'errors' => [['reason' => 'accessNotConfigured']],
+            ],
+        ], 403),
+    ]);
+
+    expect(app(App\Services\GoogleCalendarWriter::class)->diagnose('dbenagroup@gmail.com')['reason'])
+        ->toBe('api_disabled');
+});
+
+it('lists every calendar the robot can see, with its role', function (): void {
+    // Senarai itu ialah bukti. Tanpanya, "belum dikongsi" dan "ID salah"
+    // tidak boleh dibezakan.
+    fakeCalendarList([
+        ['id' => 'a@gmail.com', 'summary' => 'A', 'accessRole' => 'reader'],
+        ['id' => 'b@group.calendar.google.com', 'summary' => 'B', 'accessRole' => 'writer'],
+    ]);
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)->diagnose('a@gmail.com');
+
+    expect($hasil['calendars'])->toHaveCount(2)
+        ->and($hasil['calendars'][0]['canWrite'])->toBeFalse()
+        ->and($hasil['calendars'][1]['canWrite'])->toBeTrue();
+});
+
+it('runs the check automatically when a push fails', function (): void {
+    // Mesej yang meneka menghantar admin membetulkan perkara yang sudah
+    // betul; jawapan Google disertakan tanpa perlu ditanya.
+    calTask($this->marketing->id, 'Apa-apa', [12 => TaskMark::Planning]);
+
+    Illuminate\Support\Facades\Http::fake([
+        'oauth2.googleapis.com/*' => Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']),
+        '*users/me/calendarList*' => Illuminate\Support\Facades\Http::response([
+            'items' => [['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'reader']],
+        ]),
+        '*/events*' => Illuminate\Support\Facades\Http::response([
+            'error' => ['message' => 'Forbidden', 'errors' => [['reason' => 'forbidden']]],
+        ], 403),
+    ]);
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)
+        ->syncMonth('dbenagroup@gmail.com', 2026, 8);
+
+    expect($hasil['ok'])->toBeFalse()
+        ->and($hasil['diagnosis']['reason'])->toBe('read_only');
+});
+
+it('shows the check panel on the page', function (): void {
+    fakeCalendarList([
+        ['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'reader'],
+    ]);
+
+    App\Models\RoadmapPlan::forYear(2026)->update(['calendar_id' => 'dbenagroup@gmail.com']);
+
+    Livewire\Livewire::actingAs($this->user)
+        ->test(TaskCalendar::class)
+        ->call('checkGoogle')
+        ->assertSee(__('calendar_task.google.check_title'))
+        ->assertSee(__('calendar_task.google.role_reader'));
 });

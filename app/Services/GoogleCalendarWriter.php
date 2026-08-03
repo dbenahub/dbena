@@ -31,7 +31,15 @@ use Throwable;
  */
 class GoogleCalendarWriter
 {
-    private const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+    /*
+     * Skop PENUH, bukan calendar.events sahaja.
+     *
+     * calendar.events membenarkan penulisan acara tetapi TIDAK membenarkan
+     * calendarList — dan tanpa calendarList kita tidak boleh bertanya
+     * kepada Google apa kebenaran sebenar yang dimiliki robot ini. Tanpa
+     * jawapan itu, setiap 403 hanya boleh diteka.
+     */
+    private const SCOPE = 'https://www.googleapis.com/auth/calendar';
 
     private const TOKEN_CACHE_KEY = 'dbena.calendar.google_write_token';
 
@@ -88,7 +96,12 @@ class GoogleCalendarWriter
                 }
             }
         } catch (Throwable $e) {
-            return $this->fail($e->getMessage());
+            /*
+             * Sebelum melaporkan kegagalan, tanya Google apa kebenaran
+             * sebenar yang ada. Mesej yang meneka menghantar admin
+             * membetulkan perkara yang sudah betul.
+             */
+            return $this->fail($e->getMessage()) + ['diagnosis' => $this->diagnose($calendarId)];
         }
 
         return [
@@ -99,6 +112,75 @@ class GoogleCalendarWriter
             'message' => __('calendar_task.google.done', [
                 'created' => $dicipta, 'updated' => $dikemas, 'deleted' => $dipadam,
             ]),
+        ];
+    }
+
+    /**
+     * Tanya Google apa kebenaran sebenar yang dimiliki robot ini.
+     *
+     * calendarList memulangkan accessRole bagi setiap kalendar yang
+     * dikongsi dengan service account: reader, writer atau owner. Itu
+     * FAKTA, bukan tekaan — dan ia membezakan tiga kegagalan yang semuanya
+     * memberi 403:
+     *
+     *   · kalendar langsung tiada dalam senarai → belum dikongsi
+     *   · ada tetapi accessRole 'reader'        → dikongsi untuk baca sahaja
+     *   · ada dan 'writer' tetapi masih 403     → ID kalendar salah
+     *
+     * Versi pertama memetakan setiap 403 kepada mesej kedua, jadi sesiapa
+     * yang menghadapi yang pertama atau ketiga akan membetulkan perkara
+     * yang sudah betul, berulang kali.
+     *
+     * @return array<string, mixed>
+     */
+    public function diagnose(?string $calendarId = null): array
+    {
+        try {
+            $response = Http::withToken($this->accessToken())
+                ->timeout((int) config('dbena.sheets.timeout_seconds'))
+                ->get('https://www.googleapis.com/calendar/v3/users/me/calendarList', ['maxResults' => 50]);
+        } catch (Throwable $e) {
+            return ['ok' => false, 'reason' => 'network', 'message' => $e->getMessage(), 'calendars' => []];
+        }
+
+        if (! $response->successful()) {
+            $message = (string) ($response->json('error.message') ?? $response->status());
+            $reason = (string) ($response->json('error.errors.0.reason') ?? '');
+
+            return [
+                'ok' => false,
+                'reason' => $reason === 'accessNotConfigured' ? 'api_disabled' : 'token',
+                'message' => $message,
+                'calendars' => [],
+                'enableUrl' => $this->enableApiUrl(),
+            ];
+        }
+
+        $calendars = collect($response->json('items', []))
+            ->map(fn (array $c) => [
+                'id' => (string) ($c['id'] ?? ''),
+                'name' => (string) ($c['summary'] ?? '—'),
+                'role' => (string) ($c['accessRole'] ?? '—'),
+                'canWrite' => in_array($c['accessRole'] ?? '', ['writer', 'owner'], true),
+            ])
+            ->values()
+            ->all();
+
+        $dicari = trim((string) $calendarId);
+        $padan = collect($calendars)->firstWhere('id', $dicari);
+
+        return [
+            'ok' => true,
+            'reason' => match (true) {
+                $dicari === '' => 'no_id',
+                $padan === null => 'not_shared',
+                ! $padan['canWrite'] => 'read_only',
+                default => 'ready',
+            },
+            'message' => '',
+            'calendars' => $calendars,
+            'target' => $padan,
+            'email' => ServiceAccountSheetReader::serviceAccountEmail(),
         ];
     }
 

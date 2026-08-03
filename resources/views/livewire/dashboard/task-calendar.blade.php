@@ -179,6 +179,13 @@
                     <span wire:loading wire:target="pushToGoogle">{{ __('calendar_task.google.syncing') }}</span>
                 </button>
 
+                <button type="button" wire:click="checkGoogle"
+                        class="mt-1.5 flex w-full items-center justify-center gap-1.5 rounded-[9px] px-3 py-2 text-[11.5px] font-semibold text-t70"
+                        style="border: 1px solid var(--border3)">
+                    <i class="ph-duotone ph-shield-check text-sm" aria-hidden="true"></i>
+                    {{ __('calendar_task.google.check') }}
+                </button>
+
                 <a href="{{ route('task-calendar.pdf', ['tahun' => $cal['year'], 'bulan' => $cal['month'], 'pic' => $pic]) }}"
                    class="mt-3 flex items-center justify-center gap-1.5 rounded-[9px] px-3 py-2 text-[11.5px] font-semibold text-t80"
                    style="border: 1px solid var(--border2)">
@@ -264,6 +271,70 @@
             </a>
         </div>
     </div>
+
+    {{-- ══ Semakan kebenaran Google ══
+         Fakta daripada Google, bukan tekaan kami. Tiga kegagalan berbeza
+         semuanya memberi 403, dan mesej yang meneka menghantar admin
+         membetulkan perkara yang sudah betul, berulang kali. --}}
+    @if ($googleCheck)
+        <div class="dbena-card overflow-hidden"
+             style="border-color: {{ ($googleCheck['reason'] ?? '') === 'ready'
+                ? 'oklch(0.62 0.16 150/0.5)' : 'oklch(0.79 0.15 85/0.5)' }}">
+            <div class="flex items-center gap-2 px-4 py-2.5"
+                 style="background: {{ ($googleCheck['reason'] ?? '') === 'ready'
+                    ? 'oklch(0.62 0.16 150/0.12)' : 'oklch(0.79 0.15 85/0.12)' }}">
+                <i class="ph-duotone {{ ($googleCheck['reason'] ?? '') === 'ready' ? 'ph-check-circle' : 'ph-warning-circle' }} text-base"
+                   style="color: {{ ($googleCheck['reason'] ?? '') === 'ready'
+                        ? 'oklch(0.68 0.16 150)' : 'oklch(0.84 0.14 85)' }}" aria-hidden="true"></i>
+                <span class="text-[12.5px] font-extrabold text-t90">{{ __('calendar_task.google.check_title') }}</span>
+                <button type="button" wire:click="dismissCheck" class="ml-auto text-t55"
+                        aria-label="{{ __('calendar_task.google.dismiss') }}">
+                    <i class="ph-duotone ph-x text-sm" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-2.5 px-4 py-3.5">
+                <p class="text-[12.5px] leading-relaxed text-t85">
+                    {{ __('calendar_task.google.reason.'.($googleCheck['reason'] ?? 'token'), [
+                        'id' => $googleCheck['target']['id'] ?? '—',
+                        'message' => $googleCheck['message'] ?? '',
+                    ]) }}
+                </p>
+
+                @if (! empty($googleCheck['email']))
+                    <p class="break-all text-[11px] text-t60">
+                        {{ __('calendar_task.google.check_email', ['email' => $googleCheck['email']]) }}
+                    </p>
+                @endif
+
+                @if (empty($googleCheck['calendars']))
+                    @if (($googleCheck['ok'] ?? false))
+                        <p class="text-[11.5px] text-t65">{{ __('calendar_task.google.check_none') }}</p>
+                    @endif
+                @else
+                    <div>
+                        <div class="mb-1.5 text-[11px] font-bold text-t65">{{ __('calendar_task.google.check_list') }}</div>
+
+                        <div class="flex flex-col gap-1">
+                            @foreach ($googleCheck['calendars'] as $k)
+                                <div class="flex flex-wrap items-center gap-2 rounded-lg px-2.5 py-1.5"
+                                     style="background: var(--hover-bg3)">
+                                    <span class="text-[11.5px] font-semibold text-t85">{{ $k['name'] }}</span>
+                                    <span class="break-all text-[10.5px] text-t55">{{ $k['id'] }}</span>
+                                    <span class="ml-auto shrink-0 rounded px-1.5 py-0.5 text-[10px] font-extrabold"
+                                          style="background: {{ $k['canWrite']
+                                                ? 'oklch(0.62 0.16 150/0.18); color: oklch(0.70 0.15 150)'
+                                                : 'oklch(0.63 0.22 25/0.16); color: oklch(0.74 0.17 25)' }}">
+                                        {{ __('calendar_task.google.role_'.$k['role']) }}
+                                    </span>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
 
     {{-- ══ Jalur kaki ══ --}}
     <div class="flex flex-wrap items-center justify-center gap-x-10 gap-y-2 rounded-xl px-5 py-3"

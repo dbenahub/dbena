@@ -44,6 +44,9 @@ class TaskCalendar extends Component
     /** Hari yang dipilih untuk paparan Week dan Day. */
     public ?int $focusDay = null;
 
+    /** Hasil semakan kebenaran Google, dipaparkan selepas kegagalan. */
+    public ?array $googleCheck = null;
+
     // Borang tambah tugasan.
     public bool $showAdd = false;
 
@@ -199,11 +202,12 @@ class TaskCalendar extends Component
      */
     public function pushToGoogle(GoogleCalendarWriter $writer, AuditLogger $audit): void
     {
-        $calendarId = (string) (\App\Models\RoadmapPlan::where('year', $this->year)->value('calendar_id')
-            ?? \App\Models\RoadmapPlan::whereNotNull('calendar_id')->value('calendar_id')
-            ?? '');
+        $calendarId = $this->calendarId();
 
         $hasil = $writer->syncMonth($calendarId, $this->year, $this->month);
+
+        // Diagnosis dipaparkan hanya apabila ada sesuatu untuk dibetulkan.
+        $this->googleCheck = $hasil['ok'] ? null : ($hasil['diagnosis'] ?? null);
 
         if ($hasil['ok']) {
             $audit->log('task_calendar.pushed', null, sprintf('%04d-%02d', $this->year, $this->month), [
@@ -216,6 +220,25 @@ class TaskCalendar extends Component
         $this->dispatch('dbena-toast',
             message: $hasil['message'],
             variant: $hasil['ok'] ? 'success' : 'error');
+    }
+
+    /** Semak kebenaran tanpa cuba menulis apa-apa. */
+    public function checkGoogle(GoogleCalendarWriter $writer): void
+    {
+        $this->googleCheck = $writer->diagnose($this->calendarId());
+    }
+
+    public function dismissCheck(): void
+    {
+        $this->googleCheck = null;
+    }
+
+    /** ID kalendar yang dikonfigurasi, dikongsi oleh roadmap. */
+    private function calendarId(): string
+    {
+        return (string) (\App\Models\RoadmapPlan::where('year', $this->year)->value('calendar_id')
+            ?? \App\Models\RoadmapPlan::whereNotNull('calendar_id')->value('calendar_id')
+            ?? '');
     }
 
     public function render(TaskCalendarService $calendar): View
