@@ -46,6 +46,7 @@ return [
         'syncing' => 'Menghantar…',
         'not_connected' => 'Calendar ID belum ditetapkan. Admin boleh menetapkannya di Panel Admin → Roadmap.',
         'done' => ':created acara baharu, :updated dikemas kini, :deleted dipadam.',
+        'bad_scope' => 'Token Google diminta dengan kebenaran yang salah. Cuba tekan Hantar sekali lagi — token akan diminta semula secara automatik. Jika ia berulang, beritahu saya.',
         'needs_write' => 'Google menolak penulisan. Kalendar dikongsi untuk BACA sahaja. Buka calendar.google.com → Settings and sharing → Share with specific people → :email → tukar kepada "Make changes to events" → Save. (:message)',
         'api_disabled' => 'Google Calendar API belum diaktifkan dalam projek Google Cloud anda. Buka pautan ini, tekan ENABLE, tunggu seminit, kemudian cuba semula: :url',
         'source' => 'Dihantar automatik daripada DBENA Dashboard — Task Planning.',

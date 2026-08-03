@@ -41,7 +41,7 @@ class GoogleCalendarWriter
      */
     private const SCOPE = 'https://www.googleapis.com/auth/calendar';
 
-    private const TOKEN_CACHE_KEY = 'dbena.calendar.google_write_token';
+
 
     /** Warna acara Google mengikut status tugasan. */
     private const COLOR_IDS = [
@@ -71,6 +71,14 @@ class GoogleCalendarWriter
 
         try {
             $token = $this->accessToken();
+
+            // Skop yang ditolak dikesan sebelum gelung bermula: satu
+            // panggilan murah lebih baik daripada gagal pada tugasan
+            // ketujuh belas dan meninggalkan enam belas separuh disegerak.
+            if ($this->scopeRejected($this->calendarList())) {
+                $this->forgetToken();
+                $token = $this->accessToken();
+            }
 
             foreach ($tasks as $task) {
                 foreach ($task->marks as $mark) {
@@ -136,9 +144,18 @@ class GoogleCalendarWriter
     public function diagnose(?string $calendarId = null): array
     {
         try {
-            $response = Http::withToken($this->accessToken())
-                ->timeout((int) config('dbena.sheets.timeout_seconds'))
-                ->get('https://www.googleapis.com/calendar/v3/users/me/calendarList', ['maxResults' => 50]);
+            $response = $this->calendarList();
+
+            /*
+             * "Insufficient authentication scopes" bermakna token yang
+             * dicache diminta dengan skop LAMA. Membuangnya dan mencuba
+             * sekali lagi memulihkan keadaan serta-merta, dan bukan
+             * selepas token tamat tempoh lima puluh minit kemudian.
+             */
+            if ($this->scopeRejected($response)) {
+                $this->forgetToken();
+                $response = $this->calendarList();
+            }
         } catch (Throwable $e) {
             return ['ok' => false, 'reason' => 'network', 'message' => $e->getMessage(), 'calendars' => []];
         }
@@ -182,6 +199,27 @@ class GoogleCalendarWriter
             'target' => $padan,
             'email' => ServiceAccountSheetReader::serviceAccountEmail(),
         ];
+    }
+
+    private function calendarList(): \Illuminate\Http\Client\Response
+    {
+        return Http::withToken($this->accessToken())
+            ->timeout((int) config('dbena.sheets.timeout_seconds'))
+            ->get('https://www.googleapis.com/calendar/v3/users/me/calendarList', ['maxResults' => 50]);
+    }
+
+    /** Adakah Google menolak SKOP token, bukan kebenaran kalendar? */
+    private function scopeRejected(\Illuminate\Http\Client\Response $response): bool
+    {
+        if ($response->successful()) {
+            return false;
+        }
+
+        $message = (string) ($response->json('error.message') ?? '');
+        $reason = (string) ($response->json('error.errors.0.reason') ?? '');
+
+        return $reason === 'insufficientPermissions'
+            || str_contains($message, 'insufficient authentication scopes');
     }
 
     /** Cipta atau kemas kini satu acara. */
@@ -312,6 +350,11 @@ class GoogleCalendarWriter
             ]));
         }
 
+        if ($reason === 'insufficientPermissions' || str_contains($message, 'insufficient authentication scopes')) {
+            // Bukan masalah perkongsian langsung. Token itu sendiri salah.
+            throw new \RuntimeException(__('calendar_task.google.bad_scope'));
+        }
+
         if (in_array($response->status(), [401, 403], true)) {
             // Kegagalan paling biasa: kalendar dikongsi untuk BACA sahaja.
             throw new \RuntimeException(__('calendar_task.google.needs_write', [
@@ -325,7 +368,7 @@ class GoogleCalendarWriter
 
     private function accessToken(): string
     {
-        return Cache::remember(self::TOKEN_CACHE_KEY, now()->addMinutes(50), function (): string {
+        return Cache::remember($this->tokenCacheKey(), now()->addMinutes(50), function (): string {
             $credentials = ServiceAccountSheetReader::credentials();
 
             $now = time();
@@ -372,6 +415,30 @@ class GoogleCalendarWriter
         }
 
         return 'https://console.cloud.google.com/apis/library/calendar-json.googleapis.com?project='.$m[1];
+    }
+
+    /**
+     * Kunci cache token DITERBITKAN daripada skop.
+     *
+     * Token Google terikat kepada skop yang dimintanya. Kunci tetap
+     * bermakna menukar skop dalam kod tidak membuang token lama — ia
+     * kekal dalam cache sehingga tamat tempoh, dan setiap panggilan
+     * sehingga itu gagal dengan "Request had insufficient authentication
+     * scopes" terhadap kod yang sebenarnya betul.
+     *
+     * Kegagalan itu sembuh sendiri selepas lima puluh minit, iaitu tepat
+     * cukup lama untuk seseorang menghabiskan petang membetulkan
+     * perkongsian kalendar yang tidak pernah rosak.
+     */
+    private function tokenCacheKey(): string
+    {
+        return 'dbena.google.token.'.substr(sha1(self::SCOPE), 0, 16);
+    }
+
+    /** Buang token yang dicache — dipanggil apabila Google menolak skopnya. */
+    private function forgetToken(): void
+    {
+        Cache::forget($this->tokenCacheKey());
     }
 
     private function base64Url(string $raw): string

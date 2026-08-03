@@ -37,16 +37,7 @@ class GoogleCalendarReader
 {
     private const SCOPE = 'https://www.googleapis.com/auth/calendar.readonly';
 
-    /*
-     * Kunci cache BERASINGAN daripada token sheet.
-     *
-     * Token Google terikat kepada skop yang dimintanya. Berkongsi satu
-     * kunci cache bermakna token sheet sahaja akan digunakan untuk
-     * kalendar, dan Google menolaknya dengan 403 yang kelihatan seperti
-     * masalah perkongsian — menghantar admin membetulkan perkara yang
-     * sudah betul.
-     */
-    private const TOKEN_CACHE_KEY = 'dbena.calendar.google_access_token';
+
 
     /**
      * Acara bagi satu tahun kalendar, dikumpulkan mengikut bulan.
@@ -159,6 +150,26 @@ class GoogleCalendarReader
 
         $reason = (string) ($response->json('error.errors.0.reason') ?? '');
         $message = (string) ($response->json('error.message') ?? '');
+
+        /*
+         * Token yang dicache dengan skop lama. Buang dan cuba sekali lagi
+         * — kegagalan ini sembuh sendiri selepas lima puluh minit, iaitu
+         * tepat cukup lama untuk seseorang menyalahkan perkongsian.
+         */
+        if ($reason === 'insufficientPermissions' || str_contains($message, 'insufficient authentication scopes')) {
+            $this->forgetToken();
+
+            try {
+                $response = Http::withToken($this->accessToken())
+                    ->timeout((int) config('dbena.sheets.timeout_seconds'))
+                    ->get('https://www.googleapis.com/calendar/v3/users/me/calendarList', ['maxResults' => 10]);
+            } catch (Throwable $e) {
+                return ['state' => 'network', 'message' => __('roadmap.calendar.probe_network', ['message' => $e->getMessage()])];
+            }
+
+            $reason = (string) ($response->json('error.errors.0.reason') ?? '');
+            $message = (string) ($response->json('error.message') ?? '');
+        }
 
         if ($reason === 'accessNotConfigured' || str_contains($message, 'has not been used in project')) {
             return [
@@ -301,7 +312,7 @@ class GoogleCalendarReader
 
     private function accessToken(): string
     {
-        return Cache::remember(self::TOKEN_CACHE_KEY, now()->addMinutes(50), function (): string {
+        return Cache::remember($this->tokenCacheKey(), now()->addMinutes(50), function (): string {
             $credentials = ServiceAccountSheetReader::credentials();
 
             $now = time();
@@ -337,6 +348,30 @@ class GoogleCalendarReader
 
             return (string) $response->json('access_token');
         });
+    }
+
+    /**
+     * Kunci cache token DITERBITKAN daripada skop.
+     *
+     * Token Google terikat kepada skop yang dimintanya. Kunci tetap
+     * bermakna menukar skop dalam kod tidak membuang token lama — ia
+     * kekal dalam cache sehingga tamat tempoh, dan setiap panggilan
+     * sehingga itu gagal dengan "Request had insufficient authentication
+     * scopes" terhadap kod yang sebenarnya betul.
+     *
+     * Kegagalan itu sembuh sendiri selepas lima puluh minit, iaitu tepat
+     * cukup lama untuk seseorang menghabiskan petang membetulkan
+     * perkongsian kalendar yang tidak pernah rosak.
+     */
+    private function tokenCacheKey(): string
+    {
+        return 'dbena.google.token.'.substr(sha1(self::SCOPE), 0, 16);
+    }
+
+    /** Buang token yang dicache — dipanggil apabila Google menolak skopnya. */
+    private function forgetToken(): void
+    {
+        Cache::forget($this->tokenCacheKey());
     }
 
     private function base64Url(string $raw): string

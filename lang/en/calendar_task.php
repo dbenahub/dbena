@@ -46,6 +46,7 @@ return [
         'syncing' => 'Pushing…',
         'not_connected' => 'No Calendar ID set yet. An admin can set it in Admin Panel → Roadmap.',
         'done' => ':created new events, :updated updated, :deleted removed.',
+        'bad_scope' => 'The Google token was issued with the wrong permissions. Press Push once more — a fresh token is requested automatically. If it repeats, tell me.',
         'needs_write' => 'Google refused the write. The calendar is shared for READING only. Open calendar.google.com → Settings and sharing → Share with specific people → :email → change to "Make changes to events" → Save. (:message)',
         'api_disabled' => 'The Google Calendar API is not enabled in your Google Cloud project. Open this link, press ENABLE, wait a minute, then try again: :url',
         'source' => 'Pushed automatically from the DBENA Dashboard — Task Planning.',

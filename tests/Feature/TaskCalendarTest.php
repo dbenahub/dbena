@@ -498,16 +498,75 @@ it('asks for the write scope, not the read one', function (): void {
         ->and($sumber)->not->toContain('calendar.readonly');
 });
 
-it('caches the write token apart from the read token', function (): void {
-    // Berkongsi satu kunci cache bermakna token baca digunakan untuk
-    // menulis.
-    $baca = file_get_contents(app_path('Services/GoogleCalendarReader.php'));
-    $tulis = file_get_contents(app_path('Services/GoogleCalendarWriter.php'));
+it('derives the token cache key from the scope', function (): void {
+    // Token Google terikat kepada skop yang dimintanya. Kunci TETAP
+    // bermakna menukar skop dalam kod tidak membuang token lama — ia kekal
+    // dalam cache sehingga tamat tempoh, dan setiap panggilan sehingga itu
+    // gagal dengan "insufficient authentication scopes" terhadap kod yang
+    // sebenarnya betul.
+    foreach (['GoogleCalendarReader', 'GoogleCalendarWriter'] as $kelas) {
+        $sumber = file_get_contents(app_path("Services/{$kelas}.php"));
 
-    preg_match("/TOKEN_CACHE_KEY = '([^']+)'/", $baca, $a);
-    preg_match("/TOKEN_CACHE_KEY = '([^']+)'/", $tulis, $b);
+        expect($sumber)->toContain('sha1(self::SCOPE)')
+            ->and($sumber)->not->toContain('TOKEN_CACHE_KEY');
+    }
+});
 
-    expect($a[1])->not->toBe($b[1]);
+it('gives the reader and the writer different token keys', function (): void {
+    // Skop berbeza, jadi kunci yang diterbitkan mesti berbeza — kalau
+    // tidak token baca digunakan untuk menulis.
+    $kunci = [];
+
+    foreach (['GoogleCalendarReader', 'GoogleCalendarWriter'] as $kelas) {
+        $sumber = file_get_contents(app_path("Services/{$kelas}.php"));
+
+        preg_match("/SCOPE = '([^']+)'/", $sumber, $m);
+
+        $kunci[] = substr(sha1($m[1]), 0, 16);
+    }
+
+    expect($kunci[0])->not->toBe($kunci[1]);
+});
+
+it('retries once with a fresh token when the scope is rejected', function (): void {
+    // Kegagalan ini sembuh sendiri selepas lima puluh minit, iaitu tepat
+    // cukup lama untuk seseorang menghabiskan petang membetulkan
+    // perkongsian kalendar yang tidak pernah rosak.
+    $panggilan = 0;
+
+    Illuminate\Support\Facades\Http::fake(function ($request) use (&$panggilan) {
+        if (str_contains($request->url(), 'oauth2.googleapis.com')) {
+            return Illuminate\Support\Facades\Http::response(['access_token' => 'ujian']);
+        }
+
+        $panggilan++;
+
+        // Panggilan pertama menolak skop; kedua berjaya.
+        if ($panggilan === 1) {
+            return Illuminate\Support\Facades\Http::response([
+                'error' => [
+                    'message' => 'Request had insufficient authentication scopes.',
+                    'errors' => [['reason' => 'insufficientPermissions']],
+                ],
+            ], 403);
+        }
+
+        return Illuminate\Support\Facades\Http::response([
+            'items' => [['id' => 'dbenagroup@gmail.com', 'summary' => 'DBENA', 'accessRole' => 'writer']],
+        ]);
+    });
+
+    $hasil = app(App\Services\GoogleCalendarWriter::class)->diagnose('dbenagroup@gmail.com');
+
+    expect($panggilan)->toBe(2)
+        ->and($hasil['reason'])->toBe('ready');
+});
+
+it('does not blame sharing for a scope problem', function (): void {
+    // Bukan masalah perkongsian langsung. Token itu sendiri salah, dan
+    // menyuruh admin membetulkan perkongsian membuang petang mereka.
+    expect(__('calendar_task.google.bad_scope'))
+        ->not->toContain('Make changes to events');
 });
 
 /*
